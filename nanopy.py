@@ -7,13 +7,13 @@ url=''
 
 def nano_account(address):
 	# Given a string containing an NANO address, confirm validity and provide resulting hex address
-	if len(address) == 64 and (address[:4] == 'xrb_'):
+	if (len(address) == 64 and (address[:4] == 'xrb_')) or (len(address) == 65 and (address[:5] == 'nano_')):
 		account_map = "13456789abcdefghijkmnopqrstuwxyz"				# each index = binary value, account_lookup[0] == '1'
 		account_lookup = {}
 		for i in range(0,32):											# populate lookup index with prebuilt bitarrays ready to append
 			account_lookup[account_map[i]] = BitArray(uint=i,length=5)
 
-		acrop_key = address[4:-8]										# we want everything after 'nano_' but before the 8-char checksum
+		acrop_key = address[-60:-8]										# we want the 52 characters after 'xrb_' or 'nano_' but before the 8-char checksum
 		acrop_check = address[-8:]										# extract checksum
 
 		# convert base-32 (5-bit) values to byte string by appending each 5-bit value to the bitstring, essentially bitshifting << 5 and then adding the 5-bit value.
@@ -33,7 +33,6 @@ def nano_account(address):
 		h = hashlib.blake2b(digest_size=5)
 		h.update(number_l.bytes)
 		if (h.hexdigest() == check_l.hex):return result
-		return False
 	return False
 
 def account_nano(account):
