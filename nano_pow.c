@@ -6,7 +6,7 @@
 #include<omp.h>
 #include<blake2.h>
 
-// gcc -lb2 -fopenmp -shared -Wl,-soname,nano_pow -o nano_pow.so -fPIC nano_pow.c
+// gcc -lb2 -fopenmp -shared -Wl,-soname,libnanopow -o libnanopow.so -fPIC nano_pow.c
 
 char *strrev(char *str)
 {
