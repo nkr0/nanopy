@@ -6,7 +6,10 @@
 #include<omp.h>
 #include<blake2.h>
 
+// Compile library
 // gcc -lb2 -fopenmp -shared -Wl,-soname,libnanopow -o libnanopow.so -fPIC nano_pow.c
+// Compile executable
+// gcc -lb2 -fopenmp -o nano_pow nano_pow.c
 
 char *strrev(char *str)
 {
@@ -127,4 +130,8 @@ const char *pow_generate(char *hash){
 		free(b2b_b);
 	}
     return work;
+}
+
+int main(int argc, char *argv[]){
+    if(argc> 1) printf("%s\n", pow_generate(argv[1]));
 }
