@@ -1,3 +1,10 @@
 *.so
+*.cache
+*.log
+*.status
 *.asc
+*.m4
+nanopow
+configure
+makefile
 __pycache__/
