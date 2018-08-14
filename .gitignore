@@ -4,6 +4,7 @@
 *.status
 *.asc
 *.m4
+*.pyc
 nanopow
 configure
 makefile

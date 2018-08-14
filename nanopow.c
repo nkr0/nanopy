@@ -8,7 +8,6 @@
 #include<OpenCL/opencl.h>
 #elif HAVE_CL_CL_H
 #include<CL/opencl.h>
-//~ #include<CL/cl_intel.h>
 #else
 #include<omp.h>
 #include<blake2.h>
@@ -28,15 +27,15 @@
 #define LM 0x7FFFFFFFULL /* Least significant 31 bits */
 
 /* The array for the state vector */
-static unsigned long long mt[NN]; 
+static unsigned long long mt[NN];
 /* mti==NN+1 means mt[NN] is not initialized */
-static int mti=NN+1; 
+static int mti=NN+1;
 
 /* initializes mt[NN] with a seed */
 void init_genrand64(unsigned long long seed)
 {
     mt[0] = seed;
-    for (mti=1; mti<NN; mti++) 
+    for (mti=1; mti<NN; mti++)
         mt[mti] =  (6364136223846793005ULL * (mt[mti-1] ^ (mt[mti-1] >> 62)) + mti);
 }
 
@@ -51,8 +50,8 @@ unsigned long long genrand64_int64(void)
 
         /* if init_genrand64() has not been called, */
         /* a default initial seed is used     */
-        if (mti == NN+1) 
-            init_genrand64(5489ULL); 
+        if (mti == NN+1)
+            init_genrand64(5489ULL);
 
         for (i=0;i<NN-MM;i++) {
             x = (mt[i]&UM)|(mt[i+1]&LM);
@@ -67,7 +66,7 @@ unsigned long long genrand64_int64(void)
 
         mti = 0;
     }
-  
+
     x = mt[mti++];
 
     x ^= (x >> 29) & 0x5555555555555555ULL;
@@ -139,7 +138,7 @@ void pow_omp(uint8_t *str, char *work){
 			uint64_t r_str_l=r_str+j, b2b_b=0;
 			char b2b_h[17];
 			blake2b_state b2b;
-			
+
 			blake2b_init(&b2b, 8);
 			blake2b_update(&b2b, (uint8_t *)&r_str_l, 8);
 			blake2b_update(&b2b, str, 32);
