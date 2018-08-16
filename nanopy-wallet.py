@@ -1,4 +1,6 @@
-import nanopy, sys, argparse, getpass, gnupg, os, random, json
+import sys, argparse, getpass, gnupg, os, random, json
+from nanopy import *
+import nanopy.rpc as rpc
 
 class bcolors:
 	ok1 = '\033[95m'
@@ -11,13 +13,13 @@ class bcolors:
 	underline = '\033[4m'
 
 def generate_block(seed):
-	nb=nanopy.nano_block()
-	nb['account']=nanopy.seed_nano(seed, args.index)
+	nb=nano_block()
+	nb['account']=seed_nano(seed, args.index)
 	print("Acc:\t", nb['account'])
 
 	while True:
-		info=nanopy.account_info(nb['account'])
-		rb=nanopy.accounts_pending([nb['account']])['blocks'][nb['account']]
+		info=rpc.account_info(nb['account'])
+		rb=rpc.accounts_pending([nb['account']])['blocks'][nb['account']]
 		try:
 			nb['previous']=info['frontier']
 			nb['balance']=info['balance']
@@ -26,7 +28,7 @@ def generate_block(seed):
 			print("Rep:\t", nb["representative"])
 
 			try: # nag users to change representative
-				if int(nanopy.account_info(nb['representative'])['weight'])*100/133248289196499221154116917710445381553>1.0 and (not args.change_rep_to):
+				if int(rpc.account_info(nb['representative'])['weight'])*100/133248289196499221154116917710445381553>1.0 and (not args.change_rep_to):
 					print(bcolors.warn1, "\nYour representative has too much voting weight.", bcolors.end)
 					if ((input("Change rep?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')=='y'): args.change_rep_to=input("Rep: \t ")
 			except KeyError: pass
@@ -48,8 +50,8 @@ def generate_block(seed):
 				nb['representative']=input("Rep: \t ")
 
 		if args.send_to:
-			nb['link'] = nanopy.nano_account(args.send_to)
-			print("\nTo :\t", nanopy.account_nano(nb['link']))
+			nb['link'] = nano_account(args.send_to)
+			print("\nTo :\t", account_nano(nb['link']))
 			if args.empty_to:
 				print("Amt:\t", bcolors.warn2, int(nb["balance"])/10**30, bcolors.end, "NANO\t", nb["balance"], "RAW")
 				nb['balance']='0'
@@ -64,7 +66,7 @@ def generate_block(seed):
 
 		elif rb:
 			nb['link']=rb[0]
-			nb['balance']=str(int(nb['balance'])+int(nanopy.blocks_info(rb)['blocks'][nb['link']]['amount']))
+			nb['balance']=str(int(nb['balance'])+int(rpc.blocks_info(rb)['blocks'][nb['link']]['amount']))
 			print("\nBal:\t", bcolors.ok3, int(nb["balance"])/10**30, bcolors.end, "NANO\t", nb["balance"], "RAW")
 
 		if(args.send_to or args.change_rep_to or rb):
@@ -72,25 +74,25 @@ def generate_block(seed):
 			args.change_rep_to=None
 
 			work_hash=nb['previous']
-			if(nb['previous']=="0000000000000000000000000000000000000000000000000000000000000000"): work_hash=nanopy.nano_account(nb['account'])
+			if(nb['previous']=="0000000000000000000000000000000000000000000000000000000000000000"): work_hash=nano_account(nb['account'])
 
 			if(args.remote):
-				try: nb['work']=nanopy.work_generate(work_hash)['work']
+				try: nb['work']=rpc.work_generate(work_hash)['work']
 				except KeyError:
 					print(bcolors.warn1, "Node rejected work request, switching to local PoW.", bcolors.end)
 					args.remote=False
 
 			while True:
-				if not args.remote: nb['work']=nanopy.pow_generate(work_hash)
-				if nanopy.pow_validate(nb['work'], work_hash): break
+				if not args.remote: nb['work']=pow_generate(work_hash)
+				if pow_validate(nb['work'], work_hash): break
 
-			nb['signature'] = nanopy.sign_block(seed, args.index, nb)
+			nb['signature'] = sign_block(seed, args.index, nb)
 
 			print("\n"+json.dumps(nb))
 
 			if ((input("\nBroadcast block?(y/"+bcolors.bold+"n"+bcolors.end+"): ") or 'n')=='y'):
 				ack={'demo':'broadcasting is blocked.'}
-				if not args.demo: ack=nanopy.process(json.dumps(nb))
+				if not args.demo: ack=rpc.process(json.dumps(nb))
 
 				try: print(bcolors.ok3, ack['hash'], bcolors.end)
 				except KeyError: print(bcolors.warn2, ack, bcolors.end)
@@ -130,10 +132,10 @@ if __name__ == '__main__':
 	if (args.audit_seed or args.send_to or args.change_rep_to) : args.unlock = True
 
 	if args.tor or options['tor']:
-		nanopy.rpc.proxies['http'] = 'socks5h://localhost:9050'
-		nanopy.rpc.proxies['https'] = 'socks5h://localhost:9050'
+		rpc.session.proxies['http'] = 'socks5h://localhost:9050'
+		rpc.session.proxies['https'] = 'socks5h://localhost:9050'
 
-	nanopy.url=random.choice(options['rpc'])
+	rpc.url=random.choice(options['rpc'])
 
 	gpg = gnupg.GPG()
 
@@ -149,7 +151,7 @@ if __name__ == '__main__':
 
 			seed=os.urandom(32).hex()
 
-			with open(nanopy.seed_nano(seed, 0)+".asc", "w") as f:
+			with open(seed_nano(seed, 0)+".asc", "w") as f:
 				asc = gpg.encrypt(seed, symmetric='AES256', passphrase=pwd, recipients=None, extra_args=['--s2k-digest-algo', 'SHA512'])
 				print(f.name[:-4])
 				print(str(asc))
@@ -166,7 +168,7 @@ if __name__ == '__main__':
 		if seed.ok:
 
 			if args.audit_seed:
-				for i in range(args.audit_seed+1): accounts.append(nanopy.seed_nano(str(seed)[:64], i))
+				for i in range(args.audit_seed+1): accounts.append(seed_nano(str(seed)[:64], i))
 
 			else:
 				generate_block(str(seed))
@@ -179,7 +181,7 @@ if __name__ == '__main__':
 	else: accounts=options['accounts']
 
 	if accounts[0]:
-		info=nanopy.accounts_balances(accounts)
+		info=rpc.accounts_balances(accounts)
 		for account in accounts:
 			print("\nAcc:\t", account)
 			try:
