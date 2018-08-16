@@ -19,7 +19,7 @@ def generate_block(seed):
 
 	while True:
 		info=rpc.account_info(nb['account'])
-		rb=rpc.accounts_pending([nb['account']])['blocks'][nb['account']]
+		rb=rpc.accounts_pending([nb['account']])['blocks']['xrb'+nb['account'][-61:]] # just change already!!!! !@$@#%!$#^#!^
 		try:
 			nb['previous']=info['frontier']
 			nb['balance']=info['balance']
