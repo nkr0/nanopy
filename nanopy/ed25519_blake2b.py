@@ -6,7 +6,6 @@ l = 2**252 + 27742317777372353535851937790883648493
 
 
 def H(m):
-    # ~ return hashlib.sha512(m).digest()
     return hashlib.blake2b(m).digest()
 
 
