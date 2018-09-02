@@ -17,6 +17,7 @@ def try_build():
 
 eca = []
 try:
+    print('\033[92m' + "Trying to build in GPU mode." + '\033[0m')
     libs = ['OpenCL']
     try:
         macros = [('HAVE_CL_CL_H', '1')]
@@ -27,12 +28,14 @@ try:
     print('\033[92m' + "Success!!! Built with GPU work computation." +
           '\033[0m')
 except:
+    print('\033[91m' + "Failed to build in GPU mode." + '\033[0m')
+    print('\033[92m' + "Trying to build in CPU mode." + '\033[0m')
     try:
         libs = ['b2']
         eca = ['-fopenmp']
         macros = []
         try_build()
-        print('\033[92m' +
-              "Success!!! Built with OpenMP work computation." + '\033[0m')
+        print('\033[92m' + "Success!!! Built with CPU work computation." +
+              '\033[0m')
     except:
         print('\033[91m' + "Build failed." + '\033[0m')
