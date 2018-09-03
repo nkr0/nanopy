@@ -26,7 +26,7 @@ try:
         try_build()
     except:
         macros = [('HAVE_OPENCL_OPENCL_H', '1')]
-        ela=['-framework', 'OpenCL']
+        ela = ['-framework', 'OpenCL']
         try_build()
     print('\033[92m' + "Success!!! Built with GPU work computation." +
           '\033[0m')
