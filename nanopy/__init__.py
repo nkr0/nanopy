@@ -115,37 +115,37 @@ def work_generate(_hash):
 def mrai_from_raw(amount):
     assert type(amount) is str
     mrai = D(amount) * D(D(10)**-30)
-    return mrai.quantize(D(D(10)**-30))
+    return str(mrai.quantize(D(D(10)**-30)))
 
 
 def mrai_to_raw(amount):
     assert type(amount) is str
     raw = D(amount) * D(D(10)**30)
-    return raw.quantize(D(1))
+    return str(raw.quantize(D(1)))
 
 
 def krai_from_raw(amount):
     assert type(amount) is str
     krai = D(amount) * D(D(10)**-27)
-    return krai.quantize(D(D(10)**-27))
+    return str(krai.quantize(D(D(10)**-27)))
 
 
 def krai_to_raw(amount):
     assert type(amount) is str
     raw = D(amount) * D(D(10)**27)
-    return raw.quantize(D(1))
+    return str(raw.quantize(D(1)))
 
 
 def rai_from_raw(amount):
     assert type(amount) is str
     rai = D(amount) * D(D(10)**-24)
-    return rai.quantize(D(D(10)**-24))
+    return str(rai.quantize(D(D(10)**-24)))
 
 
 def rai_to_raw(amount):
     assert type(amount) is str
     raw = D(amount) * D(D(10)**24)
-    return raw.quantize(D(1))
+    return str(raw.quantize(D(1)))
 
 
 def base_block():
