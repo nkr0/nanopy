@@ -4,5 +4,4 @@
 build/
 dist/
 nanopy/__pycache__/
-nanopy-wallet
 test.py
