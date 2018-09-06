@@ -1,5 +1,4 @@
 *.so
-*.asc
-*.pyc
-__pycache__/
-nanopy/build/
+*.egg-info
+build/
+dist/
