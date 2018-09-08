@@ -7,6 +7,8 @@ Python implementation of NANO-related functions.
 
 Install the library by running `python setup.py build && python setup.py install`.
 
+Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
+
 ## Wallet options
 * The wallet looks for default configuration in `$HOME/.config/nanopy-confs/<network>.conf`.
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy-confs/<network>.conf`.
@@ -31,8 +33,6 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 * `--unlock`. Unlock wallet.
 * `-c` or `--change-rep-to`. Supply representative address to change representative.
   * Change representative tag can be combined with send and receive blocks.
-* `--remote`. Compute work on the RPC node.
-  * Work generation is local by default. If the C library is compiled, that is used. Otherwise, the python function is used.
 * `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy-confs/<network>.conf`. Refer to the sample file for more details.
 * `--demo`. Run in demo mode. Never broadcast blocks.
