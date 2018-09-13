@@ -1,7 +1,8 @@
 *.asc
 *.so
 *.egg-info
+test.py
+__pycache__/
 build/
 dist/
 nanopy/__pycache__/
-test.py
