@@ -1,7 +1,5 @@
-import json, requests
+import json, urllib.request
 
-session = requests.session()
-session.proxies = {}
 url = 'http://localhost:7076'
 
 rpc_enabled = ['block_count', 'account_balance']
@@ -19,7 +17,9 @@ def application(environ, start_response):
         if not json.loads(request_body)['action'] in rpc_enabled:
             status = '400 Bad Request'
 
-        response = session.post(url, data=request_body).text.encode('utf-8')
+        req = urllib.request.Request(url, request_body)
+        with urllib.request.urlopen(req) as response_raw:
+            response = response_raw.read()
 
         response_headers = [('Content-type', 'text/plain'),
                             ('Content-Length', str(len(response)))]
