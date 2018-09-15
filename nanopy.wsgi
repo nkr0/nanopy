@@ -63,6 +63,50 @@ def get_response(rpc, request_body):
     return response
 
 
+def get_root_response(rpc, representative):
+    root_info = {}
+
+    data = {}
+    data['action'] = 'block_count'
+    response = json.loads(get_response(rpc, json.dumps(data).encode('utf-8')))
+    root_info['count'] = response['count']
+    root_info['unchecked'] = response['unchecked']
+
+    data = {}
+    data['action'] = 'version'
+    response = json.loads(get_response(rpc, json.dumps(data).encode('utf-8')))
+    root_info['node_vendor'] = response['node_vendor']
+
+    data = {}
+    data['action'] = 'account_weight'
+    data['account'] = representative
+    response = json.loads(get_response(rpc, json.dumps(data).encode('utf-8')))
+    root_info['weight'] = response['weight']
+
+    data = {}
+    data['action'] = 'available_supply'
+    response = json.loads(get_response(rpc, json.dumps(data).encode('utf-8')))
+    root_info['available_supply'] = response['available']
+
+    response = b'Node version   : ' + root_info['node_vendor'][10:].encode(
+        'utf-8')
+    response += b'\nSync status    : ' + (
+        '%.2f' % (float(root_info['count']) * 100. /
+                  (float(root_info['count']) + float(root_info['unchecked']))) +
+        ' %').encode('utf-8')
+    response += b'\nBlocks         : ' + root_info['count'].encode('utf-8')
+    response += b'\nUnchecked      : ' + root_info['unchecked'].encode('utf-8')
+    response += b'\nRepresentative : ' + representative.encode('utf-8')
+    response += b'\nVoting weight  : ' + (
+        '%.2f' %
+        (int(root_info['weight']) * 100. / int(root_info['available_supply'])) +
+        ' %').encode('utf-8')
+    response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode('utf-8')
+    response += b'\n\n\nDonate         : ' + donate.encode('utf-8')
+    response += b'\nGitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi'
+    return response
+
+
 def application(environ, start_response):
     status = '400 Bad Request'
     response = b''
@@ -100,60 +144,10 @@ def application(environ, start_response):
                 request_body = environ['wsgi.input'].read(request_body_size)
 
         if not request_body:
-            root_info = {}
-
-            data = {}
-            data['action'] = 'block_count'
-            response = json.loads(
-                get_response(rpc,
-                             json.dumps(data).encode('utf-8')))
-            root_info['count'] = response['count']
-            root_info['unchecked'] = response['unchecked']
-
-            data = {}
-            data['action'] = 'version'
-            response = json.loads(
-                get_response(rpc,
-                             json.dumps(data).encode('utf-8')))
-            root_info['node_vendor'] = response['node_vendor']
-
-            data = {}
-            data['action'] = 'account_weight'
-            data['account'] = representative
-            response = json.loads(
-                get_response(rpc,
-                             json.dumps(data).encode('utf-8')))
-            root_info['weight'] = response['weight']
-
-            data = {}
-            data['action'] = 'available_supply'
-            response = json.loads(
-                get_response(rpc,
-                             json.dumps(data).encode('utf-8')))
-            root_info['available_supply'] = response['available']
-
-            response = b'Node version   : ' + root_info['node_vendor'][
-                10:].encode('utf-8')
-            response += b'\nSync status    : ' + (
-                '%.2f' %
-                (float(root_info['count']) * 100. /
-                 (float(root_info['count']) + float(root_info['unchecked']))) +
-                ' %').encode('utf-8')
-            response += b'\nBlocks         : ' + root_info['count'].encode(
-                'utf-8')
-            response += b'\nUnchecked      : ' + root_info['unchecked'].encode(
-                'utf-8')
-            response += b'\nRepresentative : ' + representative.encode('utf-8')
-            response += b'\nVoting weight  : ' + (
-                '%.2f' % (int(root_info['weight']) * 100. / int(
-                    root_info['available_supply'])) + ' %').encode('utf-8')
-            response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode(
-                'utf-8')
-            response += b'\n\n\nDonate         : ' + donate.encode('utf-8')
-            response += b'\nGitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi'
-
+            response = get_root_response(rpc, representative)
         elif json.loads(request_body)['action'] in rpc_enabled:
             response = get_response(rpc, request_body)
+
         status = '200 OK'
 
     except:
