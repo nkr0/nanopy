@@ -88,23 +88,25 @@ def get_root_response(rpc, representative):
     response = json.loads(get_response(rpc, json.dumps(data).encode('utf-8')))
     root_info['available_supply'] = response['available']
 
-    response = b'Node version   : ' + root_info['node_vendor'][10:].encode(
-        'utf-8')
-    response += b'\nSync status    : ' + (
+    response = ('''\
+Node version   : {0}
+Sync status    : {1}
+Blocks         : {2}
+Unchecked      : {3}
+Representative : {4}
+Voting weight  : {5}
+Available RPC  : {6}
+Donate         : {7}
+GitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi
+''').format(
+        root_info['node_vendor'][10:],
         '%.2f' % (float(root_info['count']) * 100. /
-                  (float(root_info['count']) + float(root_info['unchecked']))) +
-        ' %').encode('utf-8')
-    response += b'\nBlocks         : ' + root_info['count'].encode('utf-8')
-    response += b'\nUnchecked      : ' + root_info['unchecked'].encode('utf-8')
-    response += b'\nRepresentative : ' + representative.encode('utf-8')
-    response += b'\nVoting weight  : ' + (
-        '%.2f' %
-        (int(root_info['weight']) * 100. / int(root_info['available_supply'])) +
-        ' %').encode('utf-8')
-    response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode('utf-8')
-    response += b'\n\n\nDonate         : ' + donate.encode('utf-8')
-    response += b'\nGitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi'
-    return response
+                  (float(root_info['count']) + float(root_info['unchecked']))),
+        root_info['count'], root_info['unchecked'], representative, '%.2f' %
+        (int(root_info['weight']) * 100. / int(root_info['available_supply'])),
+        ', '.join(rpc_enabled) + '\n\n', donate)
+
+    return response.encode('utf-8')
 
 
 def application(environ, start_response):
