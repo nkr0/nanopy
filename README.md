@@ -16,12 +16,7 @@ Install the library by running `python setup.py build && python setup.py install
 * `sudo apt-get install libapache2-mod-wsgi-py3`
 * Add the directives below into apache conf file, `/etc/apache2/sites-available/000-default.conf`. Modify the path as necessary. Node API will be served at `http://localhost/rpc-<network>` and RPC methods can be submitted as GET/POST requests.
 ```
-WSGIScriptAlias /rpc-nano /path/to/nanopy.wsgi
-WSGIScriptAlias /rpc-xrb /path/to/nanopy.wsgi
-WSGIScriptAlias /rpc-main /path/to/nanopy.wsgi
-WSGIScriptAlias /rpc-live /path/to/nanopy.wsgi
-WSGIScriptAlias /rpc-beta /path/to/nanopy.wsgi
-WSGIScriptAlias /rpc-banano /path/to/nanopy.wsgi
+WSGIScriptAliasMatch ^/rpc-(.{3,6}) /path/to/nanopy.wsgi
 <Directory /path/to>
     Require all granted
 </Directory>
