@@ -2,7 +2,7 @@ import json, requests
 
 session = requests.session()
 session.proxies = {}
-url = ''
+url = 'http://localhost:7076'
 work_url = ''
 
 
