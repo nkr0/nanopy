@@ -302,7 +302,7 @@ elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
     nanopy.mrai_name = 'BANANO'
     nanopy.available_supply = 3402723679209384634633746074317681515310
-    nanopy.work_limit = 'fffffe0000000000'
+    nanopy.work_threshold = 'fffffe0000000000'
     rpc.url = 'http://localhost:7072'
 
 config_file = os.path.expanduser(
