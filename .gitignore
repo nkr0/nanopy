@@ -1,7 +1,8 @@
 *.asc
 *.so
 *.egg-info
-test.py
+*.bkp
+test*
 __pycache__/
 build/
 dist/
