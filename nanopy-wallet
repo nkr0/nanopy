@@ -30,6 +30,10 @@ def get_no_value_options(section):
     except:
         pass
     try:
+        options.remove('torip')
+    except:
+        pass
+    try:
         options.remove('rpc')
     except:
         pass
@@ -329,6 +333,17 @@ if online:
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
         rpc.session.proxies['http'] = 'socks5h://localhost:9050'
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
+        if config['DEFAULT'].getboolean('torip', fallback=False):
+            try:
+                from geolite2 import geolite2
+                torip = json.loads(
+                    rpc.session.get('http://httpbin.org/ip').text)['origin']
+                reader = geolite2.reader()
+                match = reader.get(torip)
+                print('\033[92m' + torip, ' ',
+                      match['country']['names']['en'] + '\033[0m')
+            except:
+                pass
 else:
     print(bcolors.warn1, 'Running in offline mode.', bcolors.end)
 
