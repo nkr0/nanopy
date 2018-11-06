@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, getpass, gnupg, os, json, configparser
+import argparse, getpass, gnupg, os, json, configparser, requests
 from nanopy import *
 import nanopy.rpc as rpc
 
@@ -14,13 +14,6 @@ class bcolors:
     end = '\033[0m'
     bold = '\033[1m'
     underline = '\033[4m'
-
-
-def accounts_balances_looper(accounts):
-    info = {}
-    for account in accounts:
-        info[account] = rpc.account_info(account)
-    return info
 
 
 def get_no_value_options(section):
@@ -61,7 +54,7 @@ def get_no_value_options(section):
 
 
 def formatted_balance_printer(label, colour, amount):
-    print(label + ' :', colour + '{:>41}'.format(amount) + bcolors.end,
+    print(label + ' :', colour + '{:>40}'.format(amount) + bcolors.end,
           nanopy.mrai_name)
 
 
@@ -418,17 +411,28 @@ else:
 
 if accounts and online:
     info = rpc.accounts_balances(accounts)
-    try:
-        info[accounts[0]]
-    except KeyError:
-        info = accounts_balances_looper(accounts)
     for account in accounts:
+        if nanopy.account_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
+            try:
+                info[account]
+                print('\033[92m' +
+                      'Fixed!!! Upstream changed RPC responses to nano_' +
+                      '\033[0m')
+            except:
+                account = rb = 'xrb_' + account[-60:]
         print('Acc :', account)
         try:
-            formatted_balance_printer('Bal', bcolors.ok1,
-                                      mrai_from_raw(info[account]['balance']))
-            if int(info[account]['pending']):
+            formatted_balance_printer(
+                'Bal', bcolors.ok1,
+                mrai_from_raw(info['balances'][account]['balance']))
+            if int(info['balances'][account]['pending']):
                 print(bcolors.ok3, 'Pending block(s)', bcolors.end)
             print('')
         except:
             print(bcolors.warn2, info[account], bcolors.end, '\n')
+
+ticker = json.loads(
+    rpc.session.
+    get('https://min-api.cryptocompare.com/data/price?fsym=NANO&tsyms=USD,EUR,BTC'
+       ).text)
+print('USD', ticker['USD'], '\tEUR', ticker['EUR'], '\tBTC', ticker['BTC'])
