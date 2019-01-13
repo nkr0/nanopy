@@ -20,13 +20,13 @@ def account_block_count(account):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def account_info(account):
+def account_info(account, representative=False, weight=False, pending=False):
     data = {}
     data['action'] = 'account_info'
     data['account'] = account
-    data['representative'] = 'true'
-    data['weight'] = 'true'
-    data['pending'] = 'true'
+    if representative: data['representative'] = representative
+    if weight: data['weight'] = weight
+    if pending: data['pending'] = pending
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -34,7 +34,7 @@ def account_create(wallet, work=False):
     data = {}
     data['action'] = 'account_create'
     data['wallet'] = wallet
-    data['work'] = work
+    if work: data['work'] = work
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -50,9 +50,8 @@ def account_history(account, count=1, raw=False, head=None):
     data['action'] = 'account_history'
     data['account'] = account
     data['count'] = count
-    data['raw'] = raw
-    if head:
-        data['head'] = head
+    if raw: data['raw'] = raw
+    if head: data['head'] = head
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -100,8 +99,7 @@ def account_representative_set(wallet, account, representative, work=None):
     data['wallet'] = wallet
     data['account'] = account
     data['representative'] = representative
-    if work:
-        data['work'] = work
+    if work: data['work'] = work
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -124,7 +122,7 @@ def accounts_create(wallet, count, work=False):
     data['action'] = 'accounts_create'
     data['wallet'] = wallet
     data['count'] = count
-    data['work'] = work
+    if work: data['work'] = work
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -145,8 +143,8 @@ def accounts_pending(accounts,
     data['accounts'] = accounts
     data['count'] = count
     if threshold: data['threshold'] = threshold
-    data['source'] = source
-    data['include_active'] = include_active
+    if source: data['source'] = source
+    if include_active: data['include_active'] = include_active
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -174,9 +172,9 @@ def blocks_info(hashes, pending=False, source=False, balance=False):
     data = {}
     data['action'] = 'blocks_info'
     data['hashes'] = hashes
-    data['pending'] = pending
-    data['source'] = source
-    data['balance'] = balance
+    if pending: data['pending'] = pending
+    if source: data['source'] = source
+    if balance: data['balance'] = balance
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -206,6 +204,16 @@ def block_count_type():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def block_hash(block):
+    data = {}
+    data['action'] = 'block_hash'
+    if type(block) == str:
+        data['block'] = block
+    else:
+        data['block'] = json.dumps(block)
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def bootstrap(address, port):
     data = {}
     data['action'] = 'bootstrap'
@@ -214,9 +222,23 @@ def bootstrap(address, port):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def bootstrap_lazy(hash_, force=False):
+    data = {}
+    data['action'] = 'bootstrap_lazy'
+    data['hash'] = hash_
+    if force: data['force'] = force
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def bootstrap_any():
     data = {}
     data['action'] = 'bootstrap_any'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def bootstrap_status():
+    data = {}
+    data['action'] = 'bootstrap_status'
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -228,9 +250,32 @@ def chain(block, count):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def confirmation_active(announcements=0):
+    data = {}
+    data['action'] = 'confirmation_active'
+    if announcements: data['announcements'] = announcements
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def confirmation_history():
     data = {}
     data['action'] = 'confirmation_history'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def confirmation_info(root, contents=True, representatives=False):
+    data = {}
+    data['action'] = 'confirmation_info'
+    data['root'] = root
+    if not contents: data['contents'] = contents
+    if representatives: data['representatives'] = representatives
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def confirmation_quorum(peer_details=False):
+    data = {}
+    data['action'] = 'confirmation_quorum'
+    if peer_details: data['peer_details'] = peer_details
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -338,17 +383,17 @@ def ledger(account,
            representative=False,
            weight=False,
            pending=False,
-           modified_since=False,
+           modified_since=0,
            sorting=False):
     data = {}
     data['action'] = 'ledger'
     data['account'] = account
     data['count'] = count
-    data['representative'] = representative
-    data['weight'] = weight
-    data['pending'] = pending
-    data['modified_since'] = modified_since
-    data['sorting'] = sorting
+    if representative: data['representative'] = representative
+    if weight: data['weight'] = weight
+    if pending: data['pending'] = pending
+    if modified_since: data['modified_since'] = modified_since
+    if sorting: data['sorting'] = sorting
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -362,6 +407,18 @@ def block_create(balance, key, representative, link, previous, work=None):
     data['link'] = link
     data['previous'] = previous
     if work: data['work'] = work
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def node_id():
+    data = {}
+    data['action'] = 'node_id'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def node_id_delete():
+    data = {}
+    data['action'] = 'node_id_delete'
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -400,7 +457,7 @@ def process(block, force=False):
     data = {}
     data['action'] = 'process'
     data['block'] = block
-    data['force'] = force
+    if force: data['force'] = force
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -431,7 +488,7 @@ def representatives(count=0, sorting=False):
     data = {}
     data['action'] = 'representatives'
     if count: data['count'] = count
-    data['sorting'] = sorting
+    if sorting: data['sorting'] = sorting
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -448,11 +505,15 @@ def wallet_representative(wallet):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def wallet_representative_set(wallet, representative):
+def wallet_representative_set(wallet,
+                              representative,
+                              update_existing_accounts=False):
     data = {}
     data['action'] = 'wallet_representative_set'
     data['wallet'] = wallet
     data['representative'] = representative
+    if update_existing_accounts:
+        data['update_existing_accounts'] = update_existing_accounts
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -489,10 +550,8 @@ def send(wallet, source, destination, amount, _id=None, work=None):
     data['source'] = source
     data['destination'] = destination
     data['amount'] = amount
-    if _id:
-        data['id'] = _id
-    if work:
-        data['work'] = work
+    if _id: data['id'] = _id
+    if work: data['work'] = work
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -582,12 +641,12 @@ def unchecked_keys(key, count=1):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def wallet_add(wallet, key, work=True):
+def wallet_add(wallet, key, work=False):
     data = {}
     data['action'] = 'wallet_add'
     data['wallet'] = wallet
     data['key'] = key
-    if not work: data['work'] = work
+    if work: data['work'] = work
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 

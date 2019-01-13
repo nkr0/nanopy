@@ -73,7 +73,7 @@ def generate_block(sk, pk, account):
 
     while True:
         if online:
-            info = rpc.account_info(nb['account'])
+            info = rpc.account_info(nb['account'], representative=True)
             if nanopy.account_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
                 try:
                     rb = rpc.accounts_pending(
@@ -103,7 +103,7 @@ def generate_block(sk, pk, account):
             if online:
                 try:  # nag users to change representative
                     if int(
-                            rpc.account_info(nb['representative'])['weight']
+                            rpc.account_info(nb['representative'], weight=True)['weight']
                     ) * 100 / available_supply > 1.0 and not args.change_rep_to:
                         print(
                             bcolors.warn1,
