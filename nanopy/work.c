@@ -11,7 +11,7 @@
 #endif
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
-// this is the variable opencl_program in raiblocks/rai/node/openclwork.cpp
+// this is the variable opencl_program in nano-node/nano/node/openclwork.cpp
 const char *opencl_program = R"%%%(
 enum blake2b_constant
 {
@@ -359,7 +359,7 @@ static void ucharcpyglb (uchar * dst, __global uchar const * src, size_t count)
 	}
 }
 
-__kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_a, __global uchar * item_a, __global ulong * threshold)
+__kernel void nano_work (__global ulong * attempt, __global ulong * result_a, __global uchar * item_a, __global ulong * threshold)
 {
   ulong threshold_l = *threshold;
 	int const thread = get_global_id (0);
@@ -384,7 +384,7 @@ __kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_
 static uint64_t s[16];
 static int p;
 
-uint64_t xorshift1024star(void) {  // raiblocks/rai/node/xorshift.hpp
+uint64_t xorshift1024star(void) {  // nano-node/nano/node/xorshift.hpp
   const uint64_t s0 = s[p++];
   uint64_t s1 = s[p &= 15];
   s1 ^= s1 << 31;         // a
@@ -502,7 +502,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    kernel = clCreateKernel(program, "raiblocks_work", &err);
+    kernel = clCreateKernel(program, "nano_work", &err);
     if (err != CL_SUCCESS) {
       printf("clCreateKernel failed with error code %d\n", err);
       goto FAIL;
