@@ -30,10 +30,11 @@ def account_info(account, representative=False, weight=False, pending=False):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def account_create(wallet, work=False):
+def account_create(wallet, index=0, work=False):
     data = {}
     data['action'] = 'account_create'
     data['wallet'] = wallet
+    if index: data['index'] = index
     if work: data['work'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
