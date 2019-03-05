@@ -7,3 +7,5 @@ __pycache__/
 build/
 dist/
 nanopy/__pycache__/
+venv
+.idea
