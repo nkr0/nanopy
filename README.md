@@ -28,8 +28,8 @@ WSGIScriptAliasMatch ^/rpc-(.{3,6}) /path/to/nanopy.wsgi
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
 
 ### Wallet options
-* The wallet looks for default configuration in `$HOME/.config/nanopy-confs/<network>.conf`.
-  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy-confs/<network>.conf`.
+* The wallet looks for default configuration in `$HOME/.config/nanopy/<network>.conf`.
+  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
   * Generated seeds are stored in a GnuPG AES256 encrypted file.
@@ -51,7 +51,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 * `-c` or `--change-rep-to`. Supply representative address to change representative.
   * Change representative tag can be combined with send and receive blocks.
 * `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
-* `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy-confs/<network>.conf`. Refer to the sample file for more details.
+* `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 * `--demo`. Run in demo mode. Never broadcast blocks.
 
 ## Pull requests
