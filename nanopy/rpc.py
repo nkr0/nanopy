@@ -170,7 +170,11 @@ def blocks(hashes):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def blocks_info(hashes, pending=False, source=False, balance=False, json_block=False):
+def blocks_info(hashes,
+                pending=False,
+                source=False,
+                balance=False,
+                json_block=False):
     data = {}
     data['action'] = 'blocks_info'
     data['hashes'] = hashes
@@ -269,7 +273,10 @@ def confirmation_history():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def confirmation_info(root, contents=True, representatives=False, json_block=False):
+def confirmation_info(root,
+                      contents=True,
+                      representatives=False,
+                      json_block=False):
     data = {}
     data['action'] = 'confirmation_info'
     data['root'] = root
@@ -404,7 +411,13 @@ def ledger(account,
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def block_create(balance, key, representative, link, previous, work=None, json_block=False):
+def block_create(balance,
+                 key,
+                 representative,
+                 link,
+                 previous,
+                 work=None,
+                 json_block=False):
     data = {}
     data['action'] = 'block_create'
     data['type'] = 'state'

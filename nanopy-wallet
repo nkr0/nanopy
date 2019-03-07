@@ -6,11 +6,11 @@ import nanopy.rpc as rpc
 
 
 class bcolors:
-    ok1 = '\033[95m'
-    ok2 = '\033[94m'
-    ok3 = '\033[92m'
-    warn1 = '\033[93m'
-    warn2 = '\033[91m'
+    ok1 = '\033[34m'
+    ok2 = '\033[35m'
+    ok3 = '\033[32m'
+    warn1 = '\033[33m'
+    warn2 = '\033[31m'
     end = '\033[0m'
     bold = '\033[1m'
     underline = '\033[4m'
@@ -296,13 +296,13 @@ if args.network == 'beta':
     available_supply = 340272367920938463463374607431768151531
 elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
-    nanopy.work_threshold = 'fffffe0000000000'
+    nanopy.work_difficulty = 'fffffe0000000000'
     rpc.url = 'http://localhost:7072'
     mrai_name = 'BANANO'
     available_supply = 3402723679209384634633746074317681515310
 
 config_file = os.path.expanduser(
-    '~') + '/.config/nanopy-confs/' + args.network + '.conf'
+    '~') + '/.config/nanopy/' + args.network + '.conf'
 
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)

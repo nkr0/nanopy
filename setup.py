@@ -40,7 +40,7 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
 
     e_args = {
         'name': 'nanopy.work',
-        'sources': ['nanopy/work.c'],
+        'sources': ['nanopy/b2b/blake2b.c', 'nanopy/work.c'],
         'extra_compile_args': [],
         'extra_link_args': [],
         'libraries': [],
@@ -52,15 +52,16 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
             e_args['define_macros'] = [('HAVE_OPENCL_OPENCL_H', '1')]
             e_args['extra_link_args'] = ['-framework', 'OpenCL']
         else:
-            e_args['libraries'] = ['b2', 'omp'] if link_omp else ['b2']
+            if link_omp: e_args['libraries'] = ['omp']
             e_args['extra_compile_args'] = ['-fopenmp']
-    elif platform == 'linux':
+            e_args['extra_link_args'] = ['-fopenmp']
+    elif platform in ['linux', 'win32', 'cygwin']:
         if use_gpu:
             e_args['define_macros'] = [('HAVE_CL_CL_H', '1')]
             e_args['libraries'] = ['OpenCL']
         else:
             e_args['extra_compile_args'] = ['-fopenmp']
-            e_args['libraries'] = ['b2']
+            e_args['extra_link_args'] = ['-fopenmp']
     else:
         raise OSError('Unsupported OS platform')
 
@@ -68,8 +69,8 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
 
 
 env = os.environ
-env['CC'] = env.get('CC', None) or find_gcc(
-    *(5, 9), dirs=env.get('PATH').split(os.path.pathsep))
+env['CC'] = os.getenv('CC') or find_gcc(
+    *(5, 9), dirs=os.getenv('PATH').split(os.pathsep))
 
 setup(
     name="nanopy",
