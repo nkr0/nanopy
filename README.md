@@ -5,7 +5,7 @@ Python implementation of NANO-related functions.
 * Install the library from PyPI by running `pip install nanopy`.
 * Install the library from source by running `python setup.py build && python setup.py install`.
 * Point to custom compiler by prepending the installation command with `CC=path/to/custom/c/compiler`.
-  * When using `Visual C`, additionally prepend the installation command with `USE_VS=1`.
+  * When using `Visual C`, additionally prepend the installation command with `USE_VC=1`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
