@@ -574,22 +574,33 @@ FAIL:
 #pragma omp parallel
 #pragma omp for
     for (i = 0; i < work_size; i++) {
-      uint64_t r_str_l = r_str + i, b2b_b = 0;
-      blake2b_state b2b;
+#ifdef USE_VISUAL_C
+      if (j == 3) {
+#endif
+        uint64_t r_str_l = r_str + i, b2b_b = 0;
+        blake2b_state b2b;
 
-      blake2b_init(&b2b, 8);
-      blake2b_update(&b2b, (uint8_t *)&r_str_l, 8);
-      blake2b_update(&b2b, str, 32);
-      blake2b_final(&b2b, (uint8_t *)&b2b_b, 8);
+        blake2b_init(&b2b, 8);
+        blake2b_update(&b2b, (uint8_t *)&r_str_l, 8);
+        blake2b_update(&b2b, str, 32);
+        blake2b_final(&b2b, (uint8_t *)&b2b_b, 8);
 
-      swapLong(&b2b_b);
+        swapLong(&b2b_b);
 
+#ifdef USE_VISUAL_C
+        if (b2b_b >= difficulty) {
+          workb = r_str_l;
+          j++;
+        }
+      }
+#else
       if (b2b_b >= difficulty) {
 #pragma omp atomic write
         workb = r_str_l;
 #pragma omp cancel for
       }
 #pragma omp cancellation point for
+#endif
     }
   }
 #endif
