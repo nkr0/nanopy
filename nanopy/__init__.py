@@ -1,4 +1,4 @@
-import hashlib, base64, decimal, hmac, mnemonic, nanopy.ed25519_blake2b
+import hashlib, base64, decimal, hmac, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
 work_difficulty = 'ffffffc000000000'
@@ -71,27 +71,28 @@ def deterministic_key(seed, index=0):
     return key_expand(sk.hex())
 
 
-def generate_mnemonic(strength=256, language='english'):
-    m = mnemonic.Mnemonic(language)
-    return m.generate(strength=strength)
+try:
+    import mnemonic
 
+    def generate_mnemonic(strength=256, language='english'):
+        m = mnemonic.Mnemonic(language)
+        return m.generate(strength=strength)
 
-def mnemonic_key(words, index=0, passphrase='', language='english'):
-    m = mnemonic.Mnemonic(language)
-    assert (m.check(words))
-
-    for i in ['m', 44, 165, index]:
-        if i == 'm':
-            key = b'ed25519 seed'
-            msg = m.to_seed(words, passphrase)
-        else:
-            i = i | 0x80000000
-            msg = b'\x00' + sk + i.to_bytes(4, byteorder='big')
-
-        h = hmac.new(key, msg, hashlib.sha512).digest()
-        sk, key = h[:32], h[32:]
-
-    return key_expand(sk.hex())
+    def mnemonic_key(words, index=0, passphrase='', language='english'):
+        m = mnemonic.Mnemonic(language)
+        assert (m.check(words))
+        for i in ['m', 44, 165, index]:
+            if i == 'm':
+                key = b'ed25519 seed'
+                msg = m.to_seed(words, passphrase)
+            else:
+                i = i | 0x80000000
+                msg = b'\x00' + sk + i.to_bytes(4, byteorder='big')
+            h = hmac.new(key, msg, hashlib.sha512).digest()
+            sk, key = h[:32], h[32:]
+        return key_expand(sk.hex())
+except ModuleNotFoundError:
+    pass
 
 
 def work_validate(work, _hash, difficulty=None):
