@@ -53,13 +53,21 @@ class RPC:
         return json.loads(
             self.session.post(self.url, data=json.dumps(data)).text)
 
-    def account_history(self, account, count=1, raw=False, head=None):
+    def account_history(self,
+                        account,
+                        count=1,
+                        raw=False,
+                        head=None,
+                        offset=0,
+                        reverse=False):
         data = {}
         data['action'] = 'account_history'
         data['account'] = account
         data['count'] = count
         if raw: data['raw'] = True
         if head: data['head'] = head
+        if offset: data['offset'] = offset
+        if reverse: data['reverse'] = reverse
         return json.loads(
             self.session.post(self.url, data=json.dumps(data)).text)
 
@@ -150,7 +158,8 @@ class RPC:
                          count=1,
                          threshold=None,
                          source=False,
-                         include_active=False):
+                         include_active=False,
+                         sorting=False):
         data = {}
         data['action'] = 'accounts_pending'
         data['accounts'] = accounts
@@ -158,6 +167,7 @@ class RPC:
         if threshold: data['threshold'] = threshold
         if source: data['source'] = True
         if include_active: data['include_active'] = True
+        if sorting: data['sorting'] = True
         return json.loads(
             self.session.post(self.url, data=json.dumps(data)).text)
 
@@ -660,7 +670,8 @@ class RPC:
                 count=1,
                 threshold=0,
                 source=False,
-                include_active=False):
+                include_active=False,
+                sorting=False):
         data = {}
         data['action'] = 'pending'
         data['account'] = account
@@ -668,6 +679,7 @@ class RPC:
         if threshold: data['threshold'] = threshold
         if source: data['source'] = True
         if include_active: data['include_active'] = True
+        if sorting: data['sorting'] = True
         return json.loads(
             self.session.post(self.url, data=json.dumps(data)).text)
 
