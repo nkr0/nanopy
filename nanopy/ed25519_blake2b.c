@@ -30,7 +30,7 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
 
 static PyObject *publickey(PyObject *self, PyObject *args) {
   const unsigned char *sk;
-  int i = 0;
+  int i;
   ed25519_public_key pk;
 
   if (!PyArg_ParseTuple(args, "y#", &sk, &i)) return NULL;
@@ -39,18 +39,19 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
 }
 
 static PyObject *signature(PyObject *self, PyObject *args) {
-  const unsigned char *m, *sk, *pk;
-  int i = 0, j = 0, k = 0;
+  const unsigned char *m, *randr, *sk, *pk;
+  int i, j, k, l;
   ed25519_signature sig;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &m, &i, &sk, &j, &pk, &k)) return NULL;
-  ed25519_sign(m, i, sk, pk, sig);
+  if (!PyArg_ParseTuple(args, "y#y#y#y#", &m, &i, &randr, &j, &sk, &k, &pk, &l))
+    return NULL;
+  ed25519_sign(m, i, randr, sk, pk, sig);
   return Py_BuildValue("y#", &sig, 64);
 }
 
 static PyObject *checkvalid(PyObject *self, PyObject *args) {
   const unsigned char *sig, *m, *pk;
-  int i = 0, j = 0, k = 0;
+  int i, j, k;
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &i, &m, &j, &pk, &k)) return NULL;
   return Py_BuildValue("i", ed25519_sign_open(m, j, pk, sig));
