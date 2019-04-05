@@ -1,4 +1,3 @@
 include nanopy/blake2b/*
 include nanopy/ed25519-donna/*
-include nanopy/ed25519-donna/fuzz/*
 exclude nanopy/peer.py
