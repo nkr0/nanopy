@@ -55,7 +55,7 @@ def formatted_balance_printer(label, colour, amount):
 
 
 def generate_block(sk, pk, account):
-    nb = base_block()
+    nb = state_block()
     nb['account'] = account
     print('Acc :', nb['account'])
 
@@ -194,7 +194,7 @@ def generate_block(sk, pk, account):
 
             if not rpc.work_url: nb['work'] = work_generate(work_hash)
 
-            nb['signature'] = sign_block(sk, pk, nb)
+            nb['signature'] = sign(sk, block=nb, pk=pk)
 
             print('\n' + json.dumps(nb))
 
