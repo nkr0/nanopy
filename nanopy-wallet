@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, getpass, gnupg, os, json, configparser, requests, random
+import argparse, getpass, gnupg, os, json, configparser, requests
 from nanopy import *
 from nanopy.rpc import RPC
 
@@ -13,29 +13,6 @@ class bcolors:
     warn2 = '\033[31m'
     end = '\033[0m'
     bold = '\033[1m'
-
-
-def canoe_patch(accounts):
-    info = {}
-    info['balances'] = {}
-    pending = rpc.accounts_pending(accounts)
-    for account in accounts:
-        info['balances'][account] = rpc.account_info(account)
-        try:
-            info['balances'][account][
-                'balance']  # patch error response for unopened accounts
-        except:
-            info['balances'][account]['balance'] = '0'
-        info['balances'][account]['pending'] = '0'
-        try:
-            if pending['blocks'][account]:
-                info['balances'][account]['pending'] = '1'
-            print('\033[92m' + 'canoe changed pending responses to nano_' +
-                  '\033[0m')
-        except:
-            if pending['blocks']['xrb_' + account[-60:]]:
-                info['balances'][account]['pending'] = '1'
-    return info
 
 
 def get_no_value_options(section):
@@ -331,15 +308,9 @@ if online:
         online = True
 
 if online:
-    try:
-        rpc_url = random.choice(json.loads(config['DEFAULT'].get('rpc')))
-    except:
-        rpc_url = config['DEFAULT'].get('rpc', fallback=rpc_url)
-    args.tor = args.tor or config['DEFAULT'].getboolean('tor',
-                                                        fallback=args.tor)
-    rpc = RPC(url=rpc_url, use_tor=args.tor)
-    print(bcolors.ok3, 'Connected to', rpc_url, 'via tor' if args.tor else '',
-          bcolors.end)
+    rpc = RPC(url=config['DEFAULT'].get('rpc', fallback=rpc_url),
+              use_tor=(args.tor or
+                       config['DEFAULT'].getboolean('tor', fallback=args.tor)))
 else:
     print(bcolors.warn1, 'Running in offline mode.', bcolors.end)
 
@@ -408,11 +379,9 @@ else:
     accounts = get_no_value_options('Accounts')
 
 if accounts and online:
-    info = rpc.accounts_balances(
-        accounts) if rpc_url != 'https://getcanoe.io/rpc' else canoe_patch(
-            accounts)
+    info = rpc.accounts_balances(accounts)
     for account in accounts:
-        if nanopy.account_prefix == 'nano_' and rpc_url != 'https://getcanoe.io/rpc':  # just change already!!!! !@$@#%!$#^#!^
+        if nanopy.account_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
             try:
                 info['balances'][account]
                 print('\033[92m' +
