@@ -50,4 +50,4 @@ Find me on discord in NANO's channel. My handle is `npy#2928`. You can support t
 clang-format --style google -i nanopy/*.c
 yapf --style google -i -r nanopy nanopy-wallet setup.py
 ```
-You can also support by sending nano to [nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy](nano:nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy).
+Donations: `nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy`.
