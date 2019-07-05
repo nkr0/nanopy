@@ -2,11 +2,11 @@
 Install by running `pip install nanopy`.
 
 ## Usage
-* Functions in the core library are written in the same template as [nano's RPC protocol](https://github.com/nanocurrency/nano-node/wiki/RPC-protocol). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://github.com/nanocurrency/nano-node/wiki/RPC-protocol#work-generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
+* Functions in the core library are written in the same template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://docs.nano.org/commands/rpc-protocol/#work_generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
   * Optional RPC parameters become optional function arguments in python. In `work_generate`, `use_peers` and `difficulty` are optional arguments available for RPC. However, `use_peers` is not a useful argument for local operations. Thus only `difficulty` is available as an argument. It can be supplied as `work_generate(hash, difficulty=x)`.
   * Only purely local `action`s are supported in the core library (work generation, signing, account key derivations, etc.).
-* Functions in the `rpc` sub-module follow the exact template as [nano's RPC protocol](https://github.com/nanocurrency/nano-node/wiki/RPC-protocol). Unlike the core library, there is no reason to omit an `action` or parameter. Thus the library is a fully compatible API to nano-node's RPC.
-* [nano's RPC wiki](https://github.com/nanocurrency/nano-node/wiki/RPC-protocol) can be used as a manual for this library. There are no changes in `action` or `parameter` names, except in a few cases \(`hash`, `id`, `type`\) where the parameter names are keywords in python. For those exceptions, arguments are prepended with an underscore \(`_hash`, `_id`, `_type`\).
+* Functions in the `rpc` sub-module follow the exact template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). Unlike the core library, there is no reason to omit an `action` or parameter. Thus the library is a fully compatible API to nano-node's RPC.
+* [nano's RPC docs](https://docs.nano.org/commands/rpc-protocol/) can be used as a manual for this library. There are no changes in `action` or `parameter` names, except in a few cases \(`hash`, `id`, `type`\) where the parameter names are keywords in python. For those exceptions, arguments are prepended with an underscore \(`_hash`, `_id`, `_type`\).
 
 ## Building from source
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
@@ -50,4 +50,3 @@ Contact me on [reddit](https://www.reddit.com/user/nanopy_). You can support the
 clang-format --style google -i nanopy/*.c
 yapf --style google -i -r nanopy nanopy-wallet setup.py
 ```
-Donations: `nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy`.

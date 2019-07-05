@@ -3,7 +3,7 @@ import json, requests
 
 class RPC:
 
-    def __init__(self, url='http://localhost:7076', use_tor=False):
+    def __init__(self, url='http://localhost:7076', headers={}, use_tor=False):
         if url[:7] == 'http://' or url[:8] == 'https://':
             self.__mode = 'requests'
             self.session = requests.session()
@@ -25,10 +25,13 @@ class RPC:
         else:
             raise Exception('Unable to parse url: ' + url)
         self.__url = url
+        self.__headers = headers
 
     def _post(self, data):
         if self.__mode == 'requests':
-            return self.session.post(self.__url, json=data).json()
+            return self.session.post(self.__url,
+                                     json=data,
+                                     headers=self.__headers).json()
         elif self.__mode == 'websockets':
             self.session.send(json.dumps(data))
             return json.loads(self.session.recv())
