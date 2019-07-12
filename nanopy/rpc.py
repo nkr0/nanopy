@@ -84,7 +84,8 @@ class RPC:
                         raw=False,
                         head=None,
                         offset=0,
-                        reverse=False):
+                        reverse=False,
+                        account_filter=[]):
         data = {}
         data['action'] = 'account_history'
         data['account'] = account
@@ -93,6 +94,7 @@ class RPC:
         if head: data['head'] = head
         if offset: data['offset'] = offset
         if reverse: data['reverse'] = reverse
+        if account_filter: data['account_filter'] = account_filter
         return self._post(data)
 
     def account_list(self, wallet):
