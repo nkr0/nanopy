@@ -509,7 +509,12 @@ class RPC:
         data['timeout'] = timeout
         return self._post(data)
 
-    def process(self, block, force=False, subtype=None, json_block=False):
+    def process(self,
+                block,
+                force=False,
+                subtype=None,
+                json_block=False,
+                watch_work=True):
         data = {}
         data['action'] = 'process'
         if type(block) == str:
@@ -519,6 +524,7 @@ class RPC:
         if force: data['force'] = True
         if subtype: data['subtype'] = subtype
         if json_block: data['json_block'] = True
+        if not watch_work: data['watch_work'] = False
         return self._post(data)
 
     def receive(self, wallet, account, block, work=None):
