@@ -679,6 +679,7 @@ class RPC:
                 threshold=0,
                 source=False,
                 include_active=False,
+                min_version=False,
                 sorting=False,
                 include_only_confirmed=False):
         data = {}
@@ -688,6 +689,7 @@ class RPC:
         if threshold: data['threshold'] = threshold
         if source: data['source'] = True
         if include_active: data['include_active'] = True
+        if min_version: data['min_version'] = True
         if sorting: data['sorting'] = True
         if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
@@ -837,6 +839,7 @@ class RPC:
                        threshold=0,
                        source=False,
                        include_active=False,
+                       min_version=False,
                        include_only_confirmed=False):
         data = {}
         data['action'] = 'wallet_pending'
@@ -845,6 +848,7 @@ class RPC:
         if threshold: data['threshold'] = threshold
         if source: data['source'] = True
         if include_active: data['include_active'] = True
+        if min_version: data['min_version'] = True
         if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
