@@ -713,9 +713,10 @@ class RPC:
         if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
-    def unchecked(self, count=1):
+    def unchecked(self, json_block=False, count=1):
         data = {}
         data['action'] = 'unchecked'
+        if json_block: data['json_block'] = True
         data['count'] = count
         return self._post(data)
 
