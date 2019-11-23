@@ -53,6 +53,15 @@ def pretty_bal(label, colour, amount):
           std_unit)
 
 
+def gpg_encrypt(secret, filename):
+    cipher, _, _ = gpg_ctx.encrypt(secret.encode(), sign=False)
+    if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
+    else:
+        print(filename, '\n', cipher.decode())
+        with open(filename, 'wb') as f:
+            f.write(cipher)
+
+
 def generate_block(sk, pk, account):
     nb = state_block()
     nb['account'] = account
@@ -214,9 +223,6 @@ parser_open.add_argument('-c',
                          '--change-rep-to',
                          metavar='ADDRESS',
                          help='Change representative to ADDRESS.')
-parser_open.add_argument('--demo',
-                         action='store_true',
-                         help='Run in demo mode. Never broadcast blocks.')
 parser_open.add_argument('--offline',
                          action='store_true',
                          help='Run in offline mode.')
@@ -233,6 +239,9 @@ open_group.add_argument(
     '--audit',
     action='store_true',
     help='Check state of all accounts from index 0 to INDEX.')
+open_group.add_argument('--change-password',
+                        action='store_true',
+                        help='Change password of FILENAME.')
 
 parser.add_argument(
     '--new',
@@ -254,6 +263,7 @@ parser.add_argument('-t',
                     '--tor',
                     action='store_true',
                     help='Connect to the RPC node via tor.')
+parser.add_argument('--demo', action='store_true', help='Run in demo mode.')
 
 args = parser.parse_args()
 
@@ -317,32 +327,37 @@ accounts = []
 if args.new:
     seed = os.urandom(32).hex()
     _, _, account0 = deterministic_key(seed, 0)
-    cipher, _, _ = gpg_ctx.encrypt(seed.encode(), sign=False)
-    print(account0, '\n', cipher.decode())
-    with open(account0 + '.asc', 'wb') as f:
-        f.write(cipher)
+    gpg_encrypt(seed, account0 + '.asc')
 
 elif args.audit_file:
     accounts = [line.rstrip(b'\n').decode() for line in args.audit_file]
 
 elif unlock:
     seed = gpg_ctx.decrypt(args.f.read())[0].decode()
+    args.f.close()
 
     if args.audit:
         for i in range(args.index + 1):
-            _, _, account_i = deterministic_key(str(seed)[:64], i)
+            _, _, account_i = deterministic_key(seed, i)
             accounts.append(account_i)
 
+    elif args.change_password:
+        if (input('Change password' + '?(y/' + bcolors.bold + 'n' +
+                  bcolors.end + '): ') or 'n') == 'y':
+            gpg_encrypt(seed, args.f.name)
+
     else:
-        generate_block(*deterministic_key(str(seed)[:64], args.index))
+        generate_block(*deterministic_key(seed, args.index))
 
 elif args.broadcast and online:
-    ack = rpc.process(
-        json.dumps(json.loads(input('Enter JSON block to broadcast: '))))
-    try:
-        print(bcolors.ok3, ack['hash'], bcolors.end)
-    except:
-        print(bcolors.warn2, ack, bcolors.end)
+    bb = json.dumps(json.loads(input('Enter JSON block to broadcast: ')))
+    if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
+    else:
+        ack = rpc.process(bb)
+        try:
+            print(bcolors.ok3, ack['hash'], bcolors.end)
+        except:
+            print(bcolors.warn2, ack, bcolors.end)
 
 else:
     accounts = get_no_value_options('Accounts')
