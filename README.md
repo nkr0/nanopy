@@ -29,6 +29,7 @@ Although not part of the package, the light wallet included in the repository is
   * Options used by the encryption can be verified by inspecting the header in the gpg file. `gpg --list-packets --verbose FILE.asc`. `cipher 9` is AES256. `s2k 3` is iterated and salted key derivation mode. `hash 10` corresponds to SHA512. `count` is the number of iterations (max 65011712).
   * To get the seed, `gpg -d FILE.asc`
 * `--audit-file`. Check state of all accounts in a file.
+* `--change-password`. Change password of the encrypted wallet.')
 * `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
 * `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
