@@ -3,11 +3,9 @@
 *.so
 *.egg-info
 *.bkp
-*.kbx
 .env
 .venv
 test*
-random_seed
 __pycache__/
 build/
 dist/
