@@ -550,6 +550,16 @@ class RPC:
         data['action'] = 'node_id_delete'
         return self._post(data)
 
+    def node_telemetry(self, raw=False, address=0, port='7075'):
+        data = {}
+        data['action'] = 'node_telemetry'
+        if raw:
+            data['raw'] = True
+        if address:
+            data['address'] = address
+            data['port'] = port
+        return self._post(data)
+
     def payment_begin(self, wallet):
         data = {}
         data['action'] = 'payment_begin'
