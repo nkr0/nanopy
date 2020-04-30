@@ -5,6 +5,8 @@
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
+[![Build Status](https://travis-ci.com/npy0/nanopy.svg?branch=master)](https://travis-ci.com/npy0/nanopy)
+
 ## Usage
 * Functions in the core library are written in the same template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://docs.nano.org/commands/rpc-protocol/#work_generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
   * Optional RPC parameters become optional function arguments in python. In `work_generate`, `use_peers` and `difficulty` are optional arguments available for RPC. However, `use_peers` is not a useful argument for local operations. Thus only `difficulty` is available as an argument. It can be supplied as `work_generate(hash, difficulty=x)`.
