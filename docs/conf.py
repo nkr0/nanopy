@@ -11,5 +11,4 @@ intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
-master_doc = 'index'
 #autodoc_member_order = 'bysource'
