@@ -15,3 +15,4 @@ ENV/
 env.bak/
 venv.bak/
 nanopy/__pycache__/
+docs/_build
