@@ -1,9 +1,8 @@
 language: python
-  - "3.6"
 cache: pip
+env: OMP_NUM_THREADS=4
 install:
   - pip install -U requests mnemonic
   - python setup.py build_ext --inplace
-script:
-  - python travis.py
+script: python travis.py
 
