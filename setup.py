@@ -1,5 +1,4 @@
-import os
-import sys
+import os, sys
 from setuptools import setup, Extension
 
 
@@ -25,6 +24,18 @@ def find_gcc(*min_max, dirs):
     return None
 
 
+def config_blake2b():
+    global BLAKE2B_SRC
+    global BLAKE2B_DIR
+    m = os.uname().machine
+    if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
+        BLAKE2B_DIR = "nanopy/blake2b/sse"
+        BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
+    else:
+        BLAKE2B_DIR = "nanopy/blake2b/ref"
+        BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
+
+
 def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
     """
     builds extension kwargs depending on environment
@@ -39,26 +50,29 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
 
     e_args = {
         "name": "nanopy.work",
-        "sources": ["nanopy/blake2b/blake2b.c", "nanopy/work.c"],
+        "sources": ["nanopy/work.c"],
+        "include_dirs": [],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
         "libraries": [],
         "define_macros": [],
     }
 
-    if platform == "darwin":
-        if use_gpu:
+    if use_gpu:
+        if platform == "darwin":
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
             e_args["extra_link_args"].extend("-framework", "OpenCL")
         else:
-            if link_omp:
-                e_args["libraries"] = ["omp"]
-            e_args["extra_compile_args"].append("-fopenmp")
-            e_args["extra_link_args"].append("-fopenmp")
-    elif platform in ["linux", "win32", "cygwin"]:
-        if use_gpu:
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
             e_args["libraries"] = ["OpenCL"]
+    else:
+        e_args["sources"].extend(BLAKE2B_SRC)
+        e_args["include_dirs"] = [BLAKE2B_DIR]
+        e_args["extra_compile_args"].append("-fopenmp")
+        e_args["extra_link_args"].append("-fopenmp")
+        if platform == "darwin":
+            if link_omp:
+                e_args["libraries"] = ["omp"]
         else:
             if use_vc:
                 e_args["define_macros"] = [("USE_VISUAL_C", "1")]
@@ -74,11 +88,6 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
                     "/arch:AVX",
                     "/arch:AVX2",
                 ]
-            else:
-                e_args["extra_compile_args"].append("-fopenmp")
-                e_args["extra_link_args"].append("-fopenmp")
-    else:
-        raise OSError("Unsupported OS platform")
 
     return e_args
 
@@ -95,11 +104,9 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
 
     e_args = {
         "name": "nanopy.ed25519_blake2b",
-        "sources": [
-            "nanopy/blake2b/blake2b.c",
-            "nanopy/ed25519-donna/ed25519.c",
-            "nanopy/ed25519_blake2b.c",
-        ],
+        "sources": BLAKE2B_SRC
+        + ["nanopy/ed25519-donna/ed25519.c", "nanopy/ed25519_blake2b.c",],
+        "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
         "define_macros": [],
@@ -132,6 +139,9 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
     return e_args
 
 
+if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
+    raise OSError("Unsupported OS platform")
+
 env = os.environ
 try:
     env["CC"] = os.getenv("CC") or find_gcc(
@@ -139,6 +149,10 @@ try:
     )
 except:
     pass
+
+BLAKE2B_SRC = []
+BLAKE2B_DIR = ""
+config_blake2b()
 
 setup(
     name="nanopy",
