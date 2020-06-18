@@ -1,4 +1,4 @@
-import os
+import os, timeit
 import nanopy as npy
 from nanopy.rpc import RPC
 
@@ -9,11 +9,14 @@ assert "fffffff800000000" == npy.from_multiplier(8)
 assert 0.125 == npy.to_multiplier("fffffe0000000000")
 assert 8.0 == npy.to_multiplier("fffffff800000000")
 
-h=os.urandom(32).hex()
-w=npy.work_generate(h, multiplier=1/8)
+h = os.urandom(32).hex()
+w = npy.work_generate(h, multiplier=1 / 8)
 print(w)
 print(npy.work_validate(w, h))
-assert npy.work_validate(w, h, multiplier=1/8)
+assert npy.work_validate(w, h, multiplier=1 / 8)
+
+# n = 20
+# print(timeit.timeit("npy.work_generate('0feb848ce9637cbc3b41e0334ecef8cf76350f689604a85bae5a2768891ac6e9', multiplier=1/8)",    setup="import nanopy as npy", number=n,)/n)
 
 # https://docs.nano.org/integration-guides/key-management/
 
