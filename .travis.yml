@@ -19,13 +19,21 @@ jobs:
         - python -m pip install -U pip
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
       install:
+        - python -V
+        - pip -V
+        - pip install -U pip
         - pip install -Ur requirements.txt
         - USE_VC=1 python setup.py build_ext -i
+      script:
+        - python travis.py
+        - python setup.py build_sphinx
 install:
-  - python -V
-  - pip install -U pip
-  - pip install -Ur requirements.txt
-  - python setup.py build_ext -i
+  - python3 -V
+  - pip3 -V
+  - pip3 install -U pip
+  - pip3 install -Ur requirements.txt
+  - python3 setup.py build_ext -i
 script:
-  - python travis.py
+  - python3 travis.py
+  - python3 setup.py build_sphinx
 
