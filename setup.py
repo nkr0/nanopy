@@ -115,7 +115,11 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
         "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
-        "define_macros": [],
+        "define_macros": [
+            (ED25519_IMPL, "1"),
+            ("ED25519_CUSTOMRNG", "1"),
+            ("ED25519_CUSTOMHASH", "1"),
+        ],
     }
 
     if platform == "win32" and use_vc:
@@ -134,12 +138,6 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
             "/arch:SSE2",
             "/arch:AVX",
             "/arch:AVX2",
-        ]
-    else:
-        e_args["define_macros"] = [
-            (ED25519_IMPL, "1"),
-            ("ED25519_CUSTOMRNG", "1"),
-            ("ED25519_CUSTOMHASH", "1"),
         ]
 
     return e_args
