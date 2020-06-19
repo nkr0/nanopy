@@ -16,12 +16,13 @@ jobs:
       language: shell
       before_install:
         - choco install python
-        - python -m pip install -U pip
+        - pip install -U pip
       env: PATH=/c/Python38:/c/Python38/Scripts:$PATH
       install:
         - pip install -Ur requirements.txt
         - USE_VC=1 python setup.py build_ext -i
 install:
+  - python -V
   - pip install -U pip
   - pip install -Ur requirements.txt
   - python setup.py build_ext -i

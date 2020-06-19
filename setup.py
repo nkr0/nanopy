@@ -124,17 +124,11 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
 
     if platform == "win32" and use_vc:
         e_args["extra_compile_args"] = [
-            "/ED25519_SSE2",
-            "/ED25519_CUSTOMRNG",
-            "/ED25519_CUSTOMHASH",
             "/arch:SSE2",
             "/arch:AVX",
             "/arch:AVX2",
         ]
         e_args["extra_link_args"] = [
-            "/ED25519_SSE2",
-            "/ED25519_CUSTOMRNG",
-            "/ED25519_CUSTOMHASH",
             "/arch:SSE2",
             "/arch:AVX",
             "/arch:AVX2",
