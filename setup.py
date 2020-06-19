@@ -1,4 +1,4 @@
-import os, sys
+import os, sys, platform
 from setuptools import setup, Extension
 
 
@@ -28,7 +28,7 @@ def config_arch():
     global BLAKE2B_SRC
     global BLAKE2B_DIR
     global ED25519_IMPL
-    m = os.uname().machine
+    m = platform.machine()
     BLAKE2B_DIR = "nanopy/blake2b/"
     ED25519_IMPL = "ED25519_64BIT"
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):

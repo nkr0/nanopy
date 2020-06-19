@@ -3,10 +3,10 @@ cache: pip
 env: OMP_NUM_THREADS=2
 jobs:
   include:
-    - name: "Linux"
-      arch:
-        - amd64
-        - arm64
+    - name: "amd64"
+      arch: amd64
+    - name: "arm64"
+      arch: arm64
     - name: "macOS"
       os: osx
       osx_image: xcode11.2
@@ -24,5 +24,4 @@ install:
   - python setup.py build_ext -i
 script:
   - python travis.py
-  - python setup.py build_sphinx
 
