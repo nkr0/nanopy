@@ -2,18 +2,18 @@ import os, sys
 from setuptools import setup, Extension
 
 
-def find_gcc(*min_max, dirs):
+def find_gcc(*max_min, dirs):
     """
-    Looks in `dirs` for gcc-{min_max}, starting with max.
+    Looks in `dirs` for gcc-{max_min}, starting with max.
 
     If no gcc-{version} is found, `None` is returned.
 
-    :param min_max: tuple of min and max gcc versions
+    :param max_min: tuple of max and min gcc versions
     :param dirs: list of directories to look in
     :return: gcc name or None
     """
 
-    for version in range(*min_max).__reversed__():
+    for version in range(*max_min, -1):
         f_name = "gcc-{0}".format(version)
 
         for _dir in dirs:
@@ -151,7 +151,7 @@ if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
 env = os.environ
 try:
     env["CC"] = os.getenv("CC") or find_gcc(
-        *(5, 9), dirs=os.getenv("PATH").split(os.pathsep)
+        *(10, 5), dirs=os.getenv("PATH").split(os.pathsep)
     )
 except:
     pass
