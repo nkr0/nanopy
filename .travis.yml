@@ -37,8 +37,9 @@ jobs:
         - pip3 install -Ur requirements.txt
         - sudo apt-get update
         - sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
-        - clinfo
         - USE_GPU=1 python3 setup.py build_ext -i
+      script:
+        - clinfo
 install:
   - python3 -V
   - pip3 -V
