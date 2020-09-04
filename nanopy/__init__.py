@@ -202,6 +202,8 @@ def work_validate(work, _hash, difficulty=None, multiplier=0):
     :return: ``True``/``False``
     :rtype: bool
     """
+    assert len(work) == 16
+    assert len(_hash) == 64
     work = bytearray.fromhex(work)
     _hash = bytes.fromhex(_hash)
     if multiplier:
@@ -230,6 +232,7 @@ try:
         :return: 16 hex-char work
         :rtype: str
         """
+        assert len(_hash) == 64
         if multiplier:
             difficulty = from_multiplier(multiplier)
         else:
@@ -254,6 +257,7 @@ except ModuleNotFoundError:
         :return: 16 hex-char work
         :rtype: str
         """
+        assert len(_hash) == 64
         _hash = bytes.fromhex(_hash)
         b2b_h = bytearray.fromhex("0" * 16)
         if multiplier:
