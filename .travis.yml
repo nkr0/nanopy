@@ -27,6 +27,15 @@ jobs:
       script:
         - python travis.py
         - python setup.py build_sphinx
+    - name: "gpu"
+      arch: amd64
+      install:
+        - python3 -V
+        - pip3 -V
+        - pip3 install -U pip
+        - pip3 install -Ur requirements.txt
+        - sudo apt install ocl-icd-opencl-dev intel-opencl-icd
+        - USE_GPU=1 python3 setup.py build_ext -i
 install:
   - python3 -V
   - pip3 -V
