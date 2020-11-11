@@ -15,9 +15,9 @@ jobs:
       os: windows
       language: shell
       before_install:
-        - choco install python --dir c:\Python
+        - choco install python
         - python -m pip install -U pip
-      env: PATH=/c/Python:/c/Python/Scripts:$PATH
+      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
       install:
         - python -V
         - pip -V
