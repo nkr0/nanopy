@@ -321,12 +321,6 @@ class RPC:
             data["include_cemented"] = False
         return self._post(data)
 
-    def block_count_type(self):
-        "https://docs.nano.org/commands/rpc-protocol/#block_count_type"
-        data = {}
-        data["action"] = "block_count_type"
-        return self._post(data)
-
     def block_hash(self, block, json_block=False):
         "https://docs.nano.org/commands/rpc-protocol/#block_hash"
         data = {}
@@ -847,7 +841,7 @@ class RPC:
     def pending(
         self,
         account,
-        count=1,
+        count=0,
         threshold=0,
         source=False,
         include_active=False,
@@ -859,7 +853,8 @@ class RPC:
         data = {}
         data["action"] = "pending"
         data["account"] = account
-        data["count"] = count
+        if count:
+            data["count"] = count
         if threshold:
             data["threshold"] = threshold
         if source:
