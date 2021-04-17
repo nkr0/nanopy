@@ -56,7 +56,7 @@ static PyObject *checkvalid(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &m, &p1, &pk, &p2))
     return NULL;
-  return Py_BuildValue("i", ed25519_sign_open(m, p1, pk, sig));
+  return Py_BuildValue("i", ed25519_sign_open(m, p1, pk, sig) == 0);
 }
 
 static PyMethodDef m_methods[] = {
