@@ -424,6 +424,23 @@ def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
     else:
         return ed25519_blake2b.signature(m, sk, pk).hex()
 
+def verify_signature(msg, sig, pk):
+    """Verify signature for message with public key
+  
+    :param str message: message to verify
+    :param str signature: signature for the message
+    :param str pk: public key for the signature
+    :return bool: True if valid, False otherwise
+    """
+#    :param bytes message: message to verify
+#    :param bytes signature: signature for the message
+#    :param bytes pk: public key for the signature
+    m = msg.encode()
+    s = bytes.fromhex(sig)
+    k = bytes.fromhex(pk)
+
+    return ed25519_blake2b.checkvalid(s, m, k)
+
 
 def block_create(key, previous, representative, balance, link):
     """Create a block
