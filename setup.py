@@ -156,7 +156,7 @@ config_arch()
 
 setup(
     name="nanopy",
-    version="21.2",
+    version="21.3",
     packages=["nanopy"],
     url="https://github.com/npy0/nanopy",
     license="MIT",
