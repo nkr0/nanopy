@@ -239,7 +239,7 @@ class RPC:
         source=False,
         include_active=False,
         sorting=False,
-        include_only_confirmed=False,
+        include_only_confirmed=True,
     ):
         "https://docs.nano.org/commands/rpc-protocol/#accounts_pending"
         data = {}
@@ -254,8 +254,8 @@ class RPC:
             data["include_active"] = True
         if sorting:
             data["sorting"] = True
-        if include_only_confirmed:
-            data["include_only_confirmed"] = True
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
     def active_difficulty(self, include_trend=False):
@@ -859,7 +859,7 @@ class RPC:
         include_active=False,
         min_version=False,
         sorting=False,
-        include_only_confirmed=False,
+        include_only_confirmed=True,
     ):
         "https://docs.nano.org/commands/rpc-protocol/#pending"
         data = {}
@@ -877,19 +877,19 @@ class RPC:
             data["min_version"] = True
         if sorting:
             data["sorting"] = True
-        if include_only_confirmed:
-            data["include_only_confirmed"] = True
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
-    def pending_exists(self, _hash, include_active=False, include_only_confirmed=False):
+    def pending_exists(self, _hash, include_active=False, include_only_confirmed=True):
         "https://docs.nano.org/commands/rpc-protocol/#pending_exists"
         data = {}
         data["action"] = "pending_exists"
         data["hash"] = _hash
         if include_active:
             data["include_active"] = True
-        if include_only_confirmed:
-            data["include_only_confirmed"] = True
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
     def unchecked(self, json_block=False, count=1):
@@ -1064,7 +1064,7 @@ class RPC:
         source=False,
         include_active=False,
         min_version=False,
-        include_only_confirmed=False,
+        include_only_confirmed=True,
     ):
         "https://docs.nano.org/commands/rpc-protocol/#wallet_pending"
         data = {}
@@ -1079,8 +1079,8 @@ class RPC:
             data["include_active"] = True
         if min_version:
             data["min_version"] = True
-        if include_only_confirmed:
-            data["include_only_confirmed"] = True
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
     def wallet_republish(self, wallet, count=1):
