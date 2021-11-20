@@ -337,7 +337,7 @@ elif args.network in ["banano", "ban"]:
 else:
     args.network = "nano"
     rpc_url = "http://localhost:7076"
-    std_unit = "₦"
+    std_unit = "Ӿ"
     available_supply = 133248061999106578273467128948453216035
 
 home_npy = os.path.expanduser("~") + "/.config/nanopy/"
