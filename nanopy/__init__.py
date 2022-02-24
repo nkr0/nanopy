@@ -287,8 +287,8 @@ def from_raw(amount, exp=0):
     """
     assert type(amount) is str
     exp = exp if exp else standard_exponent
-    mrai = _D(amount) * _D(_D(10) ** -exp)
-    return format(mrai.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
+    xrai = _D(amount) * _D(_D(10) ** -exp)
+    return format(xrai.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
 
 
 def to_raw(amount, exp=0):
@@ -305,64 +305,24 @@ def to_raw(amount, exp=0):
     return str(raw.quantize(_D(1)))
 
 
-def mrai_from_raw(amount):
-    """Divide a raw amount down by the Mrai ratio (10^30)
+def raw_to_nano(amount):
+    """Divide a raw amount down by the raw-nano ratio (10^30)
 
     :param str amount: amount in raw
-    :return: amount in Mrai
+    :return: amount in nano
     :rtype: str
     """
-    return from_raw(amount, exp=30)
+    return to_nano(amount, exp=30)
 
 
-def mrai_to_raw(amount):
-    """Multiply an Mrai amount by the Mrai ratio (10^30)
+def nano_to_raw(amount):
+    """Multiply a nano amount by the raw-nano ratio (10^30)
 
-    :param str amount: amount in Mrai
+    :param str amount: amount in nano
     :return: amount in raw
     :rtype: str
     """
     return to_raw(amount, exp=30)
-
-
-def krai_from_raw(amount):
-    """Divide a raw amount down by the Krai ratio (10^27)
-
-    :param str amount: amount in raw
-    :return: amount in Krai
-    :rtype: str
-    """
-    return from_raw(amount, exp=27)
-
-
-def krai_to_raw(amount):
-    """Multiply a Krai amount by the Krai ratio (10^27)
-
-    :param str amount: amount in Krai
-    :return: amount in raw
-    :rtype: str
-    """
-    return to_raw(amount, exp=27)
-
-
-def rai_from_raw(amount):
-    """Divide a raw amount down by the rai ratio (10^24)
-
-    :param str amount: amount in raw
-    :return: amount in rai
-    :rtype: str
-    """
-    return from_raw(amount, exp=24)
-
-
-def rai_to_raw(amount):
-    """Multiply a rai amount by the rai ratio (10^24)
-
-    :param str amount: amount in rai
-    :return: amount in raw
-    :rtype: str
-    """
-    return to_raw(amount, exp=24)
 
 
 def block_hash(block):

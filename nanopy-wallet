@@ -375,14 +375,17 @@ if online:
         online = True
 
 if online:
-    iploc = RPC(
-        url="http://ipinfo.io/json",
-        tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
-    )._get()
     try:
-        print(bcolors.warn1, iploc["city"], iploc["country"], bcolors.end)
+        iploc = RPC(
+            url="http://ipinfo.io/json",
+            tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
+        )._get()
+        try:
+            print(bcolors.warn1, iploc["city"], iploc["country"], bcolors.end)
+        except:
+            print(iploc)
     except:
-        print(iploc)
+        pass
     rpc = RPC(
         url=config["DEFAULT"].get("rpc", fallback=rpc_url),
         tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
