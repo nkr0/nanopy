@@ -18,11 +18,13 @@ jobs:
         run: python setup.py build_ext -i
         env:
           USE_VC: 1
-      - run: python travis.py
+      - run: python ghtest.py
       - if: runner.os == 'Linux'
         run: |
-          sudo apt-get update && sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
-          rm -rf build/ &&  python setup.py build_ext -i
+          sudo apt-get update
+          sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
+          rm -rf build/
+          python setup.py build_ext -i
           clinfo
         env:
           USE_GPU: 1
@@ -41,5 +43,5 @@ jobs:
           run: |
             pip3 install -Ur requirements.txt
             python3 setup.py build_ext -i
-            python3 travis.py
+            python3 ghtest.py
 
