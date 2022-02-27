@@ -21,6 +21,8 @@ jobs:
         with:
           arch: aarch64
           distro: ubuntu20.04
+          run: |
+            python setup.py build_ext -i
           githubToken: ${{ github.token }}
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
