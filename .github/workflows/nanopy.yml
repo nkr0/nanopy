@@ -13,7 +13,7 @@ jobs:
             os: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-      - if: matrix.arch=="aarch64"
+      - if: ${{ matrix.arch=="aarch64" }}
         uses: uraimo/run-on-arch-action@v2.1.1
         with:
           arch: aarch64
