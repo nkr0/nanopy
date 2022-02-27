@@ -7,31 +7,28 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        arch: [amd64]
         pu: [cpu]
         include:
-          - arch: aarch64
-            os: ubuntu-latest
           - arch: gpu
             os: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
-      - if: ${{ matrix.arch=='aarch64' }}
-        uses: uraimo/run-on-arch-action@v2.1.1
-        with:
-          arch: aarch64
-          distro: ubuntu20.04
-          run: |
-            pip install -Ur requirements.txt
-            python setup.py build_ext -i
-          githubToken: ${{ github.token }}
       - run: pip install -Ur requirements.txt
-      - if: runner.os != 'Windows'
+      - if: runner.os != 'Windows' && runner.pu == 'cpu'
         run: python setup.py build_ext -i
       - if: runner.os == 'Windows'
         run: python setup.py build_ext -i
         env:
           USE_VC: 1
-      - run: python travis.py
+      - if: runner.os == 'Linux' && runner.pu == 'gpu'
+        run: |
+          sudo apt-get update
+          sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
+          python setup.py build_ext -i
+          clinfo
+        env:
+          USE_GPU: 1
+      - if: runner.pu == 'cpu'
+        run: python travis.py
 
