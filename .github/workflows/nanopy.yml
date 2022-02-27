@@ -4,7 +4,6 @@ on: [push]
 jobs:
   common:
     runs-on: ubuntu-latest, macos-latest
-    arch: amd64, aarch64
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
