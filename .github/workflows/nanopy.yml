@@ -8,30 +8,24 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        pu: [cpu]
-        include:
-          - pu: gpu
-            os: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
-      - if: runner.os != 'Windows' && matrix.pu == 'cpu'
+      - if: runner.os != 'Windows'
         run: python setup.py build_ext -i
       - if: runner.os == 'Windows'
         run: python setup.py build_ext -i
         env:
           USE_VC: 1
-      - if: runner.os == 'Linux' && matrix.pu == 'gpu'
+      - run: python travis.py
+      - if: runner.os == 'Linux'
         run: |
-          sudo apt-get update
-          sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
+          sudo apt-get update && sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
           python setup.py build_ext -i
           clinfo
         env:
           USE_GPU: 1
-      - if: matrix.pu == 'cpu'
-        run: python travis.py
   aarch64:
     runs-on: ubuntu-20.04
     steps:
