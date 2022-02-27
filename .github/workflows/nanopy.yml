@@ -2,18 +2,21 @@ name: nanopy
 on: [push]
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
-        include:
-          - os: ubuntu-latest
-            arch: aarch64
+  common:
+    runs-on: ubuntu-latest, macos-latest
+    arch: amd64, aarch64
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
       - run: python setup.py build_ext -i
+      - run: python travis.py
+  windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install -Ur requirements.txt
+      - run: USE_VC=1 python setup.py build_ext -i
       - run: python travis.py
 
