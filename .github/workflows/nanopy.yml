@@ -31,4 +31,16 @@ jobs:
           USE_GPU: 1
       - if: matrix.pu == 'cpu'
         run: python travis.py
+  aarch64:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: uraimo/run-on-arch-action@v2.1.1
+        with:
+          arch: aarch64
+          distro: ubuntu20.04
+          run: |
+            pip3 install -Ur requirements.txt
+            python3 setup.py build_ext -i
+            python3 travis.py
 
