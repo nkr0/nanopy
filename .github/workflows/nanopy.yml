@@ -29,6 +29,6 @@ jobs:
           clinfo
         env:
           USE_GPU: 1
-      - if: runner.pu == 'cpu'
+      - if: matrix.pu == 'cpu'
         run: python travis.py
 
