@@ -1,9 +1,7 @@
 name: nanopy
 on: [push]
-
 env:
   OMP_NUM_THREADS: 2
-
 jobs:
   common:
     runs-on: ${{ matrix.os }}
@@ -15,7 +13,7 @@ jobs:
           - pu: gpu
             os: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v2.4.0
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
       - if: runner.os != 'Windows' && matrix.pu == 'cpu'
@@ -34,20 +32,4 @@ jobs:
           USE_GPU: 1
       - if: matrix.pu == 'cpu'
         run: python travis.py
-  aarch64:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - uses: uraimo/run-on-arch-action@v2.1.1
-        with:
-          arch: aarch64
-          distro: ubuntu20.04
-          githubToken: ${{ github.token }}
-          install: |
-            apt-get update -q -y
-            apt-get install -q -y g++ python3-dev python3-pip
-          run: |
-            pip3 install -Ur requirements.txt
-            python3 setup.py build_ext -i
-            python3 travis.py
 
