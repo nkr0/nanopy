@@ -9,7 +9,7 @@ jobs:
         os: [ubuntu-latest, macos-latest, windows-latest]
         pu: [cpu]
         include:
-          - arch: gpu
+          - pu: gpu
             os: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
