@@ -13,6 +13,12 @@ jobs:
             os: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+      - if: matrix.arch=="aarch64"
+        uses: uraimo/run-on-arch-action@v2.1.1
+        with:
+          arch: aarch64
+          distro: ubuntu20.04
+          githubToken: ${{ github.token }}
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
       - if: runner.os != 'Windows'
