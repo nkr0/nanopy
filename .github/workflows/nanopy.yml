@@ -7,10 +7,10 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-    include:
-      - os: windows-latest
-        env:
-          USE_VC: 1
+        include:
+          - os: windows-latest
+            env:
+              USE_VC: 1
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
