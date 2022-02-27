@@ -7,13 +7,13 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+    env:
+      if: runner.os == 'Windows'
+      USE_VC: 1
     steps:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
-      - if: runner.os != 'Windows'
-        run: python setup.py build_ext -i
-      - if: runner.os == 'Windows'
-        run: USE_VC=1 python setup.py build_ext -i
+      - run: python setup.py build_ext -i
       - run: python travis.py
 
