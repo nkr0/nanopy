@@ -39,7 +39,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             apt-get update -q -y
-            apt-get install -q -y g++ python3-dev python3-pip
+            apt-get install -q -y gcc python3-dev python3-pip
           run: |
             pip3 install -Ur requirements.txt
             python3 setup.py build_ext -i
