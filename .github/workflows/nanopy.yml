@@ -3,7 +3,7 @@ on: [push]
 env:
   OMP_NUM_THREADS: 2
 jobs:
-  common:
+  build:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
@@ -12,14 +12,17 @@ jobs:
       - uses: actions/checkout@v2
       - uses: actions/setup-python@v2
       - run: pip install -Ur requirements.txt
-      - if: runner.os != 'Windows'
+      - name: Build Linux/MacOS
+        if: runner.os != 'Windows'
         run: python setup.py build_ext -i
-      - if: runner.os == 'Windows'
+      - name: Build Windows
+        if: runner.os == 'Windows'
         run: python setup.py build_ext -i
         env:
           USE_VC: 1
       - run: python ghtest.py
-      - if: runner.os == 'Linux'
+      - name: Build GPU
+        if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
