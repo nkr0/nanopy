@@ -48,5 +48,5 @@ The wallet has a sub-command, `nanopy-wallet open FILE`, to unlock previously en
 Contact me on nano's [forum](https://forum.nano.org/u/npy) (`npy`) or discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
 ```
 clang-format -i nanopy/*.c
-black nanopy docs nanopy-wallet setup.py travis.py
+black nanopy docs nanopy-wallet setup.py ghtest.py
 ```
