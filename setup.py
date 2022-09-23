@@ -57,8 +57,8 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
         "name": "nanopy.work",
         "sources": ["nanopy/work.c"],
         "include_dirs": [],
-        "extra_compile_args": ["-O3", "-march=native", "-g0", "-Wall"],
-        "extra_link_args": ["-O3", "-march=native", "-g0", "-Wall"],
+        "extra_compile_args": ["-O3", "-march=native", "-g0"],
+        "extra_link_args": ["-O3", "-march=native", "-g0"],
         "libraries": [],
         "define_macros": [],
     }
@@ -118,8 +118,8 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
             "nanopy/ed25519_blake2b.c",
         ],
         "include_dirs": [BLAKE2B_DIR],
-        "extra_compile_args": ["-O3", "-march=native", "-g0", "-Wall"],
-        "extra_link_args": ["-O3", "-march=native", "-g0", "-Wall"],
+        "extra_compile_args": ["-O3", "-march=native", "-g0"],
+        "extra_link_args": ["-O3", "-march=native", "-g0"],
         "define_macros": [
             ("ED25519_CUSTOMRNG", "1"),
             ("ED25519_CUSTOMHASH", "1"),
