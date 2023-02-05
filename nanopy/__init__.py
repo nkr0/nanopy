@@ -239,7 +239,6 @@ try:
         work = format(
             nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)), "016x"
         )
-        assert work_validate(work, _hash, difficulty)
         return work
 
 except ModuleNotFoundError:
