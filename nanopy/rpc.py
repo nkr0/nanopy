@@ -177,7 +177,7 @@ class RPC:
         data["accounts"] = accounts
         return self._post(data)
 
-    def accounts_pending(
+    def accounts_receivable(
         self,
         accounts,
         count=1,
@@ -187,9 +187,9 @@ class RPC:
         sorting=False,
         include_only_confirmed=True,
     ):
-        "https://docs.nano.org/commands/rpc-protocol/#accounts_pending"
+        "https://docs.nano.org/commands/rpc-protocol/#accounts_receivable"
         data = {}
-        data["action"] = "accounts_pending"
+        data["action"] = "accounts_receivable"
         data["accounts"] = accounts
         data["count"] = count
         if threshold:
@@ -319,7 +319,7 @@ class RPC:
         hashes,
         pending=False,
         source=False,
-        balance=False,
+        receive_hash=False,
         json_block=False,
         include_not_found=False,
     ):
@@ -331,8 +331,8 @@ class RPC:
             data["pending"] = True
         if source:
             data["source"] = True
-        if balance:
-            data["balance"] = True
+        if receive_hash:
+            data["receive_hash"] = True
         if json_block:
             data["json_block"] = True
         if include_not_found:
@@ -566,6 +566,12 @@ class RPC:
         data["action"] = "peers"
         if peer_details:
             data["peer_details"] = True
+        return self._post(data)
+
+    def populate_backlog(self):
+        "https://docs.nano.org/commands/rpc-protocol/#populate_backlog"
+        data = {}
+        data["action"] = "populate_backlog"
         return self._post(data)
 
     def process(
@@ -978,17 +984,17 @@ class RPC:
         data["amount"] = amount
         return self._post(data)
 
-    def search_pending(self, wallet):
-        "https://docs.nano.org/commands/rpc-protocol/#search_pending"
+    def search_receivable(self, wallet):
+        "https://docs.nano.org/commands/rpc-protocol/#search_receivable"
         data = {}
-        data["action"] = "search_pending"
+        data["action"] = "search_receivable"
         data["wallet"] = wallet
         return self._post(data)
 
-    def search_pending_all(self):
-        "https://docs.nano.org/commands/rpc-protocol/#search_pending_all"
+    def search_receivable_all(self):
+        "https://docs.nano.org/commands/rpc-protocol/#search_receivable_all"
         data = {}
-        data["action"] = "search_pending_all"
+        data["action"] = "search_receivable_all"
         return self._post(data)
 
     def send(self, wallet, source, destination, amount, _id=None, work=None):
@@ -1005,14 +1011,14 @@ class RPC:
             data["work"] = work
         return self._post(data)
 
-    def wallet_add(self, wallet, key, work=True):
+    def wallet_add(self, wallet, key, work=False):
         "https://docs.nano.org/commands/rpc-protocol/#wallet_add"
         data = {}
         data["action"] = "wallet_add"
         data["wallet"] = wallet
         data["key"] = key
-        if not work:
-            data["work"] = False
+        if work:
+            data["work"] = True
         return self._post(data)
 
     def wallet_add_watch(self, wallet, accounts):
@@ -1131,7 +1137,7 @@ class RPC:
         data["wallet"] = wallet
         return self._post(data)
 
-    def wallet_pending(
+    def wallet_receivable(
         self,
         wallet,
         count=1,
@@ -1141,9 +1147,9 @@ class RPC:
         min_version=False,
         include_only_confirmed=True,
     ):
-        "https://docs.nano.org/commands/rpc-protocol/#wallet_pending"
+        "https://docs.nano.org/commands/rpc-protocol/#wallet_receivable"
         data = {}
-        data["action"] = "wallet_pending"
+        data["action"] = "wallet_receivable"
         data["wallet"] = wallet
         data["count"] = count
         if threshold:
