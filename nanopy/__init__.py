@@ -337,7 +337,7 @@ def block_hash(block):
             + block["previous"]
             + account_key(block["representative"])
             + format(int(block["balance"]), "032x")
-            + block["link"]
+            + account_key(block["link"])
         ),
         digest_size=32,
     ).hexdigest()
@@ -418,6 +418,6 @@ def block_create(
     nb["representative"] = representative
     nb["balance"] = balance
     nb["link"] = link
-    nb["work"] = work if work else work_generate(block_hash(nb, difficulty))
+    nb["work"] = work if work else work_generate(block_hash(nb), difficulty)
     nb["signature"] = sign(key, block=nb)
     return nb
