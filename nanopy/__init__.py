@@ -329,6 +329,11 @@ def block_hash(block):
     :return: 64 hex-char hash
     :rtype: str
     """
+    try:
+        bytes.fromhex(block["link"])
+    except:
+        block["link"] = account_key(block["link"])
+
     return hashlib.blake2b(
         bytes.fromhex(
             "0" * 63
@@ -337,7 +342,7 @@ def block_hash(block):
             + block["previous"]
             + account_key(block["representative"])
             + format(int(block["balance"]), "032x")
-            + account_key(block["link"])
+            + block["link"]
         ),
         digest_size=32,
     ).hexdigest()
