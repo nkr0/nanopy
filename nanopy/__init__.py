@@ -331,7 +331,7 @@ def block_hash(block):
     """
     try:
         bytes.fromhex(block["link"])
-    except:
+    except ValueError:
         block["link"] = account_key(block["link"])
 
     return hashlib.blake2b(
