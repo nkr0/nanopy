@@ -274,7 +274,7 @@ online = not (args.offline or config["DEFAULT"].getboolean("offline"))
 tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
 
 if online:
-    iploc = RPC(url="http://ipinfo.io/json", tor=tor)._get()
+    iploc = RPC(url="https://ipinfo.io/json", tor=tor)._get()
     bc.warn1(iploc["city"] + " " + iploc["country"])
     rpc = RPC(url=config["DEFAULT"].get("rpc", fallback=rpc_url), tor=tor)
 else:
