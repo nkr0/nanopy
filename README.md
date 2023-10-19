@@ -26,7 +26,7 @@ Although not part of the package, the light wallet included in the repository ca
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t`, `--tor`. Communicate with RPC node via the tor network.
 
-The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kbdx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. `open` has the following options.
+The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. `open` has the following options.
 * `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
 * `-d`, `--demo`. Run in demo mode.
 * `--empty`. Empty funds to the specified send address.
@@ -41,7 +41,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *
 * `-s`, `--send`. Supply destination address to create a send block.
 
 ## Support
-Contact me on nano's [forum](https://forum.nano.org/u/npy) (`npy`) or discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
+Contact me on discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
 ```
 clang-format -i nanopy/*.c
 black nanopy docs nanopy-wallet setup.py ghtest.py
