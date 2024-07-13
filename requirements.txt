@@ -1,3 +1,4 @@
-requests
 mnemonic
-sphinx>=3
+sphinx
+twine
+websocket-client[optional]
