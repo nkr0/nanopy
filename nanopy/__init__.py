@@ -302,6 +302,20 @@ def to_raw(amount, exp=0):
     return str(raw.quantize(_D(1)))
 
 
+def to_nano(amount, exp=0):
+    """Divide amount by 10^exp with precision
+
+    :param str amount: amount
+    :param int exp: positive number
+    :return: amount divided by 10^exp with appropriate precision
+    :rtype: str
+    """
+    assert type(amount) is str
+    exp = exp if exp else standard_exponent
+    nano = _D(amount) / _D(_D(10) ** exp)
+    return str(nano.normalize())
+
+
 def raw_to_nano(amount):
     """Divide a raw amount down by the raw-nano ratio (10^30)
 
