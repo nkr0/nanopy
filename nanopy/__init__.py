@@ -329,6 +329,12 @@ def block_hash(block):
     :return: 64 hex-char hash
     :rtype: str
     """
+
+    try:
+        bytes.fromhex(block["link"])
+    except ValueError:
+        block["link"] = account_key(block["link"])
+
     return hashlib.blake2b(
         bytes.fromhex(
             "0" * 63
