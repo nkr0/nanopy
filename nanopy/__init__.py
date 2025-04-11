@@ -284,8 +284,8 @@ def from_raw(amount, exp=0):
     """
     assert type(amount) is str
     exp = exp if exp else standard_exponent
-    xrai = _D(amount) * _D(_D(10) ** -exp)
-    return format(xrai.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
+    nano = _D(amount) * _D(_D(10) ** -exp)
+    return format(nano.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
 
 
 def to_raw(amount, exp=0):
@@ -309,7 +309,7 @@ def raw_to_nano(amount):
     :return: amount in nano
     :rtype: str
     """
-    return to_nano(amount, exp=30)
+    return from_raw(amount, exp=30)
 
 
 def nano_to_raw(amount):
