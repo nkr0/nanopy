@@ -25,9 +25,9 @@ class RPC:
             self.API = requests.session()
             self.API.proxies = {}
             if tor:
-                self.API.proxies["http"] = self.API.proxies[
-                    "https"
-                ] = "socks5h://localhost:9050"
+                self.API.proxies["http"] = self.API.proxies["https"] = (
+                    "socks5h://localhost:9050"
+                )
         elif url[:5] == "ws://" or url[:6] == "wss://":
             from websocket import create_connection
 
