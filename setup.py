@@ -25,11 +25,15 @@ def find_gcc(*max_min, dirs):
 
 
 def config_arch():
-    global BLAKE2B_SRC
     global BLAKE2B_DIR
+    global BLAKE2B_SRC
+    global ED25519_DIR
+    global ED25519_SRC
     global ED25519_IMPL
     m = platform.machine()
     BLAKE2B_DIR = "nanopy/blake2b/"
+    ED25519_DIR = "nanopy/ed25519-donna"
+    ED25519_SRC = [ED25519_DIR + "/ed25519.c"]
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
         BLAKE2B_DIR += "sse"
         ED25519_IMPL = "ED25519_SSE2"
@@ -57,7 +61,7 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
         "name": "nanopy.work",
         "sources": ["nanopy/work.c"],
         "include_dirs": [],
-        "extra_compile_args": ["-O3", "-march=native", "-g0"],
+        "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
         "extra_link_args": ["-s"],
         "libraries": [],
         "define_macros": [],
@@ -112,18 +116,11 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
 
     e_args = {
         "name": "nanopy.ed25519_blake2b",
-        "sources": BLAKE2B_SRC
-        + [
-            "nanopy/ed25519-donna/ed25519.c",
-            "nanopy/ed25519_blake2b.c",
-        ],
-        "include_dirs": [BLAKE2B_DIR],
-        "extra_compile_args": ["-O3", "-march=native", "-g0"],
+        "sources": BLAKE2B_SRC + ED25519_SRC + ["nanopy/ed25519_blake2b.c"],
+        "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
+        "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
         "extra_link_args": ["-s"],
-        "define_macros": [
-            ("ED25519_CUSTOMRNG", "1"),
-            ("ED25519_CUSTOMHASH", "1"),
-        ],
+        "define_macros": [],
     }
 
     if ED25519_IMPL:
