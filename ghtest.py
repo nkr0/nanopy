@@ -1,5 +1,6 @@
 import os
 import nanopy as npy
+import ed25519_blake2b
 
 # signature
 
@@ -9,6 +10,7 @@ tk, pk, _ = npy.key_expand(
 m = "test"
 sig = npy.sign(tk, msg=m)
 assert npy.verify_signature(m, sig, pk)
+assert ed25519_blake2b.checkvalid(bytes.fromhex(sig), m.encode(), bytes.fromhex(pk))
 m = "fail"
 assert not npy.verify_signature(m, sig, pk)
 
