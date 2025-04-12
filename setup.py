@@ -43,22 +43,20 @@ def config_arch():
     print(m, sys.maxsize > 2**32, BLAKE2B_SRC, ED25519_IMPL)
 
 
-def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
+def get_work_ext_kwargs(use_gpu, use_vc):
     """
     builds extension kwargs depending on environment
 
     :param use_gpu: use OpenCL GPU work generation
-    :param link_omp: Link with the OMP library (OSX)
     :param use_vc: use Visual C compiler (Windows)
-    :param platform: OS platform
 
     :return: extension kwargs
     """
 
     e_args = {
         "name": "nanopy.work",
-        "sources": ["nanopy/work.c"],
-        "include_dirs": [],
+        "sources": ["nanopy/work.c", BLAKE2B_SRC],
+        "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
         "extra_link_args": ["-s"],
         "libraries": [],
@@ -66,7 +64,7 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
     }
 
     if use_gpu:
-        if platform == "darwin":
+        if sys.platform == "darwin":
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
             e_args["extra_link_args"].extend("-framework", "OpenCL")
         else:
@@ -76,38 +74,31 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
             e_args["libraries"] = ["OpenCL"]
     else:
-        e_args["sources"].append(BLAKE2B_SRC)
-        e_args["include_dirs"].append(BLAKE2B_DIR)
         e_args["extra_compile_args"].append("-fopenmp")
         e_args["extra_link_args"].append("-fopenmp")
-        if platform == "darwin":
-            if link_omp:
-                e_args["libraries"] = ["omp"]
-        else:
-            if use_vc:
-                e_args["define_macros"] = [("USE_VISUAL_C", "1")]
-                e_args["extra_compile_args"] = [
-                    "/openmp",
-                    "/arch:SSE2",
-                    "/arch:AVX",
-                    "/arch:AVX2",
-                ]
-                e_args["extra_link_args"] = [
-                    "/openmp",
-                    "/arch:SSE2",
-                    "/arch:AVX",
-                    "/arch:AVX2",
-                ]
+        if use_vc:
+            e_args["define_macros"] = [("USE_VISUAL_C", "1")]
+            e_args["extra_compile_args"] = [
+                "/openmp",
+                "/arch:SSE2",
+                "/arch:AVX",
+                "/arch:AVX2",
+            ]
+            e_args["extra_link_args"] = [
+                "/openmp",
+                "/arch:SSE2",
+                "/arch:AVX",
+                "/arch:AVX2",
+            ]
 
     return e_args
 
 
-def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
+def get_ed25519_blake2b_ext_kwargs(use_vc):
     """
     builds extension kwargs depending on environment
 
     :param use_vc: use Visual C compiler (Windows)
-    :param platform: OS platform
 
     :return: extension kwargs
     """
@@ -124,7 +115,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
     if ED25519_IMPL:
         e_args["define_macros"].append((ED25519_IMPL, "1"))
 
-    if platform == "win32" and use_vc:
+    if use_vc:
         e_args["extra_compile_args"] = [
             "/arch:SSE2",
             "/arch:AVX",
@@ -153,18 +144,8 @@ config_arch()
 setup(
     ext_modules=[
         Extension(
-            **get_work_ext_kwargs(
-                use_gpu=True if env.get("USE_GPU") == "1" else False,
-                link_omp=True if env.get("LINK_OMP") == "1" else False,
-                use_vc=True if env.get("USE_VC") == "1" else False,
-                platform=sys.platform,
-            )
+            **get_work_ext_kwargs(env.get("USE_GPU") == "1", env.get("USE_VC") == "1")
         ),
-        Extension(
-            **get_ed25519_blake2b_ext_kwargs(
-                use_vc=True if env.get("USE_VC") == "1" else False,
-                platform=sys.platform,
-            )
-        ),
+        Extension(**get_ed25519_blake2b_ext_kwargs(env.get("USE_VC") == "1")),
     ],
 )
