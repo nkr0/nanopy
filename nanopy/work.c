@@ -1,5 +1,7 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <blake2.h>
+#include <stdbool.h>
 #include <time.h>
 
 #ifdef HAVE_CL_CL_H
@@ -9,7 +11,6 @@
 #include "opencl_program.h"
 #include <OpenCL/opencl.h>
 #else
-#include <blake2.h>
 #include <omp.h>
 #endif
 
@@ -24,6 +25,29 @@ uint64_t xorshift1024star(void) { // nano-node/nano/node/xorshift.hpp
   s1 ^= s0 ^ (s0 >> 30); // c
   s[p] = s1;
   return s1 * (uint64_t)1181783497276652981;
+}
+
+static inline bool is_valid(uint64_t *work, uint8_t *h32,
+                            uint64_t *difficulty) {
+  uint64_t b2b_h = 0;
+  blake2b_state b2b;
+  blake2b_init(&b2b, 8);
+  blake2b_update(&b2b, work, 8);
+  blake2b_update(&b2b, h32, 32);
+  blake2b_final(&b2b, &b2b_h, 8);
+  return b2b_h >= *difficulty;
+}
+
+static PyObject *validate(PyObject * /*self*/, PyObject *args) {
+  uint8_t *h32;
+  uint64_t difficulty = 0, work = 0;
+  Py_ssize_t p0;
+
+  if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
+    return NULL;
+  assert(p0 == 32);
+
+  return Py_BuildValue("i", is_valid(&work, h32, &difficulty));
 }
 
 static PyObject *generate(PyObject * /*self*/, PyObject *args) {
@@ -174,25 +198,14 @@ static PyObject *generate(PyObject * /*self*/, PyObject *args) {
 #pragma omp parallel
 #pragma omp for
     for (i = 0; i < work_size; i++) {
+      uint64_t nonce_l = nonce + i;
 #ifdef USE_VISUAL_C
-      if (work == 0) {
-#endif
-        uint64_t nonce_l = nonce + i, b2b_h = 0;
-        blake2b_state b2b;
-
-        blake2b_init(&b2b, 8);
-        blake2b_update(&b2b, &nonce_l, 8);
-        blake2b_update(&b2b, h32, 32);
-        blake2b_final(&b2b, &b2b_h, 8);
-
-#ifdef USE_VISUAL_C
-        if (b2b_h >= difficulty) {
+      if (work == 0 && is_valid(&nonce_l, h32, &difficulty)) {
 #pragma omp critical
-          work = nonce_l;
-        }
+        work = nonce_l;
       }
 #else
-      if (b2b_h >= difficulty) {
+      if (is_valid(&nonce_l, h32, &difficulty)) {
 #pragma omp atomic write
         work = nonce_l;
 #pragma omp cancel for
@@ -206,6 +219,7 @@ static PyObject *generate(PyObject * /*self*/, PyObject *args) {
 }
 
 static PyMethodDef m_methods[] = {{"generate", generate, METH_VARARGS, NULL},
+                                  {"validate", validate, METH_VARARGS, NULL},
                                   {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef work_module = {
