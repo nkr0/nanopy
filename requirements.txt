@@ -1,4 +1,4 @@
 mnemonic
-sphinx
-twine
-websocket-client[optional]
+pysocks
+requests
+websocket-client
