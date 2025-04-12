@@ -1,12 +1,10 @@
-import os
+import os, random
 import nanopy as npy
 import ed25519_blake2b
 
 # signature
 
-tk, pk, _ = npy.key_expand(
-    "0000000000000000000000000000000000000000000000000000000000000000"
-)
+tk, pk, _ = npy.key_expand("0" * 64)
 m = "test"
 sig = npy.sign(tk, msg=m)
 assert npy.verify_signature(m, sig, pk)
@@ -15,6 +13,28 @@ m = "fail"
 assert not npy.verify_signature(m, sig, pk)
 
 # work computation
+
+
+def work_generate(_hash, difficulty=None, multiplier=0):
+    assert len(_hash) == 64
+    _hash = bytes.fromhex(_hash)
+    b2b_h = bytearray.fromhex("0" * 16)
+    if multiplier:
+        difficulty = from_multiplier(multiplier)
+    else:
+        difficulty = difficulty if difficulty else work_difficulty
+    difficulty = bytes.fromhex(difficulty)
+    while b2b_h < difficulty:
+        work = bytearray((random.getrandbits(8) for i in range(8)))
+        for r in range(0, 256):
+            work[7] = (work[7] + r) % 256
+            b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
+            b2b_h.reverse()
+            if b2b_h >= difficulty:
+                break
+    work.reverse()
+    return work.hex()
+
 
 assert "fffffe0000000000" == npy.from_multiplier(1 / 8)
 assert "fffffff800000000" == npy.from_multiplier(8)

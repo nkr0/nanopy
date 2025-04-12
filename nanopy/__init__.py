@@ -3,7 +3,7 @@ nanopy
 ######
 """
 
-import os, hashlib, base64, decimal, hmac
+import os, hashlib, base64, decimal, hmac, nanopy.work
 import nanopy.ed25519_blake2b as ed25519_blake2b
 
 account_prefix = "nano_"
@@ -211,59 +211,24 @@ def work_validate(work, _hash, difficulty=None, multiplier=0):
     return False
 
 
-try:
-    import nanopy.work
+def work_generate(_hash, difficulty=None, multiplier=0):
+    """Check whether work is valid for _hash.
 
-    def work_generate(_hash, difficulty=None, multiplier=0):
-        """Check whether work is valid for _hash.
-
-        :param str _hash: 64 hex-char hash
-        :param str difficulty: 16 hex-char difficulty
-        :param float multiplier: positive number, overrides difficulty
-        :return: 16 hex-char work
-        :rtype: str
-        """
-        assert len(_hash) == 64
-        if multiplier:
-            difficulty = from_multiplier(multiplier)
-        else:
-            difficulty = difficulty if difficulty else work_difficulty
-        work = format(
-            nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)), "016x"
-        )
-        return work
-
-except ModuleNotFoundError:
-    print("\033[93m" + "No work extension" + "\033[0m")
-    import random
-
-    def work_generate(_hash, difficulty=None, multiplier=0):
-        """Check whether work is valid for _hash.
-
-        :param str _hash: 64 hex-char hash
-        :param str difficulty: 16 hex-char difficulty
-        :param float multiplier: positive number, overrides difficulty
-        :return: 16 hex-char work
-        :rtype: str
-        """
-        assert len(_hash) == 64
-        _hash = bytes.fromhex(_hash)
-        b2b_h = bytearray.fromhex("0" * 16)
-        if multiplier:
-            difficulty = from_multiplier(multiplier)
-        else:
-            difficulty = difficulty if difficulty else work_difficulty
-        difficulty = bytes.fromhex(difficulty)
-        while b2b_h < difficulty:
-            work = bytearray((random.getrandbits(8) for i in range(8)))
-            for r in range(0, 256):
-                work[7] = (work[7] + r) % 256
-                b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
-                b2b_h.reverse()
-                if b2b_h >= difficulty:
-                    break
-        work.reverse()
-        return work.hex()
+    :param str _hash: 64 hex-char hash
+    :param str difficulty: 16 hex-char difficulty
+    :param float multiplier: positive number, overrides difficulty
+    :return: 16 hex-char work
+    :rtype: str
+    """
+    assert len(_hash) == 64
+    if multiplier:
+        difficulty = from_multiplier(multiplier)
+    else:
+        difficulty = difficulty if difficulty else work_difficulty
+    work = format(
+        nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)), "016x"
+    )
+    return work
 
 
 def from_raw(amount, exp=0):
