@@ -1,5 +1,6 @@
 # nanopy
-* Install by running `pip install nanopy[full]`.
+* Install by running `pip install nanopy` or `pip install nanopy[rpc,wssrpc,mnemonic]`.
+  * `rpc`, `wssrpc`, and `mnemonic` install dependencies of extra features.
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
   * When using `Visual C`, additionally prepend the installation command with `USE_VC=1`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`

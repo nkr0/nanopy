@@ -151,12 +151,6 @@ except:
 config_arch()
 
 setup(
-    name="nanopy",
-    version="27.0.1",
-    packages=["nanopy"],
-    url="https://github.com/npy0/nanopy",
-    license="MIT",
-    python_requires=">=3.6",
     ext_modules=[
         Extension(
             **get_work_ext_kwargs(
@@ -173,5 +167,4 @@ setup(
             )
         ),
     ],
-    extras_require={"full": ["requests", "websocket-client[optional]", "mnemonic"]},
 )
