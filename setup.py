@@ -43,12 +43,11 @@ def config_arch():
     print(m, sys.maxsize > 2**32, BLAKE2B_SRC, ED25519_IMPL)
 
 
-def get_work_ext_kwargs(use_gpu, use_vc):
+def get_work_ext_kwargs(use_gpu):
     """
     builds extension kwargs depending on environment
 
     :param use_gpu: use OpenCL GPU work generation
-    :param use_vc: use Visual C compiler (Windows)
 
     :return: extension kwargs
     """
@@ -68,7 +67,7 @@ def get_work_ext_kwargs(use_gpu, use_vc):
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
             e_args["extra_link_args"].extend("-framework", "OpenCL")
         else:
-            if use_vc:
+            if sys.platform == "win32":
                 e_args["extra_compile_args"] = []
                 e_args["extra_link_args"] = []
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
@@ -76,7 +75,7 @@ def get_work_ext_kwargs(use_gpu, use_vc):
     else:
         e_args["extra_compile_args"].append("-fopenmp")
         e_args["extra_link_args"].append("-fopenmp")
-        if use_vc:
+        if sys.platform == "win32":
             e_args["extra_compile_args"] = [
                 "/openmp:llvm",
                 "/arch:SSE2",
@@ -88,11 +87,9 @@ def get_work_ext_kwargs(use_gpu, use_vc):
     return e_args
 
 
-def get_ed25519_blake2b_ext_kwargs(use_vc):
+def get_ed25519_blake2b_ext_kwargs():
     """
     builds extension kwargs depending on environment
-
-    :param use_vc: use Visual C compiler (Windows)
 
     :return: extension kwargs
     """
@@ -109,7 +106,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc):
     if ED25519_IMPL:
         e_args["define_macros"].append((ED25519_IMPL, "1"))
 
-    if use_vc:
+    if sys.platform == "win32":
         e_args["extra_compile_args"] = [
             "/arch:SSE2",
             "/arch:AVX",
@@ -134,8 +131,8 @@ config_arch()
 setup(
     ext_modules=[
         Extension(
-            **get_work_ext_kwargs(env.get("USE_GPU") == "1", env.get("USE_VC") == "1")
+            **get_work_ext_kwargs(env.get("USE_GPU") == "1")
         ),
-        Extension(**get_ed25519_blake2b_ext_kwargs(env.get("USE_VC") == "1")),
+        Extension(**get_ed25519_blake2b_ext_kwargs(),
     ],
 )
