@@ -51,7 +51,7 @@ static PyObject *validate(PyObject *self, PyObject *args) {
 
 static PyObject *generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
-  uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
+  uint64_t i, j, difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
@@ -59,8 +59,8 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   assert(p0 == 32);
 
   srand(time(NULL));
-  for (uint64_t i = 0; i < 16; i++)
-    for (uint64_t j = 0; j < 4; j++)
+  for (i = 0; i < 16; i++)
+    for (j = 0; j < 4; j++)
       ((uint16_t *)&s[i])[j] = rand();
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
@@ -187,7 +187,6 @@ static PyObject *generate(PyObject *self, PyObject *args) {
 #else
   while (work == 0) {
     nonce = xorshift1024star();
-    uint64_t i;
 #pragma omp parallel for
     for (i = 0; i < work_size; i++) {
       if (work == 0 && is_valid(nonce + i, h32, difficulty)) {
