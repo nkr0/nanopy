@@ -77,7 +77,6 @@ def get_work_ext_kwargs(use_gpu, use_vc):
         e_args["extra_compile_args"].append("-fopenmp")
         e_args["extra_link_args"].append("-fopenmp")
         if use_vc:
-            e_args["define_macros"] = [("USE_VISUAL_C", "1")]
             e_args["extra_compile_args"] = [
                 "/openmp",
                 "/arch:SSE2",
