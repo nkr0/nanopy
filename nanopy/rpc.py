@@ -1,110 +1,116 @@
 """
 nanopy.rpc
 ##########
-A wrapper to make RPC requests to a node. Requires `requests <https://pypi.org/project/requests>`_. Additionally,  `websocket-client <https://pypi.org/project/websocket-client>`_ for websocket connections, and `pysocks <https://pypi.org/project/pysocks>`_ for connecting via TOR network.
+A wrapper to make RPC requests to a node.
 """
 
-import json, requests
+from typing import Any  # pragma: no cover
+import json  # pragma: no cover
+import requests  # pragma: no cover
+import websocket  # pragma: no cover
 
 
-class RPC:
+class RPC:  # pragma: no cover
     """RPC class
 
-    :arg str url: URL of the nano node
-    :arg dict headers: Optional headers for the RPC requests
-    :arg bool tor: Whether to connect via TOR network.
+    :arg url: URL of the nano node
+    :arg headers: Optional headers for the RPC requests
+    :arg tor: Whether to connect via TOR network.
 
     Refer `docs <https://docs.nano.org/commands/rpc-protocol>`_ for information on methods.
-
-    Return type is ``dict`` for all methods except ``disconnect``.
     """
 
-    def __init__(self, url="http://localhost:7076", headers={}, tor=False):
+    def __init__(
+        self,
+        url: str = "http://localhost:7076",
+        headers: dict[str, str] | None = None,
+        tor: bool = False,
+    ):
         if url[:7] == "http://" or url[:8] == "https://":
             self.__mode = "requests"
-            self.API = requests.session()
-            self.API.proxies = {}
+            self.http_api = requests.session()
+            self.http_api.proxies = {}
             if tor:
-                self.API.proxies["http"] = self.API.proxies["https"] = (
+                self.http_api.proxies["http"] = self.http_api.proxies["https"] = (
                     "socks5h://localhost:9050"
                 )
         elif url[:5] == "ws://" or url[:6] == "wss://":
-            from websocket import create_connection
-
             self.__mode = "websockets"
             if tor:
-                self.API = create_connection(
+                self.wss_api = websocket.create_connection(
                     url,
                     http_proxy_host="localhost",
                     http_proxy_port=9050,
                     proxy_type="socks5h",
                 )
             else:
-                self.API = create_connection(url)
-            self.API.settimeout(20.0)
+                self.wss_api = websocket.create_connection(url)
         else:
-            raise Exception("Unable to parse url: " + url)
+            raise AttributeError("Invalid url: " + url)
         self.__url = url
         self.__headers = headers
 
-    def _get(self):
+    def _get(self) -> Any:
         if self.__mode == "requests":
-            response = self.API.get(self.__url, headers=self.__headers)
-            response.raise_for_status()
-            return response.json()
+            http_response = self.http_api.get(self.__url, headers=self.__headers)
+            http_response.raise_for_status()
+            return http_response.json()
+        return None
 
-    def _post(self, data):
+    def _post(self, data: dict[str, Any]) -> Any:
         if self.__mode == "requests":
-            response = self.API.post(self.__url, json=data, headers=self.__headers)
-            response.raise_for_status()
-            return response.json()
-        elif self.__mode == "websockets":
-            self.API.send(json.dumps(data))
-            response = self.API.recv()
-            return json.loads(response)
+            http_response = self.http_api.post(
+                self.__url, json=data, headers=self.__headers
+            )
+            http_response.raise_for_status()
+            return http_response.json()
+        if self.__mode == "websockets":
+            self.wss_api.send(json.dumps(data))
+            return json.loads(self.wss_api.recv())
+        return None
 
-    def disconnect(self):
+    def disconnect(self) -> None:
         "Close RPC connection. Only necessary for websocket connections."
         if self.__mode == "websockets":
-            self.API.close()
+            self.wss_api.close()
 
     # Node RPCs
 
-    def account_balance(self, account, include_only_confirmed=True):
+    def account_balance(self, account: str, include_only_confirmed: bool = True) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_balance"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_balance"
         data["account"] = account
         if not include_only_confirmed:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def account_block_count(self, account):
+    def account_block_count(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_block_count"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_block_count"
         data["account"] = account
         return self._post(data)
 
-    def account_get(self, key):
+    def account_get(self, key: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_get"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_get"
         data["key"] = key
         return self._post(data)
 
     def account_history(
         self,
-        account,
-        count=1,
-        raw=False,
-        head=None,
-        offset=0,
-        reverse=False,
-        account_filter=[],
-    ):
+        account: str,
+        count: int = 1,
+        raw: bool = False,
+        head: str = "",
+        offset: int = 0,
+        reverse: bool = False,
+        account_filter: list[str] | None = None,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_history"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_history"
         data["account"] = account
         data["count"] = count
@@ -122,14 +128,14 @@ class RPC:
 
     def account_info(
         self,
-        account,
-        include_confirmed=False,
-        representative=False,
-        weight=False,
-        pending=False,
-    ):
+        account: str,
+        include_confirmed: bool = False,
+        representative: bool = False,
+        weight: bool = False,
+        pending: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_info"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_info"
         data["account"] = account
         if include_confirmed:
@@ -142,55 +148,57 @@ class RPC:
             data["pending"] = True
         return self._post(data)
 
-    def account_key(self, account):
+    def account_key(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_key"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_key"
         data["account"] = account
         return self._post(data)
 
-    def account_representative(self, account):
+    def account_representative(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_representative"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_representative"
         data["account"] = account
         return self._post(data)
 
-    def account_weight(self, account):
+    def account_weight(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_weight"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_weight"
         data["account"] = account
         return self._post(data)
 
-    def accounts_balances(self, accounts, include_only_confirmed=True):
+    def accounts_balances(
+        self, accounts: list[str], include_only_confirmed: bool = True
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#accounts_balances"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "accounts_balances"
         data["accounts"] = accounts
         if not include_only_confirmed:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def accounts_frontiers(self, accounts):
+    def accounts_frontiers(self, accounts: list[str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#accounts_frontiers"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "accounts_frontiers"
         data["accounts"] = accounts
         return self._post(data)
 
     def accounts_receivable(
         self,
-        accounts,
-        count=1,
-        threshold=None,
-        source=False,
-        include_active=False,
-        sorting=False,
-        include_only_confirmed=True,
-    ):
+        accounts: list[str],
+        count: int = 1,
+        threshold: str = "",
+        source: bool = False,
+        include_active: bool = False,
+        sorting: bool = False,
+        include_only_confirmed: bool = True,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#accounts_receivable"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "accounts_receivable"
         data["accounts"] = accounts
         data["count"] = count
@@ -206,36 +214,36 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def accounts_representatives(self, accounts):
+    def accounts_representatives(self, accounts: list[str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#accounts_representatives"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "accounts_representatives"
         data["accounts"] = accounts
         return self._post(data)
 
-    def available_supply(self):
+    def available_supply(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#available_supply"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "available_supply"
         return self._post(data)
 
-    def block_account(self, _hash):
+    def block_account(self, _hash: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_account"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_account"
         data["hash"] = _hash
         return self._post(data)
 
-    def block_confirm(self, _hash):
+    def block_confirm(self, _hash: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_confirm"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_confirm"
         data["hash"] = _hash
         return self._post(data)
 
-    def block_count(self, include_cemented=True):
+    def block_count(self, include_cemented: bool = True) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_count"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_count"
         if not include_cemented:
             data["include_cemented"] = False
@@ -243,22 +251,22 @@ class RPC:
 
     def block_create(
         self,
-        balance,
-        representative,
-        previous,
-        wallet=None,
-        account=None,
-        key=None,
-        source=None,
-        destination=None,
-        link=None,
-        work=None,
-        version="work_1",
-        json_block=False,
-        difficulty=None,
-    ):
+        balance: str,
+        representative: str,
+        previous: str,
+        wallet: str = "",
+        account: str = "",
+        key: str = "",
+        source: str = "",
+        destination: str = "",
+        link: str = "",
+        work: str = "",
+        version: str = "work_1",
+        json_block: bool = False,
+        difficulty: str = "",
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_create"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_create"
         data["type"] = "state"
         data["balance"] = balance
@@ -280,36 +288,33 @@ class RPC:
             data["work"] = work
         elif difficulty:
             data["difficulty"] = difficulty
-        # Currently 'work_1' is the default and only valid option.
-        # if version in []: data['version'] = version
+        if version in ["work_1"]:
+            data["version"] = version
         if json_block:
             data["json_block"] = True
         return self._post(data)
 
-    def block_hash(self, block, json_block=False):
+    def block_hash(self, block: dict[str, str], json_block: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_hash"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_hash"
-        if type(block) == str:
-            data["block"] = block
-        else:
-            data["block"] = json.dumps(block)
+        data["block"] = block
         if json_block:
             data["json_block"] = True
         return self._post(data)
 
-    def block_info(self, _hash, json_block=False):
+    def block_info(self, _hash: str, json_block: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_info"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "block_info"
         data["hash"] = _hash
         if json_block:
             data["json_block"] = True
         return self._post(data)
 
-    def blocks(self, hashes, json_block=False):
+    def blocks(self, hashes: list[str], json_block: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#blocks"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "blocks"
         data["hashes"] = hashes
         if json_block:
@@ -318,15 +323,15 @@ class RPC:
 
     def blocks_info(
         self,
-        hashes,
-        pending=False,
-        source=False,
-        receive_hash=False,
-        json_block=False,
-        include_not_found=False,
-    ):
+        hashes: list[str],
+        pending: bool = False,
+        source: bool = False,
+        receive_hash: bool = False,
+        json_block: bool = False,
+        include_not_found: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#blocks_info"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "blocks_info"
         data["hashes"] = hashes
         if pending:
@@ -341,19 +346,29 @@ class RPC:
             data["include_not_found"] = True
         return self._post(data)
 
-    def bootstrap(self, address, port, bypass_frontier_confirmation=False, _id=""):
+    def bootstrap(
+        self,
+        address: str,
+        port: str,
+        bypass_frontier_confirmation: bool = False,
+        _id: str = "",
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "bootstrap"
         data["address"] = address
         data["port"] = port
         if _id:
             data["id"] = _id
+        if bypass_frontier_confirmation:
+            data["bypass_frontier_confirmation"] = True
         return self._post(data)
 
-    def bootstrap_any(self, force=False, _id="", account=""):
+    def bootstrap_any(
+        self, force: bool = False, _id: str = "", account: str = ""
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap_any"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "bootstrap_any"
         if force:
             data["force"] = True
@@ -363,9 +378,9 @@ class RPC:
             data["account"] = account
         return self._post(data)
 
-    def bootstrap_lazy(self, hash_, force=False, _id=""):
+    def bootstrap_lazy(self, hash_: str, force: bool = False, _id: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap_lazy"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "bootstrap_lazy"
         data["hash"] = hash_
         if force:
@@ -374,15 +389,17 @@ class RPC:
             data["id"] = _id
         return self._post(data)
 
-    def bootstrap_status(self):
+    def bootstrap_status(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap_status"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "bootstrap_status"
         return self._post(data)
 
-    def chain(self, block, count=1, offset=0, reverse=False):
+    def chain(
+        self, block: str, count: int = 1, offset: int = 0, reverse: bool = False
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#chain"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "chain"
         data["block"] = block
         data["count"] = count
@@ -392,33 +409,37 @@ class RPC:
             data["reverse"] = True
         return self._post(data)
 
-    def confirmation_active(self, announcements=0):
+    def confirmation_active(self, announcements: int = 0) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_active"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "confirmation_active"
         if announcements:
             data["announcements"] = announcements
         return self._post(data)
 
-    def confirmation_height_currently_processing(self):
+    def confirmation_height_currently_processing(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_height_currently_processing"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "confirmation_height_currently_processing"
         return self._post(data)
 
-    def confirmation_history(self, _hash=None):
+    def confirmation_history(self, _hash: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_history"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "confirmation_history"
         if _hash:
             data["hash"] = _hash
         return self._post(data)
 
     def confirmation_info(
-        self, root, contents=True, representatives=False, json_block=False
-    ):
+        self,
+        root: str,
+        contents: bool = True,
+        representatives: bool = False,
+        json_block: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_info"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "confirmation_info"
         data["root"] = root
         if not contents:
@@ -429,25 +450,27 @@ class RPC:
             data["json_block"] = True
         return self._post(data)
 
-    def confirmation_quorum(self, peer_details=False):
+    def confirmation_quorum(self, peer_details: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_quorum"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "confirmation_quorum"
         if peer_details:
             data["peer_details"] = True
         return self._post(data)
 
-    def database_txn_tracker(self, min_read_time, min_write_time):
+    def database_txn_tracker(self, min_read_time: int, min_write_time: int) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#database_txn_tracker"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "database_txn_tracker"
         data["min_read_time"] = min_read_time
         data["min_write_time"] = min_write_time
         return self._post(data)
 
-    def delegators(self, account, threshold=0, count=0, start=""):
+    def delegators(
+        self, account: str, threshold: int = 0, count: int = 0, start: str = ""
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#delegators"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "delegators"
         data["account"] = account
         if threshold:
@@ -458,30 +481,32 @@ class RPC:
             data["start"] = start
         return self._post(data)
 
-    def delegators_count(self, account):
+    def delegators_count(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#delegators_count"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "delegators_count"
         data["account"] = account
         return self._post(data)
 
-    def deterministic_key(self, seed, index):
+    def deterministic_key(self, seed: str, index: int) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#deterministic_key"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "deterministic_key"
         data["seed"] = seed
         data["index"] = index
         return self._post(data)
 
-    def election_statistics(self):
+    def election_statistics(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#election_statistics"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "election_statistics"
         return self._post(data)
 
-    def epoch_upgrade(self, epoch, key, count=0, threads=0):
+    def epoch_upgrade(
+        self, epoch: int, key: str, count: int = 0, threads: int = 0
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#epoch_upgrade"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "epoch_upgrade"
         data["epoch"] = epoch
         data["key"] = key
@@ -491,54 +516,54 @@ class RPC:
             data["threads"] = threads
         return self._post(data)
 
-    def frontier_count(self):
+    def frontier_count(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#frontier_count"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "frontier_count"
         return self._post(data)
 
-    def frontiers(self, account, count=1):
+    def frontiers(self, account: str, count: int = 1) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#frontiers"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "frontiers"
         data["account"] = account
         data["count"] = count
         return self._post(data)
 
-    def keepalive(self, address, port):
+    def keepalive(self, address: str, port: int) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#keepalive"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "keepalive"
         data["address"] = address
         data["port"] = port
         return self._post(data)
 
-    def key_create(self):
+    def key_create(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#key_create"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "key_create"
         return self._post(data)
 
-    def key_expand(self, key):
+    def key_expand(self, key: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#key_expand"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "key_expand"
         data["key"] = key
         return self._post(data)
 
     def ledger(
         self,
-        account,
-        count=1,
-        representative=False,
-        weight=False,
-        receivable=False,
-        modified_since=0,
-        sorting=False,
-        threshold=0,
-    ):
+        account: str,
+        count: int = 1,
+        representative: bool = False,
+        weight: bool = False,
+        receivable: bool = False,
+        modified_since: int = 0,
+        sorting: bool = False,
+        threshold: int = 0,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#ledger"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "ledger"
         data["account"] = account
         data["count"] = count
@@ -556,48 +581,45 @@ class RPC:
             data["threshold"] = threshold
         return self._post(data)
 
-    def node_id(self):
+    def node_id(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#node_id"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "node_id"
         return self._post(data)
 
-    def node_id_delete(self):
+    def node_id_delete(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#node_id_delete"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "node_id_delete"
         return self._post(data)
 
-    def peers(self, peer_details=False):
+    def peers(self, peer_details: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#peers"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "peers"
         if peer_details:
             data["peer_details"] = True
         return self._post(data)
 
-    def populate_backlog(self):
+    def populate_backlog(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#populate_backlog"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "populate_backlog"
         return self._post(data)
 
     def process(
         self,
-        block,
-        force=False,
-        subtype=None,
-        json_block=False,
-        watch_work=True,
-        _async=False,
-    ):
+        block: str | dict[str, str],
+        force: bool = False,
+        subtype: str = "",
+        json_block: bool = False,
+        watch_work: bool = True,
+        _async: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#process"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "process"
-        if type(block) == str:
-            data["block"] = block
-        else:
-            data["block"] = json.dumps(block)
+        data["block"] = block
         if force:
             data["force"] = True
         if subtype:
@@ -612,17 +634,17 @@ class RPC:
 
     def receivable(
         self,
-        account,
-        count=0,
-        threshold=0,
-        source=False,
-        include_active=False,
-        min_version=False,
-        sorting=False,
-        include_only_confirmed=True,
-    ):
+        account: str,
+        count: int = 0,
+        threshold: int = 0,
+        source: bool = False,
+        include_active: bool = False,
+        min_version: bool = False,
+        sorting: bool = False,
+        include_only_confirmed: bool = True,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receivable"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "receivable"
         data["account"] = account
         if count:
@@ -642,10 +664,13 @@ class RPC:
         return self._post(data)
 
     def receivable_exists(
-        self, _hash, include_active=False, include_only_confirmed=True
-    ):
+        self,
+        _hash: str,
+        include_active: bool = False,
+        include_only_confirmed: bool = True,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receivable_exists"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "receivable_exists"
         data["hash"] = _hash
         if include_active:
@@ -654,28 +679,32 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def representatives(self, count=1, sorting=False):
+    def representatives(self, count: int = 1, sorting: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#representatives"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "representatives"
         data["count"] = count
         if sorting:
             data["sorting"] = True
         return self._post(data)
 
-    def representatives_online(self, weight=False, accounts=[]):
+    def representatives_online(
+        self, weight: bool = False, accounts: list[str] | None = None
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#representatives_online"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "representatives_online"
         if weight:
             data["weight"] = True
         if accounts:
-            data["accounts"] = repr(accounts)
+            data["accounts"] = accounts
         return self._post(data)
 
-    def republish(self, _hash, count=1, sources=0, destinations=0):
+    def republish(
+        self, _hash: str, count: int = 1, sources: int = 0, destinations: int = 0
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#republish"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "republish"
         data["hash"] = _hash
         if sources:
@@ -686,9 +715,17 @@ class RPC:
             data["count"] = count
         return self._post(data)
 
-    def sign(self, key="", wallet="", account="", block="", _hash="", json_block=False):
+    def sign(
+        self,
+        key: str = "",
+        wallet: str = "",
+        account: str = "",
+        block: str = "",
+        _hash: str = "",
+        json_block: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#sign"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "sign"
         if key:
             data["key"] = key
@@ -696,7 +733,7 @@ class RPC:
             data["wallet"] = wallet
         if account:
             data["account"] = account
-        if type(block) == str:
+        if isinstance(block, str):
             data["block"] = block
         else:
             data["block"] = json.dumps(block)
@@ -706,28 +743,30 @@ class RPC:
             data["json_block"] = True
         return self._post(data)
 
-    def stats(self, _type):
+    def stats(self, _type: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stats"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "stats"
         data["type"] = _type
         return self._post(data)
 
-    def stats_clear(self):
+    def stats_clear(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stats_clear"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "stats_clear"
         return self._post(data)
 
-    def stop(self):
+    def stop(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stop"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "stop"
         return self._post(data)
 
-    def successors(self, block, count=1, offset=0, reverse=False):
+    def successors(
+        self, block: str, count: int = 1, offset: int = 0, reverse: bool = False
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#successors"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "successors"
         data["block"] = block
         data["count"] = count
@@ -737,9 +776,9 @@ class RPC:
             data["reverse"] = True
         return self._post(data)
 
-    def telemetry(self, raw=False, address=0, port="7075"):
+    def telemetry(self, raw: bool = False, address: int = 0, port: int = 7075) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#telemetry"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "telemetry"
         if raw:
             data["raw"] = True
@@ -748,46 +787,46 @@ class RPC:
             data["port"] = port
         return self._post(data)
 
-    def validate_account_number(self, account):
+    def validate_account_number(self, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#validate_account_number"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "validate_account_number"
         data["account"] = account
         return self._post(data)
 
-    def version(self):
+    def version(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#version"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "version"
         return self._post(data)
 
-    def unchecked(self, json_block=False, count=1):
+    def unchecked(self, json_block: bool = False, count: int = 1) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "unchecked"
         if json_block:
             data["json_block"] = True
         data["count"] = count
         return self._post(data)
 
-    def unchecked_clear(self):
+    def unchecked_clear(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_clear"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "unchecked_clear"
         return self._post(data)
 
-    def unchecked_get(self, _hash, json_block=False):
+    def unchecked_get(self, _hash: str, json_block: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_get"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "unchecked_get"
         data["hash"] = _hash
         if json_block:
             data["json_block"] = True
         return self._post(data)
 
-    def unchecked_keys(self, key, count=1, json_block=False):
+    def unchecked_keys(self, key: str, count: int = 1, json_block: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_keys"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "unchecked_keys"
         data["key"] = key
         data["count"] = count
@@ -795,9 +834,9 @@ class RPC:
             data["json_block"] = True
         return self._post(data)
 
-    def unopened(self, account=None, count=1, threshold=0):
+    def unopened(self, account: str = "", count: int = 1, threshold: int = 0) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unopened"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "unopened"
         if account:
             data["account"] = account
@@ -807,32 +846,32 @@ class RPC:
             data["threshold"] = threshold
         return self._post(data)
 
-    def uptime(self):
+    def uptime(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#uptime"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "uptime"
         return self._post(data)
 
-    def work_cancel(self, _hash):
+    def work_cancel(self, _hash: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_cancel"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_cancel"
         data["hash"] = _hash
         return self._post(data)
 
     def work_generate(
         self,
-        _hash,
-        use_peers=False,
-        difficulty=None,
-        multiplier=0,
-        account=None,
-        version="work_1",
-        block=None,
-        json_block=False,
-    ):
+        _hash: str,
+        use_peers: bool = False,
+        difficulty: str = "",
+        multiplier: int = 0,
+        account: str = "",
+        version: str = "work_1",
+        block: str = "",
+        json_block: bool = False,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_generate"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_generate"
         data["hash"] = _hash
         if use_peers:
@@ -843,39 +882,44 @@ class RPC:
             data["difficulty"] = difficulty
         if account:
             data["account"] = account
-        # Currently 'work_1' is the default and only valid option.
-        # if version in []: data['version'] = version
+        if version in ["work_1"]:
+            data["version"] = version
         if block:
             data["block"] = block
             if json_block:
                 data["json_block"] = json_block
         return self._post(data)
 
-    def work_peer_add(self, address, port):
+    def work_peer_add(self, address: str, port: int) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_peer_add"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_peer_add"
         data["address"] = address
         data["port"] = port
         return self._post(data)
 
-    def work_peers(self):
+    def work_peers(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_peers"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_peers"
         return self._post(data)
 
-    def work_peers_clear(self):
+    def work_peers_clear(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_peers_clear"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_peers_clear"
         return self._post(data)
 
     def work_validate(
-        self, work, _hash, difficulty=None, multiplier=0, version="work_1"
-    ):
+        self,
+        work: str,
+        _hash: str,
+        difficulty: str = "",
+        multiplier: int = 0,
+        version: str = "work_1",
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_validate"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_validate"
         data["work"] = work
         data["hash"] = _hash
@@ -883,15 +927,15 @@ class RPC:
             data["multiplier"] = multiplier
         elif difficulty:
             data["difficulty"] = difficulty
-        # Currently 'work_1' is the default and only valid option.
-        # if version in []: data['version'] = version
+        if version in ["work_1"]:
+            data["version"] = version
         return self._post(data)
 
     # Wallet RPCs
 
-    def account_create(self, wallet, index=0, work=True):
+    def account_create(self, wallet: str, index: int = 0, work: bool = True) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_create"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_create"
         data["wallet"] = wallet
         if index:
@@ -900,33 +944,35 @@ class RPC:
             data["work"] = False
         return self._post(data)
 
-    def account_list(self, wallet):
+    def account_list(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_list"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_list"
         data["wallet"] = wallet
         return self._post(data)
 
-    def account_move(self, wallet, source, accounts):
+    def account_move(self, wallet: str, source: str, accounts: list[str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_move"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_move"
         data["wallet"] = wallet
         data["source"] = source
         data["accounts"] = accounts
         return self._post(data)
 
-    def account_remove(self, wallet, account):
+    def account_remove(self, wallet: str, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_remove"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_remove"
         data["wallet"] = wallet
         data["account"] = account
         return self._post(data)
 
-    def account_representative_set(self, wallet, account, representative, work=None):
+    def account_representative_set(
+        self, wallet: str, account: str, representative: str, work: str = ""
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#account_representative_set"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "account_representative_set"
         data["wallet"] = wallet
         data["account"] = account
@@ -935,9 +981,9 @@ class RPC:
             data["work"] = work
         return self._post(data)
 
-    def accounts_create(self, wallet, count=1, work=True):
+    def accounts_create(self, wallet: str, count: int = 1, work: bool = True) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#accounts_create"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "accounts_create"
         data["wallet"] = wallet
         data["count"] = count
@@ -945,32 +991,32 @@ class RPC:
             data["work"] = False
         return self._post(data)
 
-    def password_change(self, wallet, password):
+    def password_change(self, wallet: str, password: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#password_change"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "password_change"
         data["wallet"] = wallet
         data["password"] = password
         return self._post(data)
 
-    def password_enter(self, wallet, password):
+    def password_enter(self, wallet: str, password: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#password_enter"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "password_enter"
         data["wallet"] = wallet
         data["password"] = password
         return self._post(data)
 
-    def password_valid(self, wallet):
+    def password_valid(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#password_valid"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "password_valid"
         data["wallet"] = wallet
         return self._post(data)
 
-    def receive(self, wallet, account, block, work=None):
+    def receive(self, wallet: str, account: str, block: str, work: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receive"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "receive"
         data["wallet"] = wallet
         data["account"] = account
@@ -979,35 +1025,43 @@ class RPC:
             data["work"] = work
         return self._post(data)
 
-    def receive_minimum(self):
+    def receive_minimum(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receive_minimum"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "receive_minimum"
         return self._post(data)
 
-    def receive_minimum_set(self, amount):
+    def receive_minimum_set(self, amount: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receive_minimum_set"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "receive_minimum_set"
         data["amount"] = amount
         return self._post(data)
 
-    def search_receivable(self, wallet):
+    def search_receivable(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#search_receivable"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "search_receivable"
         data["wallet"] = wallet
         return self._post(data)
 
-    def search_receivable_all(self):
+    def search_receivable_all(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#search_receivable_all"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "search_receivable_all"
         return self._post(data)
 
-    def send(self, wallet, source, destination, amount, _id=None, work=None):
+    def send(
+        self,
+        wallet: str,
+        source: str,
+        destination: str,
+        amount: str,
+        _id: str = "",
+        work: str = "",
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#send"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "send"
         data["wallet"] = wallet
         data["source"] = source
@@ -1019,9 +1073,9 @@ class RPC:
             data["work"] = work
         return self._post(data)
 
-    def wallet_add(self, wallet, key, work=False):
+    def wallet_add(self, wallet: str, key: str, work: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_add"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_add"
         data["wallet"] = wallet
         data["key"] = key
@@ -1029,26 +1083,26 @@ class RPC:
             data["work"] = True
         return self._post(data)
 
-    def wallet_add_watch(self, wallet, accounts):
+    def wallet_add_watch(self, wallet: str, accounts: list[str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_add_watch"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_add_watch"
         data["wallet"] = wallet
         data["accounts"] = accounts
         return self._post(data)
 
-    def wallet_balances(self, wallet, threshold=0):
+    def wallet_balances(self, wallet: str, threshold: int = 0) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_balances"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_balances"
         data["wallet"] = wallet
         if threshold:
             data["threshold"] = threshold
         return self._post(data)
 
-    def wallet_change_seed(self, wallet, seed, count=0):
+    def wallet_change_seed(self, wallet: str, seed: str, count: int = 0) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_change_seed"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_change_seed"
         data["wallet"] = wallet
         data["seed"] = seed
@@ -1056,69 +1110,69 @@ class RPC:
             data["count"] = count
         return self._post(data)
 
-    def wallet_contains(self, wallet, account):
+    def wallet_contains(self, wallet: str, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_contains"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_contains"
         data["wallet"] = wallet
         data["account"] = account
         return self._post(data)
 
-    def wallet_create(self, seed=""):
+    def wallet_create(self, seed: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_create"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_create"
         if seed:
             data["seed"] = seed
         return self._post(data)
 
-    def wallet_destroy(self, wallet):
+    def wallet_destroy(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_destroy"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_destroy"
         data["wallet"] = wallet
         return self._post(data)
 
-    def wallet_export(self, wallet):
+    def wallet_export(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_export"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_export"
         data["wallet"] = wallet
         return self._post(data)
 
-    def wallet_frontiers(self, wallet):
+    def wallet_frontiers(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_frontiers"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_frontiers"
         data["wallet"] = wallet
         return self._post(data)
 
-    def wallet_history(self, wallet, modified_since=0):
+    def wallet_history(self, wallet: str, modified_since: int = 0) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_history"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_history"
         data["wallet"] = wallet
         if modified_since:
             data["modified_since"] = modified_since
         return self._post(data)
 
-    def wallet_info(self, wallet):
+    def wallet_info(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_info"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_info"
         data["wallet"] = wallet
         return self._post(data)
 
     def wallet_ledger(
         self,
-        wallet,
-        representative=False,
-        weight=False,
-        receivable=False,
-        modified_since=None,
-    ):
+        wallet: str,
+        representative: bool = False,
+        weight: bool = False,
+        receivable: bool = False,
+        modified_since: str = "",
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_ledger"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_ledger"
         data["wallet"] = wallet
         if representative:
@@ -1131,32 +1185,32 @@ class RPC:
             data["modified_since"] = modified_since
         return self._post(data)
 
-    def wallet_lock(self, wallet):
+    def wallet_lock(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_lock"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_lock"
         data["wallet"] = wallet
         return self._post(data)
 
-    def wallet_locked(self, wallet):
+    def wallet_locked(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_locked"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_locked"
         data["wallet"] = wallet
         return self._post(data)
 
     def wallet_receivable(
         self,
-        wallet,
-        count=1,
-        threshold=0,
-        source=False,
-        include_active=False,
-        min_version=False,
-        include_only_confirmed=True,
-    ):
+        wallet: str,
+        count: int = 1,
+        threshold: int = 0,
+        source: bool = False,
+        include_active: bool = False,
+        min_version: bool = False,
+        include_only_confirmed: bool = True,
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_receivable"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_receivable"
         data["wallet"] = wallet
         data["count"] = count
@@ -1172,18 +1226,18 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def wallet_representative(self, wallet):
+    def wallet_representative(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_representative"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_representative"
         data["wallet"] = wallet
         return self._post(data)
 
     def wallet_representative_set(
-        self, wallet, representative, update_existing_accounts=False
-    ):
+        self, wallet: str, representative: str, update_existing_accounts: bool = False
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_representative_set"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_representative_set"
         data["wallet"] = wallet
         data["representative"] = representative
@@ -1191,32 +1245,32 @@ class RPC:
             data["update_existing_accounts"] = True
         return self._post(data)
 
-    def wallet_republish(self, wallet, count=1):
+    def wallet_republish(self, wallet: str, count: int = 1) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_republish"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_republish"
         data["wallet"] = wallet
         data["count"] = count
         return self._post(data)
 
-    def wallet_work_get(self, wallet):
+    def wallet_work_get(self, wallet: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#wallet_work_get"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "wallet_work_get"
         data["wallet"] = wallet
         return self._post(data)
 
-    def work_get(self, wallet, account):
+    def work_get(self, wallet: str, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_get"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_get"
         data["wallet"] = wallet
         data["account"] = account
         return self._post(data)
 
-    def work_set(self, wallet, account, work):
+    def work_set(self, wallet: str, account: str, work: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_set"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "work_set"
         data["wallet"] = wallet
         data["account"] = account
@@ -1225,16 +1279,16 @@ class RPC:
 
     # Unit conversion RPCs
 
-    def nano_to_raw(self, amount):
+    def nano_to_raw(self, amount: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#nano_to_raw"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "nano_to_raw"
         data["amount"] = amount
         return self._post(data)
 
-    def raw_to_nano(self, amount):
+    def raw_to_nano(self, amount: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#raw_to_nano"
-        data = {}
+        data: dict[str, Any] = {}
         data["action"] = "raw_to_nano"
         data["amount"] = amount
         return self._post(data)
