@@ -18,9 +18,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: |
-          pip install -U sphinx
-          sphinx-build docs html
+      - run: pip install .[dev] && sphinx-build -W docs html
       - uses: actions/upload-pages-artifact@v3
         with:
           path: 'html'

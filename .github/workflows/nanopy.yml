@@ -11,30 +11,20 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.x'
-      - run: pip install -Ur requirements.txt
       - run: |
-          sudo apt update
-          sudo apt install clang libomp-dev
-          python setup.py build_ext -i -f
-          python ghtest.py
-          CC=clang python setup.py build_ext -i -f
-          python ghtest.py
+          sudo apt update && sudo apt install clang libomp-dev
+          pip install -e .[dev] && pytest && mypy && pylint nanopy
+          rm -rf build && CC=clang pip install -e .[dev] && pytest
         if: runner.os == 'Linux'
       - run: |
           brew install gcc llvm libomp
-          CC=gcc-14 python setup.py build_ext -i -f
-          python ghtest.py
-          CC=$(brew --prefix llvm)/bin/clang python setup.py build_ext -i -f
-          python ghtest.py
+          CC=gcc-14 pip install -e .[dev] && pytest
+          rm -rf build && CC=$(brew --prefix llvm)/bin/clang pip install -e .[dev] && pytest
         if: runner.os == 'macOS'
         continue-on-error: true
-      - run: |
-          python setup.py build_ext -i -f
-          python ghtest.py
+      - run: pip install -e .[dev] && pytest
         if: runner.os == 'Windows'
       - run: |
-          sudo apt install ocl-icd-opencl-dev intel-opencl-icd clinfo
-          USE_GPU=1 python setup.py build_ext -i -f
-          clinfo
-          python ghtest-gpu.py
+          sudo apt install ocl-icd-opencl-dev intel-opencl-icd
+          rm -rf build && USE_GPU=1 pip install .[dev]
         if: matrix.os == 'ubuntu-latest'

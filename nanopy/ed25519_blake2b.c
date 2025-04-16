@@ -37,29 +37,29 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
 }
 
 static PyObject *signature(PyObject *self, PyObject *args) {
-  const unsigned char *m, *randr, *sk, *pk;
-  Py_ssize_t p0, p1, p2, p3;
-  ed25519_signature sig;
+  const unsigned char *sk, *m, *r;
+  Py_ssize_t p0, p1, p2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#y#", &m, &p0, &randr, &p1, &sk, &p2, &pk,
-                        &p3))
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
     return NULL;
-  assert(p1 == 32);
+  assert(p0 == 32);
   assert(p2 == 32);
-  assert(p3 == 32);
-  ed25519_sign(m, p0, randr, sk, pk, sig);
+  ed25519_public_key pk;
+  ed25519_publickey(sk, pk);
+  ed25519_signature sig;
+  ed25519_sign(m, p1, r, sk, pk, sig);
   return Py_BuildValue("y#", &sig, 64);
 }
 
 static PyObject *checkvalid(PyObject *self, PyObject *args) {
-  const unsigned char *sig, *m, *pk;
+  const unsigned char *sig, *pk, *m;
   Py_ssize_t p0, p1, p2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &m, &p1, &pk, &p2))
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
     return NULL;
   assert(p0 == 64);
-  assert(p2 == 32);
-  return Py_BuildValue("i", ed25519_sign_open(m, p1, pk, sig) == 0);
+  assert(p1 == 32);
+  return Py_BuildValue("i", ed25519_sign_open(m, p2, pk, sig) == 0);
 }
 
 static PyMethodDef m_methods[] = {
