@@ -53,27 +53,27 @@ def check_status(accounts: list[str]) -> None:
 
 
 def generate_block(acc: "npy.Account") -> None:
-    info = rpc.account_info(acc.acc, representative=True)
+    info = rpc.account_info(acc.addr, representative=True)
     if "frontier" in info:
         acc.frontier = info["frontier"]
         acc.raw_bal = int(info["balance"])
-        acc.rep = npy.Account(n, acc=info["representative"])
+        acc.rep = npy.Account(n, info["representative"])
     else:  # pragma: no cover
         args.send = None
         if not args.rep:
             args.rep = input("Rep : ")
-    args.rep = npy.Account(n, acc=args.rep) if args.rep else None
+    args.rep = npy.Account(n, args.rep) if args.rep else None
 
-    rbs = rpc.receivable(acc.acc)["blocks"]
+    rbs = rpc.receivable(acc.addr)["blocks"]
     while True:
         rb = "" if args.send else rbs.pop() if rbs else ""
-        bc.status("Acc", acc.acc)
-        bc.amt("Bal", acc.bal(), bc.ok)
-        bc.status("Rep", acc.rep.acc)
+        bc.status("Acc", acc.addr)
+        bc.amt("Bal", acc.bal, bc.ok)
+        bc.status("Rep", acc.rep.addr)
 
         if args.send:
-            args.send = npy.Account(n, acc=args.send)
-            bc.status("To ", args.send.acc)
+            args.send = npy.Account(n, args.send)
+            bc.status("To ", args.send.addr)
             raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
             bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
             nb = acc.send(args.send, raw_amt, args.rep)
@@ -93,9 +93,9 @@ def generate_block(acc: "npy.Account") -> None:
             break
 
         args.rep = None
-        print("\n" + nb.json())
+        print("\n" + nb.json)
         if input("\nBroadcast block?(y/" + bc.boldstr("n") + "): ") == "y":
-            broadcast(nb.json())
+            broadcast(nb.json)
 
 
 bc = BColours()
@@ -165,28 +165,29 @@ if args.sub:
     os.chmod(args.f, 0o600)
     kp = pykeepass.PyKeePass(args.f, password=getpass.getpass())
     group = kp.find_groups(name=args.group, first=True) if args.group else kp.root_group
+    acci = npy.Account(n)
 
     if args.new:  # pragma: no cover
         seed = os.urandom(32).hex()
-        acc0 = npy.Account(n, sk=npy.deterministic_key(seed, 0)).acc
-        bc.status(args.k, acc0)
-        kp.add_entry(group, args.k, acc0.split("_")[1], seed)
+        acci.sk = npy.deterministic_key(seed, 0)
+        bc.status(args.k, acci.addr)
+        kp.add_entry(group, args.k, acci.addr.split("_")[1], seed)
         kp.save()
 
     else:
         entry = kp.find_entries(title=args.k, group=group, recursive=False, first=True)
         seed = entry.password
-        acc0 = npy.Account(n, sk=npy.deterministic_key(seed, 0)).acc
-        assert n.prefix + entry.username == acc0
+        acci.sk = npy.deterministic_key(seed, 0)
+        assert n.prefix + entry.username == acci.addr
         if args.audit:
-            check_status(
-                [
-                    npy.Account(n, sk=npy.deterministic_key(seed, i)).acc
-                    for i in range(args.index + 1)
-                ]
-            )
+            addrs = []
+            for i in range(args.index + 1):
+                acci.sk = npy.deterministic_key(seed, i)
+                addrs.append(acci.addr)
+            check_status(addrs)
         else:
-            generate_block(npy.Account(n, sk=npy.deterministic_key(seed, args.index)))
+            acci.sk = npy.deterministic_key(seed, args.index)
+            generate_block(acci)
 
 elif args.broadcast:
     broadcast(input("Enter JSON block to broadcast: "))
