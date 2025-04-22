@@ -1,2 +1,1 @@
-include nanopy/*
-include nanopy/*/*
+recursive-include nanopy *
