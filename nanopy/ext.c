@@ -1,6 +1,8 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <blake2.h>
+#include <ed25519-hash-custom.h>
+#include <ed25519.h>
 #include <stdbool.h>
 #include <time.h>
 
@@ -37,7 +39,7 @@ bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
   return b2b_h >= difficulty;
 }
 
-static PyObject *validate(PyObject *self, PyObject *args) {
+static PyObject *work_validate(PyObject *self, PyObject *args) {
   uint8_t *h32;
   uint64_t difficulty, work;
   Py_ssize_t p0;
@@ -49,7 +51,7 @@ static PyObject *validate(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", is_valid(work, h32, difficulty));
 }
 
-static PyObject *generate(PyObject *self, PyObject *args) {
+static PyObject *work_generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
   uint64_t i, difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0;
@@ -198,11 +200,73 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   return Py_BuildValue("K", work);
 }
 
-static PyMethodDef m_methods[] = {{"generate", generate, METH_VARARGS, NULL},
-                                  {"validate", validate, METH_VARARGS, NULL},
-                                  {NULL, NULL, 0, NULL}};
+void ed25519_randombytes_unsafe(void *out, size_t outlen) {}
 
-static struct PyModuleDef work_module = {
-    PyModuleDef_HEAD_INIT, "work", NULL, -1, m_methods, NULL, NULL, NULL, NULL};
+void ed25519_hash_init(ed25519_hash_context *ctx) { blake2b_init(ctx, 64); }
 
-PyMODINIT_FUNC PyInit_work(void) { return PyModule_Create(&work_module); }
+void ed25519_hash_update(ed25519_hash_context *ctx, uint8_t const *in,
+                         size_t inlen) {
+  blake2b_update(ctx, in, inlen);
+}
+
+void ed25519_hash_final(ed25519_hash_context *ctx, uint8_t *out) {
+  blake2b_final(ctx, out, 64);
+}
+
+void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
+  ed25519_hash_context ctx;
+  ed25519_hash_init(&ctx);
+  ed25519_hash_update(&ctx, in, inlen);
+  ed25519_hash_final(&ctx, out);
+}
+
+static PyObject *publickey(PyObject *self, PyObject *args) {
+  const unsigned char *sk;
+  Py_ssize_t p0;
+  ed25519_public_key pk;
+
+  if (!PyArg_ParseTuple(args, "y#", &sk, &p0))
+    return NULL;
+  assert(p0 == 32);
+  ed25519_publickey(sk, pk);
+  return Py_BuildValue("y#", &pk, 32);
+}
+
+static PyObject *sign(PyObject *self, PyObject *args) {
+  const unsigned char *sk, *m, *r;
+  Py_ssize_t p0, p1, p2;
+
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
+    return NULL;
+  assert(p0 == 32);
+  assert(p2 == 32);
+  ed25519_public_key pk;
+  ed25519_publickey(sk, pk);
+  ed25519_signature sig;
+  ed25519_sign(m, p1, r, sk, pk, sig);
+  return Py_BuildValue("y#", &sig, 64);
+}
+
+static PyObject *verify_signature(PyObject *self, PyObject *args) {
+  const unsigned char *sig, *pk, *m;
+  Py_ssize_t p0, p1, p2;
+
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
+    return NULL;
+  assert(p0 == 64);
+  assert(p1 == 32);
+  return Py_BuildValue("i", ed25519_sign_open(m, p2, pk, sig) == 0);
+}
+
+static PyMethodDef m_methods[] = {
+    {"work_generate", work_generate, METH_VARARGS, NULL},
+    {"work_validate", work_validate, METH_VARARGS, NULL},
+    {"publickey", publickey, METH_VARARGS, NULL},
+    {"sign", sign, METH_VARARGS, NULL},
+    {"verify_signature", verify_signature, METH_VARARGS, NULL},
+    {NULL, NULL, 0, NULL}};
+
+static struct PyModuleDef ext_module = {
+    PyModuleDef_HEAD_INIT, "ext", NULL, -1, m_methods, NULL, NULL, NULL, NULL};
+
+PyMODINIT_FUNC PyInit_ext(void) { return PyModule_Create(&ext_module); }

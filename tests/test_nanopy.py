@@ -1,13 +1,16 @@
 import hashlib
 import json
+import os
 import re
 import pytest
 import nanopy as npy
 
 NANO = npy.Network()
 PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
+PACC1 = "nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c"
 SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
 Z64 = "0" * 64
+R64 = os.urandom(32).hex()
 
 
 def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
@@ -73,8 +76,6 @@ class TestAccount:
     def test_bal(self) -> None:
         acc = npy.Account(NANO, PACC0)
         assert acc.bal == "0.000000000000000000000000000000"
-        with pytest.raises(ValueError, match="Balance cannot be < 0"):
-            acc.bal = "-1"
         acc.bal = "1"
         assert acc.bal == "1.000000000000000000000000000000"
         acc.bal = "0.000000000000000000000000000001"
@@ -84,8 +85,16 @@ class TestAccount:
         acc = npy.Account(NANO, PACC0)
         with pytest.raises(ValueError, match="Balance cannot be < 0"):
             acc.raw_bal = -1
+        with pytest.raises(ValueError, match=re.escape("Balance cannot be >= 2^128")):
+            acc.raw_bal = 1 << 128
         acc.raw_bal = 1
         assert acc.raw_bal == 1
+
+    def test_state(self) -> None:
+        acc = npy.Account(NANO, PACC0)
+        rep = npy.Account(NANO, PACC1)
+        acc.state = (R64, 1, rep)
+        assert acc.state == (R64, 1, rep)
 
     def test_change_rep(self) -> None:
         acc = npy.Account(NANO)
