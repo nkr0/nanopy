@@ -11,9 +11,8 @@ import hashlib
 import hmac
 import json
 import os
-from typing import Optional
-from . import work  # type: ignore
-from . import ed25519_blake2b  # type: ignore
+from typing import Optional, Tuple
+from . import ext  # type: ignore
 
 decimal.setcontext(decimal.BasicContext)
 decimal.getcontext().traps[decimal.Inexact] = True
@@ -98,100 +97,76 @@ class Account:
         self._sk = ""
 
     def __repr__(self) -> str:
-        """class string representation
-
-        :return: account address as string
-        """
         return self.addr
 
     @property
     def addr(self) -> str:
-        """Account address
-
-        :return: account address
-        """
+        "Account address"
         return self.network.from_pk(self._pk)
 
     @property
     def pk(self) -> str:
-        """Account public key
-
-        :return: account public key
-        """
+        "64 hex char account public key"
         return self._pk
 
     @pk.setter
     def pk(self, key: str) -> None:
-        """Set account public key. Address is synced to match. Private key is erased.
-
-        :arg key: 64 hex char account public key
-        """
         assert len(bytes.fromhex(key)) == 32
         self._pk = key
         self._sk = ""
 
     @property
     def sk(self) -> str:
-        """Account private key
-
-        :return: account private key
-        """
+        "64 hex char account secret/private key"
         return self._sk
 
     @sk.setter
     def sk(self, key: str) -> None:
-        """Set account private key. Address and public key are synced to match.
-
-        :arg key: 64 hex char account private key
-        """
         assert len(bytes.fromhex(key)) == 32
-        self._pk = ed25519_blake2b.publickey(bytes.fromhex(key)).hex()
+        self._pk = ext.publickey(bytes.fromhex(key)).hex()
         self._sk = key
 
     @property
     def bal(self) -> str:
-        """Account balance
-
-        :return: account balance
-        """
-        return self.network.from_raw(self._raw_bal)
+        "Account balance"
+        return self.network.from_raw(self.raw_bal)
 
     @bal.setter
     def bal(self, val: str) -> None:
-        """Set account balance
-
-        :arg val: account balance
-        """
-        raw_val = self.network.to_raw(val)
-        if raw_val < 0:
-            raise ValueError("Balance cannot be < 0")
-        self._raw_bal = raw_val
+        self.raw_bal = self.network.to_raw(val)
 
     @property
     def raw_bal(self) -> int:
-        """Account raw balance
-
-        :return: account balance in raw
-        """
+        "Account raw balance"
         return self._raw_bal
 
     @raw_bal.setter
     def raw_bal(self, val: int) -> None:
-        """Set account raw balance
-
-        :arg val: account balance in raw
-        """
         if val < 0:
             raise ValueError("Balance cannot be < 0")
+        if val >= 1 << 128:
+            raise ValueError("Balance cannot be >= 2^128")
         self._raw_bal = val
+
+    @property
+    def state(self) -> Tuple[str, int, "Account"]:
+        "State of the account (frontier block digest, raw balance, representative)"
+        return self.frontier, self.raw_bal, self.rep
+
+    @state.setter
+    def state(self, value: Tuple[str, int, "Account"]) -> None:
+        assert len(bytes.fromhex(value[0])) == 32
+        self.frontier = value[0]
+        self.raw_bal = value[1]
+        self.rep = value[2]
 
     def change_rep(self, rep: "Account") -> "StateBlock":
         """Construct a signed change StateBlock. Work is not added.
 
-        :arg rep: rep account
+        :arg rep: representative account
         :return: a signed change StateBlock
         """
-        b = StateBlock(self, rep, self._raw_bal, self.frontier, "0" * 64)
+        b = StateBlock(self, rep, self.raw_bal, self.frontier, "0" * 64)
         self.sign(b)
         self.rep = rep
         self.frontier = b.digest
@@ -204,13 +179,13 @@ class Account:
 
         :arg digest: 64 hex char hash digest of the receive block
         :arg raw_amt: raw amount to receive
-        :arg rep: Optionally, change rep account
+        :arg rep: Optionally, change representative account
         :return: a signed receive StateBlock
         """
         assert len(bytes.fromhex(digest)) == 32
         if raw_amt <= 0:
             raise AttributeError("Amount must be a positive integer")
-        final_raw_bal = self._raw_bal + raw_amt
+        final_raw_bal = self.raw_bal + raw_amt
         if final_raw_bal >= 1 << 128:
             raise AttributeError("raw balance after receive cannot be >= 2^128")
         brep = rep if rep else self.rep
@@ -218,7 +193,7 @@ class Account:
         self.sign(b)
         if rep:
             self.rep = rep
-        self._raw_bal = final_raw_bal
+        self.raw_bal = final_raw_bal
         self.frontier = b.digest
         return b
 
@@ -229,12 +204,12 @@ class Account:
 
         :arg to: Destination account
         :arg raw_amt: raw amount to send
-        :arg rep: Optionally, change rep account
+        :arg rep: Optionally, change representative account
         :return: a signed send StateBlock
         """
         if not isinstance(raw_amt, int) or raw_amt <= 0:
             raise AttributeError("Amount must be a positive integer")
-        final_raw_bal = self._raw_bal - raw_amt
+        final_raw_bal = self.raw_bal - raw_amt
         if final_raw_bal < 0:
             raise AttributeError("raw balance after send cannot be < 0")
         brep = rep if rep else self.rep
@@ -242,7 +217,7 @@ class Account:
         self.sign(b)
         if rep:
             self.rep = rep
-        self._raw_bal = final_raw_bal
+        self.raw_bal = final_raw_bal
         self.frontier = b.digest
         return b
 
@@ -255,7 +230,7 @@ class Account:
             raise NotImplementedError("This method needs private key")
         h = bytes.fromhex(b.digest)
         s = bytes.fromhex(self._sk)
-        b.sig = str(ed25519_blake2b.signature(s, h, os.urandom(32)).hex())
+        b.sig = str(ext.sign(s, h, os.urandom(32)).hex())
 
 
 @dataclasses.dataclass
@@ -374,10 +349,7 @@ class StateBlock:
 
     @property
     def digest(self) -> str:
-        """hash digest of block
-
-        :return: 64 hex char hash digest
-        """
+        "64 hex char hash digest of block"
         return hashlib.blake2b(
             bytes.fromhex(
                 "0" * 63
@@ -393,10 +365,7 @@ class StateBlock:
 
     @property
     def json(self) -> str:
-        """block as JSON string
-
-        :return: JSON string
-        """
+        "block as JSON string"
         d = {
             "type": "state",
             "account": self.acc.addr,
@@ -417,7 +386,7 @@ class StateBlock:
         s = bytes.fromhex(self.sig)
         p = bytes.fromhex(self.acc.pk)
         h = bytes.fromhex(self.digest)
-        return bool(ed25519_blake2b.checkvalid(s, p, h))
+        return bool(ext.verify_signature(s, p, h))
 
     def work_generate(self, difficulty: str) -> None:
         """Compute work
@@ -426,7 +395,7 @@ class StateBlock:
         """
         assert len(bytes.fromhex(difficulty)) == 8
         self.work = format(
-            work.generate(bytes.fromhex(self.prev), int(difficulty, 16)), "016x"
+            ext.work_generate(bytes.fromhex(self.prev), int(difficulty, 16)), "016x"
         )
 
     def work_validate(self, difficulty: str) -> bool:
@@ -437,4 +406,4 @@ class StateBlock:
         """
         assert len(bytes.fromhex(difficulty)) == 8
         h = bytes.fromhex(self.prev)
-        return bool(work.validate(int(self.work, 16), h, int(difficulty, 16)))
+        return bool(ext.work_validate(int(self.work, 16), h, int(difficulty, 16)))

@@ -55,9 +55,11 @@ def check_status(accounts: list[str]) -> None:
 def generate_block(acc: "npy.Account") -> None:
     info = rpc.account_info(acc.addr, representative=True)
     if "frontier" in info:
-        acc.frontier = info["frontier"]
-        acc.raw_bal = int(info["balance"])
-        acc.rep = npy.Account(n, info["representative"])
+        acc.state = (
+            info["frontier"],
+            int(info["balance"]),
+            npy.Account(n, info["representative"]),
+        )
     else:  # pragma: no cover
         args.send = None
         if not args.rep:
