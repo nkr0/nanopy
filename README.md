@@ -8,30 +8,25 @@
 
 ## Usage
 ```py
-# create a network object. Defaults to nano network
-n = npy.Network()
-
-# create an account and set secret key
+# create an account (defaults to NANO network) and set secret key
 seed = "0000000...."
 index = 2
-acc = npy.Account(n)
+acc = npy.Account()
 acc.sk = npy.deterministic_key(seed, index)
 
 # if it is not a new account, set the current state of the account (frontier, raw bal, rep)
-acc.state = ("1234....", 1200000000000000, npy.Account(n, "nano_repaddress..."))
+acc.state = ("1234....", 1200000000000000, npy.Account(addr="nano_repaddress..."))
 
 # create a receive block and optionally, change rep along with it
 _hash = "5678...."
-raw_amt = n.to_raw("10")
-rep = npy.Account(n, "nano_newrepaddress...")
+raw_amt = acc.network.to_raw("10")
+rep = npy.Account(addr="nano_newrepaddress...")
 rb = acc.receive(_hash, raw_amt, rep)
-rb.work_generate(n.receive_difficulty)
 
 # create a send block
-to = npy.Account(n, "nano_sendaddress...")
-raw_amt = n.to_raw("1")
+to = npy.Account(addr="nano_sendaddress...")
+raw_amt = acc.network.to_raw("1")
 sb = acc.send(to, raw_amt)
-sb.work_generate(n.send_difficulty)
 
 # broadcast
 rpc.process(rb.json)

@@ -5,7 +5,6 @@ import re
 import pytest
 import nanopy as npy
 
-NANO = npy.Network()
 PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
 PACC1 = "nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c"
 SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
@@ -49,14 +48,22 @@ def test_mnemonic_key() -> None:
 
 class TestAccount:
     def test_init(self) -> None:
-        acc = npy.Account(NANO, PACC0)
+        acc = npy.Account(addr=PACC0)
+        assert str(acc) == PACC0
+        assert acc.addr == PACC0
+        assert acc.pk == Z64
+        assert not acc.sk
+
+    def test_addr(self) -> None:
+        acc = npy.Account()
+        acc.addr = PACC0
         assert str(acc) == PACC0
         assert acc.addr == PACC0
         assert acc.pk == Z64
         assert not acc.sk
 
     def test_pk(self) -> None:
-        acc = npy.Account(NANO)
+        acc = npy.Account()
         acc.pk = Z64
         assert str(acc) == PACC0
         assert acc.addr == PACC0
@@ -64,7 +71,7 @@ class TestAccount:
         assert not acc.sk
 
     def test_sk(self) -> None:
-        acc = npy.Account(NANO)
+        acc = npy.Account()
         acc.sk = Z64
         assert str(acc) == SACC0
         assert acc.addr == SACC0
@@ -74,7 +81,7 @@ class TestAccount:
         assert acc.sk == Z64
 
     def test_bal(self) -> None:
-        acc = npy.Account(NANO, PACC0)
+        acc = npy.Account(addr=PACC0)
         assert acc.bal == "0.000000000000000000000000000000"
         acc.bal = "1"
         assert acc.bal == "1.000000000000000000000000000000"
@@ -82,7 +89,7 @@ class TestAccount:
         assert acc.bal == "0.000000000000000000000000000001"
 
     def test_raw_bal(self) -> None:
-        acc = npy.Account(NANO, PACC0)
+        acc = npy.Account(addr=PACC0)
         with pytest.raises(ValueError, match="Balance cannot be < 0"):
             acc.raw_bal = -1
         with pytest.raises(ValueError, match=re.escape("Balance cannot be >= 2^128")):
@@ -90,31 +97,56 @@ class TestAccount:
         acc.raw_bal = 1
         assert acc.raw_bal == 1
 
+    def test_frontier(self) -> None:
+        acc = npy.Account(addr=PACC0)
+        with pytest.raises(ValueError):
+            acc.frontier = "x" * 64
+        with pytest.raises(AssertionError):
+            acc.frontier = "ff"
+        acc.frontier = "f" * 64
+        assert acc.frontier == "f" * 64
+
+    def test_rep(self) -> None:
+        acc = npy.Account(addr=PACC0)
+        with pytest.raises(ValueError, match="Representative is not initialised"):
+            acc.rep = npy.Account()
+        rep = npy.Account(addr=PACC1)
+        acc.rep = rep
+        assert acc.rep == rep
+
     def test_state(self) -> None:
-        acc = npy.Account(NANO, PACC0)
-        rep = npy.Account(NANO, PACC1)
+        acc = npy.Account(addr=PACC0)
+        rep = npy.Account(addr=PACC1)
         acc.state = (R64, 1, rep)
         assert acc.state == (R64, 1, rep)
 
     def test_change_rep(self) -> None:
-        acc = npy.Account(NANO)
+        acc = npy.Account(addr=PACC0)
+        with pytest.raises(NotImplementedError, match="This method needs private key"):
+            acc.change_rep(acc)
+        TESTNET = npy.Network()
+        TESTNET.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(TESTNET)
         acc.sk = Z64
-        b = acc.change_rep(acc)
+        acc.change_rep(acc)
+        b = acc.change_rep(acc, work="f" * 16)
         assert b.verify_signature()
         assert acc.frontier == b.digest
 
     def test_receive(self) -> None:
-        acc = npy.Account(NANO)
+        acc = npy.Account()
+        with pytest.raises(NotImplementedError, match="This method needs private key"):
+            acc.change_rep(acc)
         acc.sk = Z64
-        with pytest.raises(AttributeError, match="Amount must be a positive integer"):
+        with pytest.raises(ValueError, match="Amount must be a positive integer"):
             acc.receive(Z64, -1)
         with pytest.raises(
-            AttributeError,
+            ValueError,
             match=re.escape("raw balance after receive cannot be >= 2^128"),
         ):
             acc.receive(Z64, 1 << 128)
-        acc.receive(Z64, 1)
-        rep = npy.Account(NANO, PACC0)
+        acc.receive(Z64, 1, work="f" * 16)
+        rep = npy.Account(addr=PACC0)
         b = acc.receive(Z64, 1, rep)
         assert b.verify_signature()
         assert acc.frontier == b.digest
@@ -123,17 +155,20 @@ class TestAccount:
         assert acc.rep == rep
 
     def test_send(self) -> None:
-        acc = npy.Account(NANO)
+        acc = npy.Account(addr=PACC0)
+        with pytest.raises(NotImplementedError, match="This method needs private key"):
+            acc.change_rep(acc)
+        TESTNET = npy.Network()
+        TESTNET.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(TESTNET)
         acc.sk = Z64
-        to = npy.Account(NANO, PACC0)
-        with pytest.raises(AttributeError, match="Amount must be a positive integer"):
+        to = npy.Account(addr=PACC0)
+        with pytest.raises(ValueError, match="Amount must be a positive integer"):
             acc.send(to, -1)
-        with pytest.raises(
-            AttributeError, match="raw balance after send cannot be < 0"
-        ):
+        with pytest.raises(ValueError, match="raw balance after send cannot be < 0"):
             acc.send(to, 1)
         acc.raw_bal = 2
-        acc.send(to, 1)
+        acc.send(to, 1, work="f" * 16)
         b = acc.send(to, 1, to)
         assert b.verify_signature()
         assert acc.frontier == b.digest
@@ -141,57 +176,47 @@ class TestAccount:
         assert acc.raw_bal == 0
         assert acc.rep == to
 
-    def test_sign(self) -> None:
-        acc = npy.Account(NANO, PACC0)
-        with pytest.raises(NotImplementedError, match="This method needs private key"):
-            b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
-            acc.sign(b)
-        acc.sk = Z64
-        b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
-        acc.sign(b)
-        assert b.verify_signature()
-
 
 class TestNetwork:
     def test_from_multiplier(self) -> None:
-        assert "fffffe0000000000" == NANO.from_multiplier(1 / 8)
+        assert "fffffe0000000000" == npy.NANO.from_multiplier(1 / 8)
 
     def test_to_multiplier(self) -> None:
         with pytest.raises(ValueError, match="Difficulty should be 16 hex char"):
-            NANO.to_multiplier("0")
-        assert 0.125 == NANO.to_multiplier("fffffe0000000000")
+            npy.NANO.to_multiplier("0")
+        assert 0.125 == npy.NANO.to_multiplier("fffffe0000000000")
 
     def test_from_pk(self) -> None:
         with pytest.raises(ValueError, match="Public key should be 64 hex char"):
-            NANO.from_pk("0")
-        assert PACC0 == NANO.from_pk(Z64)
+            npy.NANO.from_pk("0")
+        assert PACC0 == npy.NANO.from_pk(Z64)
 
     def test_to_pk(self) -> None:
         with pytest.raises(ValueError, match="Invalid address"):
-            NANO.to_pk("nano_wrong_address")
+            npy.NANO.to_pk("nano_wrong_address")
         with pytest.raises(ValueError, match="Invalid address"):
-            NANO.to_pk(
+            npy.NANO.to_pk(
                 "xxxx_111111111111111111111111111111111111111111111111111111111111"
             )
         with pytest.raises(ValueError, match="Invalid address"):
-            NANO.to_pk(
+            npy.NANO.to_pk(
                 "nano_1111111111111111111111111111111111111111111111111111hifc8npr"
             )
-        assert Z64 == NANO.to_pk(PACC0)
+        assert Z64 == npy.NANO.to_pk(PACC0)
 
     def test_from_raw(self) -> None:
-        assert "0.000000000000000000000123456789" == NANO.from_raw(123456789)
-        assert "1.234567890000000000000000000000" == NANO.from_raw(
+        assert "0.000000000000000000000123456789" == npy.NANO.from_raw(123456789)
+        assert "1.234567890000000000000000000000" == npy.NANO.from_raw(
             1234567890000000000000000000000
         )
 
     def test_to_raw(self) -> None:
-        assert 123456789 == NANO.to_raw("0.000000000000000000000123456789")
-        assert 1234567890000000000000000000000 == NANO.to_raw("1.23456789")
+        assert 123456789 == npy.NANO.to_raw("0.000000000000000000000123456789")
+        assert 1234567890000000000000000000000 == npy.NANO.to_raw("1.23456789")
 
 
 class TestStateBlock:
-    acc = npy.Account(NANO)
+    acc = npy.Account()
     acc.sk = Z64
     b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
 
@@ -219,11 +244,11 @@ class TestStateBlock:
         assert self.b.verify_signature()
 
     def test_work_generate(self) -> None:
-        self.b.work_generate(NANO.receive_difficulty)
-        assert work_validate(self.b, NANO.receive_difficulty)
+        self.b.work_generate(npy.NANO.receive_difficulty)
+        assert work_validate(self.b, npy.NANO.receive_difficulty)
 
     def test_work_validate(self) -> None:
         self.b.work = "0" * 16
-        assert not self.b.work_validate(NANO.receive_difficulty)
+        assert not self.b.work_validate(npy.NANO.receive_difficulty)
         self.b.work = "e1c6427755027448"
-        assert self.b.work_validate(NANO.receive_difficulty)
+        assert self.b.work_validate(npy.NANO.receive_difficulty)
