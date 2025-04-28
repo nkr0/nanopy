@@ -80,18 +80,24 @@ except ModuleNotFoundError:  # pragma: no cover
 class Network:
     """Network
 
+    :arg name: name of the network
     :arg prefix: prefix for accounts in the network
     :arg difficulty: base difficulty
     :arg send_difficulty: difficulty for send/change blocks
     :arg receive_difficulty: difficulty for receive/open blocks
     :arg exp: exponent to convert between raw and base currency unit
+    :arg rpc_url: default RPC url for the network
+    :arg std_unit: symbol or label for the default currency unit
     """
 
+    name: str = "nano"
     prefix: str = "nano_"
     difficulty: str = "ffffffc000000000"
     send_difficulty: str = "fffffff800000000"
     receive_difficulty: str = "fffffe0000000000"
     exp: int = 30
+    rpc_url: str = "http://localhost:7076"
+    std_unit: str = "Ӿ"
 
     _D: ClassVar[type["decimal.Decimal"]] = decimal.Decimal
     _B32STD: ClassVar[bytes] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
@@ -140,14 +146,14 @@ class Network:
         :arg addr: account address
         """
         if len(addr) != len(self.prefix) + 60:
-            raise ValueError("Invalid address:", addr)
+            raise ValueError(f"Invalid address: {addr}")
         if addr[: len(self.prefix)] != self.prefix:
-            raise ValueError("Invalid address:", addr)
+            raise ValueError(f"Invalid address: {addr}")
         p = base64.b32decode((b"1111" + addr[-60:].encode()).translate(self._NANO2STD))
         checksum = p[:-6:-1]
         p = p[3:-5]
         if hashlib.blake2b(p, digest_size=5).digest() != checksum:
-            raise ValueError("Invalid address:", addr)
+            raise ValueError(f"Invalid address: {addr}")
         return p.hex()
 
     def from_raw(self, raw: int, exp: int = 0) -> str:
