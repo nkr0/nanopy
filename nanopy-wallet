@@ -26,10 +26,30 @@ class BColours:
         return f"{self._bold}{s}{self._end}"
 
     def amt(self, l: str, a: str, c: Callable[[str, str, str], None]) -> None:
-        c(f"{a:>40}", f"{l} : ", f" {std_unit}")
+        c(f"{a:>40}", f"{l} : ", f" {n.std_unit}")
 
     def status(self, label: str, msg: str) -> None:
         print(f"{label} : {msg}")
+
+
+def get_network(network: str) -> "npy.Network":
+    if network == "banano":
+        n.name = "banano"
+        n.prefix = "ban_"
+        n.send_difficulty = "fffffe0000000000"
+        n.exp = 29
+        n.rpc_url = "http://localhost:7072"
+        n.std_unit = "BAN"
+    elif network == "beta":
+        n.name = "beta"
+        n.prefix = "xrb_"
+        n.rpc_url = "http://localhost:55000"
+        n.std_unit = "β"
+    return n
+
+
+def get_account(address: str) -> "npy.Account":
+    return npy.Account(addr=address)
 
 
 def broadcast(block: str) -> None:
@@ -61,8 +81,7 @@ def generate_block(acc: "npy.Account") -> None:
     else:  # pragma: no cover
         args.send = None
         if not args.rep:
-            args.rep = input("Rep : ")
-    args.rep = npy.Account(n, args.rep) if args.rep else None
+            args.rep = get_account(input("Rep : "))
 
     rbs = rpc.receivable(acc.addr)["blocks"]
     while True:
@@ -72,7 +91,6 @@ def generate_block(acc: "npy.Account") -> None:
         bc.status("Rep", acc.rep.addr)
 
         if args.send:
-            args.send = npy.Account(n, args.send)
             bc.status("To ", args.send.addr)
             raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
             bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
@@ -96,13 +114,15 @@ def generate_block(acc: "npy.Account") -> None:
 
 
 bc = BColours()
+n = npy.NANO
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-a",
     "--audit",
+    help="Audit accounts in FILE.",
     metavar="FILE",
     type=argparse.FileType("r"),
-    help="Audit accounts in FILE.",
 )
 parser.add_argument(
     "-b", "--broadcast", action="store_true", help="Broadcast JSON block"
@@ -110,9 +130,8 @@ parser.add_argument(
 parser.add_argument(
     "-n",
     "--network",
-    default="nano",
-    choices=["banano", "beta", "nano"],
     help="Choose the network to interact with.",
+    type=get_network,
 )
 parser.add_argument("-t", "--tor", action="store_true", help="Connect via tor.")
 
@@ -121,31 +140,17 @@ parserOpen = subparsers.add_parser("open", help="Unlock *.kdbx file")
 parserOpen.add_argument("f", metavar="FILE", help="*.kdbx file.")
 parserOpen.add_argument("k", metavar="KEY", help="key to open/create.")
 parserOpen.add_argument("-g", "--group", help="Key group. (root)")
-parserOpen.add_argument("-i", "--index", default=0, type=int, help="Account index. (0)")
-parserOpen.add_argument("-r", "--rep", metavar="ADDRESS", help="Change rep")
+parserOpen.add_argument("-i", "--index", default=0, help="Account index. (0)", type=int)
+parserOpen.add_argument(
+    "-r", "--rep", help="Change rep", metavar="ADDRESS", type=get_account
+)
 parserOpen.add_argument("--empty", action="store_true", help="Empty account")
 
 openG = parserOpen.add_mutually_exclusive_group()
 openG.add_argument("-a", "--audit", action="store_true", help="Audit accounts")
 openG.add_argument("-n", "--new", action="store_true", help="Add a new key.")
-openG.add_argument("-s", "--send", metavar="ADDRESS", help="Send to")
-
+openG.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=get_account)
 args = parser.parse_args()
-
-n = npy.Network()
-if args.network == "banano":
-    n.prefix = "ban_"
-    n.send_difficulty = "fffffe0000000000"
-    n.exp = 29
-    rpc_url = "http://localhost:7072"
-    std_unit = "BAN"
-elif args.network == "beta":
-    n.prefix = "xrb_"
-    rpc_url = "http://localhost:55000"
-    std_unit = "β"
-else:
-    rpc_url = "http://localhost:7076"
-    std_unit = "Ӿ"
 
 config_file = os.path.expanduser("~") + "/.config/nanopy.conf"
 os.chmod(config_file, 0o600)
@@ -153,7 +158,7 @@ config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
 tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
-rpc = RPC(url=str(config[args.network].get("rpc", fallback=rpc_url)), tor=tor)
+rpc: "RPC" = RPC(url=str(config[n.name].get("rpc", fallback=n.rpc_url)), tor=tor)
 
 if args.sub:
     os.chmod(args.f, 0o600)
@@ -190,7 +195,8 @@ elif args.audit:
     check_status([a.strip() for a in args.audit if a.startswith(n.prefix)])
 
 else:
-    check_status([a for a in config.options(args.network) if a.startswith(n.prefix)])
+    print(n)
+    check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
 
 rpc.disconnect()
 
