@@ -114,6 +114,7 @@ class RPC:  # pragma: no cover
         count: int = 1,
         raw: bool = False,
         head: str = "",
+        include_linked_account: bool = False,
         offset: int = 0,
         reverse: bool = False,
         account_filter: list[str] | None = None,
@@ -127,6 +128,8 @@ class RPC:  # pragma: no cover
             data["raw"] = True
         if head:
             data["head"] = head
+        if include_linked_account:
+            data["include_linked_account"] = True
         if offset:
             data["offset"] = offset
         if reverse:
@@ -312,13 +315,17 @@ class RPC:  # pragma: no cover
             data["json_block"] = True
         return self.post(data)
 
-    def block_info(self, _hash: str, json_block: bool = False) -> Any:
+    def block_info(
+        self, _hash: str, json_block: bool = False, include_linked_account: bool = False
+    ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_info"
         data: dict[str, Any] = {}
         data["action"] = "block_info"
         data["hash"] = _hash
         if json_block:
             data["json_block"] = True
+        if include_linked_account:
+            data["include_linked_account"] = True
         return self.post(data)
 
     def blocks(self, hashes: list[str], json_block: bool = False) -> Any:
@@ -333,6 +340,7 @@ class RPC:  # pragma: no cover
     def blocks_info(
         self,
         hashes: list[str],
+        include_linked_account: bool = False,
         pending: bool = False,
         source: bool = False,
         receive_hash: bool = False,
@@ -343,6 +351,8 @@ class RPC:  # pragma: no cover
         data: dict[str, Any] = {}
         data["action"] = "blocks_info"
         data["hashes"] = hashes
+        if include_linked_account:
+            data["include_linked_account"] = True
         if pending:
             data["pending"] = True
         if source:
@@ -396,6 +406,18 @@ class RPC:  # pragma: no cover
             data["force"] = True
         if _id:
             data["id"] = _id
+        return self.post(data)
+
+    def bootstrap_priorities(self) -> Any:
+        "https://docs.nano.org/commands/rpc-protocol/#bootstrap_priorities"
+        data: dict[str, Any] = {}
+        data["action"] = "bootstrap_priorities"
+        return self.post(data)
+
+    def bootstrap_reset(self) -> Any:
+        "https://docs.nano.org/commands/rpc-protocol/#bootstrap_reset"
+        data: dict[str, Any] = {}
+        data["action"] = "bootstrap_reset"
         return self.post(data)
 
     def bootstrap_status(self) -> Any:

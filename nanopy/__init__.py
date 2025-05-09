@@ -122,9 +122,9 @@ class Network:
         """
         if len(difficulty) != 16:
             raise ValueError("Difficulty should be 16 hex char")
-        return float((1 << 64) - int(self.difficulty, 16)) / float(
-            (1 << 64) - int(difficulty, 16)
-        )
+        base_d = (1 << 64) - int(self.difficulty, 16)
+        d = (1 << 64) - int(difficulty, 16)
+        return base_d / d
 
     def from_pk(self, pk: str) -> str:
         """Get account address from public key
@@ -135,8 +135,7 @@ class Network:
             raise ValueError("Public key should be 64 hex char")
         p = bytes.fromhex(pk)
         checksum = hashlib.blake2b(p, digest_size=5).digest()
-        p = b"\x00\x00\x00" + p + checksum[::-1]
-        addr = base64.b32encode(p)
+        addr = base64.b32encode(b"000" + p + checksum[::-1])
         addr = addr.translate(self._STD2NANO)[4:]
         return self.prefix + addr.decode()
 
@@ -149,9 +148,8 @@ class Network:
             raise ValueError(f"Invalid address: {addr}")
         if addr[: len(self.prefix)] != self.prefix:
             raise ValueError(f"Invalid address: {addr}")
-        p = base64.b32decode((b"1111" + addr[-60:].encode()).translate(self._NANO2STD))
-        checksum = p[:-6:-1]
-        p = p[3:-5]
+        pc = base64.b32decode((b"1111" + addr[-60:].encode()).translate(self._NANO2STD))
+        p, checksum = pc[3:-5], pc[:-6:-1]
         if hashlib.blake2b(p, digest_size=5).digest() != checksum:
             raise ValueError(f"Invalid address: {addr}")
         return p.hex()
@@ -411,12 +409,8 @@ class StateBlock:
     @property
     def digest(self) -> str:
         "64 hex char hash digest of block"
-        return hashlib.blake2b(
-            bytes.fromhex(
-                f"{'0' * 63}6{self.acc.pk}{self.prev}{self.rep.pk}{self.bal:032x}{self.link}"
-            ),
-            digest_size=32,
-        ).hexdigest()
+        h = f"{'0' * 63}6{self.acc.pk}{self.prev}{self.rep.pk}{self.bal:032x}{self.link}"
+        return hashlib.blake2b(bytes.fromhex(h), digest_size=32).hexdigest()
 
     @property
     def json(self) -> str:
