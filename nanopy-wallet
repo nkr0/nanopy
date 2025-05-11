@@ -7,7 +7,7 @@ import os
 from typing import Callable
 import pykeepass  # type: ignore
 import nanopy as npy
-from nanopy.rpc import RPC
+from nanopy.rpc import HTTP
 
 
 class BColours:
@@ -158,7 +158,7 @@ config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
 tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
-rpc: "RPC" = RPC(url=str(config[n.name].get("rpc", fallback=n.rpc_url)), tor=tor)
+rpc = HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url)), tor=tor)
 
 if args.sub:
     os.chmod(args.f, 0o600)
@@ -193,8 +193,6 @@ elif args.audit:
 else:
     check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
 
-rpc.disconnect()
-
-ticker = RPC(url="https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur").get()
+ticker = HTTP(url="https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur").get()
 print(ticker["result"]["NANOUSD"]["c"][0], "$")
 print(ticker["result"]["NANOEUR"]["c"][0], "€")
