@@ -53,12 +53,6 @@ def get_account(address: str) -> "npy.Account":
     return npy.Account(addr=address)
 
 
-def broadcast(block: str) -> None:
-    ack = rpc.process(block)
-    assert "hash" in ack
-    bc.ok(ack["hash"])
-
-
 def check_status(accounts: list[str]) -> None:
     if accounts:
         info = rpc.accounts_balances(accounts)
@@ -111,23 +105,13 @@ def generate_block(acc: "npy.Account") -> None:
         args.rep = None
         print(nb.json)
         if input(f"\nBroadcast block?(y/{bc.bold('n')}): ") == "y":
-            broadcast(nb.json)
+            bc.ok(rpc.process(nb.json)["hash"])
 
 
 bc = BColours()
 n = npy.NANO
 
 parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-a",
-    "--audit",
-    help="Audit accounts in FILE.",
-    metavar="FILE",
-    type=argparse.FileType("r"),
-)
-parser.add_argument(
-    "-b", "--broadcast", action="store_true", help="Broadcast JSON block"
-)
 parser.add_argument(
     "-n",
     "--network",
@@ -185,10 +169,6 @@ if args.sub:
         else:
             acci.sk = npy.deterministic_key(seed, args.index)
             generate_block(acci)
-elif args.broadcast:
-    broadcast(input("Enter JSON block to broadcast: "))
-elif args.audit:
-    check_status([a.strip() for a in args.audit if a.startswith(n.prefix)])
 else:
     check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
 

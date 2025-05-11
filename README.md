@@ -37,23 +37,10 @@ rpc.process(sb.json)
 Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
 
 ### Wallet options
-* The wallet looks for default configuration in `$HOME/.config/nanopy.conf`.
-  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy.conf`.
-* `-a`, `--audit-file`. Check state of all accounts in a file.
-* `-b`, `--broadcast`. Broadcast a block in JSON format.
+* The wallet looks for default configuration in `~/.config/nanopy.conf`.
+  * Default mode of operation is to check state of all accounts in `~/.config/nanopy.conf`.
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
-
-The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. `open` has the following options.
-* `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
-* `--empty`. Empty funds to the specified send address.
-* `-g`, `--group`. Group in which to open key from. (Default=root)
-* `-i`, `--index`. Index of the account unlocked from the seed. (Default=0)
-* `--new`. Generate a new seed and derive index 0 account from it.
-  * Seeds are generated using `os.urandom()`.
-  * Generated seeds are base85 encoded and stored in a user selected *.kdbx file.
-* `-r`, `--rep`. Supply representative address to change representative.
-  * Change representative tag can be combined with send and receive blocks.
-* `-s`, `--send`. Supply destination address to create a send block.
+* Open a wallet, `nanopy-wallet open FILE KEY`, and use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. See `nanopy-wallet open -h` for options.
 
 ## Support
 Contact me on discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
