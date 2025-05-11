@@ -15,8 +15,13 @@ class RPC(ABC):  # pragma: no cover
     "RPC base class"
 
     @abstractmethod
-    def request(self, data: Any) -> Any:
-        "Make request to nano node. Implemented in derived classes."
+    def request(self, data: dict[str, Any]) -> Any:
+        """Make RPC request to nano node.
+        Overridden in derived class
+
+        :arg data: dict like object
+        :return: JSON reponse as dict
+        """
         raise NotImplementedError("Implement in a derived class")
 
     def account_balance(self, account: str, include_only_confirmed: bool = True) -> Any:
@@ -1265,17 +1270,8 @@ class HTTP(RPC):  # pragma: no cover
         self.url = url
         self.api = requests.session()
 
-    def get(self) -> Any:
-        """JSON GET request
-
-        :return: JSON reponse as dict
-        """
-        r = self.api.get(self.url)
-        r.raise_for_status()
-        return r.json()
-
-    def post(self, data: Any) -> Any:
-        """JSON POST request
+    def request(self, data: dict[str, Any]) -> Any:
+        """Overridden from base class
 
         :arg data: dict like object
         :return: JSON reponse as dict
@@ -1283,15 +1279,6 @@ class HTTP(RPC):  # pragma: no cover
         r = self.api.post(self.url, json=data)
         r.raise_for_status()
         return r.json()
-
-    def request(self, data: Any) -> Any:
-        """Make HTTP POST RPC request to nano node.
-        Overridden from base class RPC
-
-        :arg data: dict like object
-        :return: JSON reponse as dict
-        """
-        return self.post(data)
 
 
 class WS(RPC):  # pragma: no cover
@@ -1306,9 +1293,8 @@ class WS(RPC):  # pragma: no cover
     def __del__(self) -> None:
         self.api.close()
 
-    def request(self, data: Any) -> Any:
-        """Make JSON WS request.
-        Overridden from base class RPC
+    def request(self, data: dict[str, Any]) -> Any:
+        """Overridden from base class
 
         :arg data: dict like object
         :return: JSON reponse as dict
