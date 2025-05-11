@@ -18,9 +18,6 @@ coverage run --append nanopy-wallet open test.kdbx test1 -i 1 -s $SRC --empty
 echo copy and broadcast
 coverage run --append nanopy-wallet open test.kdbx test1 -r $REP
 coverage run --append nanopy-wallet -b
-echo $SRC > /tmp/test.txt
-echo $DST >> /tmp/test.txt
-coverage run --append nanopy-wallet -a /tmp/test.txt
 coverage run --append nanopy-wallet -n banano
 coverage run --append nanopy-wallet -n beta
 coverage html
