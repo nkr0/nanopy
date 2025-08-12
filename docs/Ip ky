@@ -1,0 +1,29 @@
+import hmac
+import hashlib
+import time
+import requests
+
+API_KEY = "API
+API_SECRET =130.193.219.106
+
+BASE_URL = "https://api.wallex.ir"
+
+def sign(payload: str):
+    return hmac.new(API_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+
+def get_account_info():
+    path = "/v1/account"
+    ts = str(int(time.time() * 1000))
+    payload = ts + path
+    signature = sign(payload)
+    headers = {
+        "X-API-KEY": API_KEY,
+        "X-SIGNATURE": signature,
+        "X-TIMESTAMP": ts,
+    }
+    response = requests.get(BASE_URL + path, headers=headers)
+    return response.json()
+
+if __name__ == "__main__":
+    info = get_account_info()
+    print(info)
