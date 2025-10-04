@@ -1,0 +1,23 @@
+name: nanopy
+on: [push]
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, windows-latest]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - run: pip install -e .[dev] && pytest && mypy && pylint nanopy
+        if: runner.os == 'Linux'
+      - run: CC=gcc-15 pip install -e .[dev] && pytest
+        if: runner.os == 'macOS'
+      - run: pip install -e .[dev] && pytest
+        if: runner.os == 'Windows'
+      - run: |
+          sudo apt update && sudo apt install ocl-icd-opencl-dev intel-opencl-icd
+          rm -rf build && USE_GPU=1 pip install .[dev]
+        if: matrix.os == 'ubuntu-latest'
