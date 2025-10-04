@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nanopy"
+description = "Python implementation of NANO currency related functions"
+version = "28.0.1"
+license = "MIT"
+
+[project.optional-dependencies]
+dev = ["black", "mnemonic", "mypy", "pylint[spelling]", "pytest-cov", "requests", "setuptools", "sphinx-autodoc-typehints", "twine", "types-requests", "websocket-client"]
+
+[project.urls]
+Repository = "https://github.com/nkr0/nanopy"
+
+[tool.coverage.run]
+omit = ["nanopy/rpc.py"]
+
+[tool.mypy]
+files = "nanopy, nanopy-wallet, tests"
+strict = true
+
+[tool.pylint]
+disable = ["c-extension-no-member", "too-many-arguments", "too-many-instance-attributes", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
+
+[tool.pytest.ini_options]
+addopts = "--cov nanopy --cov-fail-under=100"
+
+[tool.setuptools]
+packages = ["nanopy"]

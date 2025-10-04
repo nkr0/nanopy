@@ -1,0 +1,6 @@
+*.so
+.coverage
+__pycache__
+build
+dist
+nanopy.egg-info
