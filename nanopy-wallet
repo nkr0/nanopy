@@ -1,0 +1,168 @@
+#!/usr/bin/env python3
+
+import argparse
+import configparser
+import getpass
+import keyring
+import os
+import nanopy as npy
+from nanopy.rpc import HTTP
+import requests
+from typing import Callable
+
+
+class BColours:
+    _bold = "\033[1m"
+    _end = "\033[0m"
+    _ok = "\033[32m"
+    _warn = "\033[31m"
+
+    def ok(self, s: str, prefix: str = "", suffix: str = "") -> None:
+        print(f"{prefix}{self._ok}{s}{self._end}{suffix}")
+
+    def warn(self, s: str, prefix: str = "", suffix: str = "") -> None:
+        print(f"{prefix}{self._warn}{s}{self._end}{suffix}")
+
+    def bold(self, s: str) -> str:
+        return f"{self._bold}{s}{self._end}"
+
+    def amt(self, l: str, a: str, c: Callable[[str, str, str], None]) -> None:
+        c(f"{a:>40}", f"{l} : ", f" {n.std_unit}")
+
+    def status(self, label: str, msg: str) -> None:
+        print(f"{label} : {msg}")
+
+
+def get_network(network: str) -> "npy.Network":
+    if network == "banano":
+        n.name = "banano"
+        n.prefix = "ban_"
+        n.send_difficulty = "fffffe0000000000"
+        n.exp = 29
+        n.rpc_url = "http://localhost:7072"
+        n.std_unit = "BAN"
+    elif network == "beta":
+        n.name = "beta"
+        n.prefix = "xrb_"
+        n.rpc_url = "http://localhost:55000"
+        n.std_unit = "β"
+    return n
+
+
+def get_account(address: str) -> "npy.Account":
+    return npy.Account(addr=address)
+
+
+def check_status(accounts: list[str]) -> None:
+    if accounts:
+        info = rpc.accounts_balances(accounts)
+        for account in accounts:
+            accinfo = info["balances"][account]
+            bc.status("Acc", account)
+            bc.amt("Bal", n.from_raw(int(accinfo["balance"])), bc.ok)
+            if accinfo["receivable"] != "0":
+                bc.amt("Rec", n.from_raw(int(accinfo["receivable"])), bc.ok)
+            print()
+
+
+def generate_block(acc: "npy.Account") -> None:
+    info = rpc.account_info(acc.addr, representative=True)
+    if "frontier" in info:
+        acc.state = (
+            info["frontier"],
+            int(info["balance"]),
+            npy.Account(n, info["representative"]),
+        )
+    else:  # pragma: no cover
+        args.send = None
+        if not args.rep:
+            args.rep = get_account(input("Rep : "))
+
+    rbs = rpc.receivable(acc.addr)["blocks"]
+    while True:
+        rb = "" if args.send else rbs.pop() if rbs else ""
+        bc.status("Acc", acc.addr)
+        bc.amt("Bal", acc.bal, bc.ok)
+        bc.status("Rep", acc.rep.addr)
+
+        if args.send:
+            bc.status("To ", args.send.addr)
+            raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
+            bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
+            nb = acc.send(args.send, raw_amt, args.rep)
+            args.send = None
+        elif rb and input(f"\nReceive blocks?({bc.bold('y')}/n): ") != "n":
+            rbi = rpc.block_info(rb)
+            bc.status("From", rbi["block_account"])
+            raw_amt = int(rbi["amount"])
+            bc.amt("Amt", n.from_raw(raw_amt), bc.ok)
+            nb = acc.receive(rb, raw_amt, args.rep)
+        elif args.rep:
+            nb = acc.change_rep(args.rep)
+        else:
+            break
+
+        args.rep = None
+        print(nb.json)
+        if input(f"\nBroadcast block?(y/{bc.bold('n')}): ") == "y":
+            bc.ok(rpc.process(nb.json)["hash"])
+
+
+bc = BColours()
+n = npy.NANO
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-n",
+    "--network",
+    help="Choose the network to interact with.",
+    type=get_network,
+)
+
+subparsers = parser.add_subparsers(dest="sub")
+parserOpen = subparsers.add_parser("open", help="Unlock entry from keyring")
+parserOpen.add_argument("k", metavar="KEY", help="key to open/create.")
+parserOpen.add_argument("-i", "--index", default=0, help="Account index. (0)", type=int)
+parserOpen.add_argument(
+    "-r", "--rep", help="Change rep", metavar="ADDRESS", type=get_account
+)
+parserOpen.add_argument("-e", "--empty", action="store_true", help="Empty account")
+
+openG = parserOpen.add_mutually_exclusive_group()
+openG.add_argument("-a", "--audit", action="store_true", help="Audit accounts")
+openG.add_argument("-n", "--new", action="store_true", help="Add a new key.")
+openG.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=get_account)
+args = parser.parse_args()
+
+config_file = os.path.expanduser("~") + "/.config/nanopy.conf"
+config = configparser.ConfigParser(allow_no_value=True)
+config.read(config_file)
+
+rpc = HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url)))
+
+if args.sub:
+    acci = npy.Account(n)
+    if args.new:  # pragma: no cover
+        seed = os.urandom(32).hex()
+        acci.sk = npy.deterministic_key(seed, 0)
+        bc.status(args.k, acci.addr)
+        keyring.set_password("nanopy", args.k, seed)
+    else:
+        seed = keyring.get_password("nanopy", args.k) or ""
+        assert seed
+        if args.audit:
+            addrs = []
+            for i in range(args.index + 1):
+                acci.sk = npy.deterministic_key(seed, i)
+                addrs.append(acci.addr)
+            check_status(addrs)
+        else:
+            acci.sk = npy.deterministic_key(seed, args.index)
+            generate_block(acci)
+else:
+    check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
+
+r = requests.get("https://api.kraken.com/0/public/Ticker?pair=nanoeur")
+r.raise_for_status()
+ticker = r.json()
+print(ticker["result"]["NANOEUR"]["c"][0], "€")
