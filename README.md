@@ -58,3 +58,9 @@ Setup a pre-commit hook to run tests.
 ```sh
 pytest && mypy && pylint nanopy && sphinx-build -W docs /tmp/html
 ```
+
+Create distribution
+```sh
+python3 setup.py sdist
+twine upload dist/*
+```
