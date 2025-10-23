@@ -2,12 +2,10 @@
 
 import argparse
 import configparser
-import getpass
 import keyring
 import os
 import nanopy as npy
 from nanopy.rpc import HTTP
-import requests
 from typing import Callable
 
 
@@ -134,7 +132,7 @@ openG.add_argument("-n", "--new", action="store_true", help="Add a new key.")
 openG.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=get_account)
 args = parser.parse_args()
 
-config_file = os.path.expanduser("~") + "/.config/nanopy.conf"
+config_file = os.path.expanduser("~") + "/.config/nanopy.ini"
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
