@@ -3,32 +3,18 @@
 import argparse
 import configparser
 import keyring
-import os
 import nanopy as npy
+import os
 from nanopy.rpc import HTTP
 from typing import Callable
 
 
-class BColours:
-    _bold = "\033[1m"
-    _end = "\033[0m"
-    _ok = "\033[32m"
-    _warn = "\033[31m"
+def log_amt(l: str, a: str, c: Callable[[str], str]) -> None:
+    print(l, ":", c(f"{a:>40}"), n.std_unit)
 
-    def ok(self, s: str, prefix: str = "", suffix: str = "") -> None:
-        print(f"{prefix}{self._ok}{s}{self._end}{suffix}")
 
-    def warn(self, s: str, prefix: str = "", suffix: str = "") -> None:
-        print(f"{prefix}{self._warn}{s}{self._end}{suffix}")
-
-    def bold(self, s: str) -> str:
-        return f"{self._bold}{s}{self._end}"
-
-    def amt(self, l: str, a: str, c: Callable[[str, str, str], None]) -> None:
-        c(f"{a:>40}", f"{l} : ", f" {n.std_unit}")
-
-    def status(self, label: str, msg: str) -> None:
-        print(f"{label} : {msg}")
+def log_status(l: str, m: str) -> None:
+    print(l, ":", m)
 
 
 def get_network(network: str) -> "npy.Network":
@@ -47,19 +33,15 @@ def get_network(network: str) -> "npy.Network":
     return n
 
 
-def get_account(address: str) -> "npy.Account":
-    return npy.Account(addr=address)
-
-
 def check_status(accounts: list[str]) -> None:
     if accounts:
         info = rpc.accounts_balances(accounts)
         for account in accounts:
             accinfo = info["balances"][account]
-            bc.status("Acc", account)
-            bc.amt("Bal", n.from_raw(int(accinfo["balance"])), bc.ok)
+            log_status("Acc", account)
+            log_amt("Bal", n.from_raw(int(accinfo["balance"])), green)
             if accinfo["receivable"] != "0":
-                bc.amt("Rec", n.from_raw(int(accinfo["receivable"])), bc.ok)
+                log_amt("Rec", n.from_raw(int(accinfo["receivable"])), green)
             print()
 
 
@@ -79,21 +61,21 @@ def generate_block(acc: "npy.Account") -> None:
     rbs = rpc.receivable(acc.addr)["blocks"]
     while True:
         rb = "" if args.send else rbs.pop() if rbs else ""
-        bc.status("Acc", acc.addr)
-        bc.amt("Bal", acc.bal, bc.ok)
-        bc.status("Rep", acc.rep.addr)
+        log_status("Acc", acc.addr)
+        log_amt("Bal", acc.bal, green)
+        log_status("Rep", acc.rep.addr)
 
         if args.send:
-            bc.status("To ", args.send.addr)
+            log_status("To ", args.send.addr)
             raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
-            bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
+            log_amt("Amt", n.from_raw(raw_amt), red)
             nb = acc.send(args.send, raw_amt, args.rep)
             args.send = None
-        elif rb and input(f"\nReceive blocks?({bc.bold('y')}/n): ") != "n":
+        elif rb and input(f"\nReceive blocks?({bold('y')}/n): ") != "n":
             rbi = rpc.block_info(rb)
-            bc.status("From", rbi["block_account"])
+            log_status("From", rbi["block_account"])
             raw_amt = int(rbi["amount"])
-            bc.amt("Amt", n.from_raw(raw_amt), bc.ok)
+            log_amt("Amt", n.from_raw(raw_amt), green)
             nb = acc.receive(rb, raw_amt, args.rep)
         elif args.rep:
             nb = acc.change_rep(args.rep)
@@ -102,11 +84,14 @@ def generate_block(acc: "npy.Account") -> None:
 
         args.rep = None
         print(nb.json)
-        if input(f"\nBroadcast block?(y/{bc.bold('n')}): ") == "y":
-            bc.ok(rpc.process(nb.json)["hash"])
+        if input(f"\nBroadcast block?(y/{bold('n')}): ") == "y":
+            print(green(rpc.process(nb.json)["hash"]))
 
 
-bc = BColours()
+bold: Callable[[str], str] = lambda s: f"\x1b[1m{s}\x1b[0m"
+green: Callable[[str], str] = lambda s: f"\x1b[32m{s}\x1b[0m"
+red: Callable[[str], str] = lambda s: f"\x1b[31m{s}\x1b[0m"
+get_account: Callable[[str], "npy.Account"] = lambda address: npy.Account(addr=address)
 n = npy.NANO
 
 parser = argparse.ArgumentParser()
@@ -143,7 +128,7 @@ if args.sub:
     if args.new:  # pragma: no cover
         seed = os.urandom(32).hex()
         acci.sk = npy.deterministic_key(seed, 0)
-        bc.status(args.k, acci.addr)
+        log_status(args.k, acci.addr)
         keyring.set_password("nanopy", args.k, seed)
     else:
         seed = keyring.get_password("nanopy", args.k) or ""
