@@ -5,26 +5,26 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "nanopy"
 description = "Python implementation of NANO currency related functions"
-version = "28.0.1"
-license = "MIT"
+readme = "README.md"
+version = "28.0.1-7"
 
 [project.optional-dependencies]
-dev = ["black", "mnemonic", "mypy", "pylint[spelling]", "pytest-cov", "requests", "setuptools", "sphinx-autodoc-typehints", "twine", "websocket-client"]
-mnemonic = ["mnemonic"]
-rpc = ["requests", "websocket-client"]
+cibasic = ["mnemonic", "pytest"]
+cifull = ["black", "coverage", "keyring", "mnemonic", "mypy", "pylint[spelling]", "pytest", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
 
 [project.urls]
-Repository = "https://github.com/npy0/nanopy"
+Repository = "https://github.com/nkr0/nanopy"
+Documentation = "https://nkr0.github.io/nanopy"
+
+[tool.coverage.run]
+omit = ["src/nanopy/rpc.py", "tests/*"]
+
+[tool.coverage.report]
+fail_under = 100
 
 [tool.mypy]
-files = "nanopy, nanopy-wallet, tests"
+files = "src, tests, nanopy-wallet"
 strict = true
 
 [tool.pylint]
 disable = ["c-extension-no-member", "too-many-arguments", "too-many-instance-attributes", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
-
-[tool.pytest.ini_options]
-addopts = "--cov nanopy --cov-fail-under=100"
-
-[tool.setuptools]
-packages = ["nanopy"]

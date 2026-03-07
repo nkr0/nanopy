@@ -1,30 +1,56 @@
-name: nanopy
-on: [push]
+on: [push, pull_request]
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13, windows-latest]
+  base:
+    runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.x'
-      - run: |
-          sudo apt update && sudo apt install clang libomp-dev
-          pip install -e .[dev] && pytest && mypy && pylint nanopy
-          rm -rf build && CC=clang pip install -e .[dev] && pytest
-        if: runner.os == 'Linux'
-      - run: |
-          brew install gcc llvm libomp
-          CC=gcc-14 pip install -e .[dev] && pytest
-          rm -rf build && CC=$(brew --prefix llvm)/bin/clang pip install -e .[dev] && pytest
-        if: runner.os == 'macOS'
-        continue-on-error: true
-      - run: pip install -e .[dev] && pytest
-        if: runner.os == 'Windows'
-      - run: |
-          sudo apt install ocl-icd-opencl-dev intel-opencl-icd
-          rm -rf build && USE_GPU=1 pip install .[dev]
-        if: matrix.os == 'ubuntu-latest'
+      - run: pip install -ve .[cifull]
+      - run: coverage run -m pytest
+      - run: coverage report
+      - run: black --check *.py */*.py */*/*.py nanopy-wallet
+      - run: clang-format --dry-run -Werror src/nanopy/ext.c
+      - run: mypy
+      - run: pylint src
+      - run: sphinx-build -W docs _site
+      - run: sudo apt update
+      - run: sudo apt install libomp-dev ocl-icd-opencl-dev
+      - run: CC=clang pip install -ve .
+      - run: pytest
+      - run: USE_GPU=1 pip install -ve .
+      - uses: actions/upload-pages-artifact@v4
+  other:
+    needs: base
+    strategy:
+      matrix:
+        os: [ubuntu-24.04-arm, macos-26-intel, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - if: runner.os != 'macOS'
+        run: pip install -ve .[cibasic]
+      - if: runner.os == 'macOS'
+        run: CC=gcc-15 pip install -ve .[cibasic]
+      - run: pytest
+  deploy:
+    if: github.ref_type == 'tag'
+    needs: other
+    permissions:
+      pages: write
+      id-token: write
+    environment: release
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+      - run: pip install setuptools
+      - run: python3 setup.py sdist
+      - uses: pypa/gh-action-pypi-publish@release/v1
+      - uses: actions/deploy-pages@v4

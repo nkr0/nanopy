@@ -1,16 +1,12 @@
-import os, sys
-from datetime import date
-
-sys.path.insert(0, os.path.abspath("../"))
+import time
 
 project = "nanopy"
-author = "npy"
-copyright = str(date.today().year) + ", " + author + ", MIT License"
+author = "nkr0"
+copyright = f"{time.strftime('%Y')}, {author}, MIT License"
 
 extensions = [
     "sphinx.ext.autodoc",
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",
 ]
-autodoc_mock_imports = ["nanopy.ext"]
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
