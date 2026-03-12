@@ -6,17 +6,17 @@ import sysconfig
 k, _, _, _, m, _ = platform.uname()
 cc = os.getenv("CC", sysconfig.get_config_var("CC"))
 print(k, m, cc)
-BLAKE2B_DIR = "src/nanopy/blake2b/"
+BLAKE2B_DIR = "src/nanopy/blake2b"
 ED25519_DIR = "src/nanopy/ed25519-donna"
 ED25519_SRC = ED25519_DIR + "/ed25519.c"
 ED25519_IMPL = None
 if m.lower() in ["x86_64", "amd64"]:
-    BLAKE2B_DIR += "sse"
+    BLAKE2B_DIR += "/sse"
     ED25519_IMPL = "ED25519_SSE2"
 elif m.lower().startswith("arm64") or m.lower().startswith("aarch64"):
-    BLAKE2B_DIR += "neon"
+    BLAKE2B_DIR += "/neon"
 else:
-    BLAKE2B_DIR += "ref"
+    BLAKE2B_DIR += "/ref"
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e_args = {
