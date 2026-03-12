@@ -46,7 +46,7 @@ if os.environ.get("USE_GPU"):
         e_args["define_macros"] += [("HAVE_CL_CL_H", None)]
         e_args["libraries"] += ["OpenCL"]
 elif k == "Windows":
-    e_args["extra_compile_args"] += ["/openmp"]
+    e_args["extra_compile_args"] += ["/openmp:llvm"]
 else:
     e_args["extra_compile_args"] += ["-fopenmp"]
     e_args["extra_link_args"] += ["-fopenmp"]
