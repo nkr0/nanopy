@@ -13,7 +13,7 @@ ED25519_IMPL = None
 if m.lower() in ["x86_64", "amd64"]:
     BLAKE2B_DIR += "sse"
     ED25519_IMPL = "ED25519_SSE2"
-elif m.lower().startswith("arm64") or m.lower().startswith("aarch64"):
+elif m.lower().startswith("arm") or m.lower().startswith("aarch"):
     BLAKE2B_DIR += "neon"
 else:
     BLAKE2B_DIR += "ref"
@@ -30,10 +30,17 @@ e_args = {
 }
 
 if k == "Windows":
-    e_args["extra_compile_args"] += ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
+    if m.lower() in ["x86_64", "amd64"]:
+        e_args["extra_compile_args"] += ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
 else:
-    e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
-    e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
+    e_args["extra_compile_args"] += ["-O3", "-flto"]
+    e_args["extra_link_args"] += ["-O3", "-flto", "-s"]
+    if os.environ.get("WHEELS") and m.lower() in ["x86_64", "amd64"]:
+        e_args["extra_compile_args"] += ["-msse2", "-mavx", "-mavx2"]
+        e_args["extra_link_args"] += ["-msse2", "-mavx", "-mavx2"]
+    else:
+        e_args["extra_compile_args"] += ["-march=native"]
+        e_args["extra_link_args"] += ["-march=native"]
 
 if ED25519_IMPL:
     e_args["define_macros"] += [(ED25519_IMPL, None)]

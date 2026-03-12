@@ -7,14 +7,19 @@ name = "nanopy"
 description = "Python implementation of NANO currency related functions"
 readme = "README.md"
 version = "28.0.1-8"
+requires-python = ">=3.9"
 
 [project.optional-dependencies]
-cibasic = ["mnemonic", "pytest"]
-cifull = ["black", "coverage", "keyring", "mnemonic", "mypy", "pylint[spelling]", "pytest", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
+dev = ["black", "coverage", "keyring", "mnemonic", "mypy", "pylint[spelling]", "pytest", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
 
 [project.urls]
 Repository = "https://github.com/nkr0/nanopy"
 Documentation = "https://nkr0.github.io/nanopy"
+
+[tool.cibuildwheel]
+test-command = "pytest"
+test-requires = ["mnemonic", "pytest"]
+test-sources = ["tests"]
 
 [tool.coverage.run]
 omit = ["src/nanopy/rpc.py", "tests/*"]

@@ -10,9 +10,9 @@ jobs:
     - run: pipx run build -s
     - uses: actions/upload-artifact@v7
       with:
-        name: dist
+        name: nanopy-sdist
         path: dist
-    - run: pip install -ve .[cifull]
+    - run: pip install -ve .[dev]
     - run: coverage run -m pytest
     - run: coverage report
     - run: black --check *.py */*.py */*/*.py nanopy-wallet
@@ -26,26 +26,35 @@ jobs:
     - run: pytest
     - run: USE_GPU=1 pip install -ve .
     - uses: actions/upload-pages-artifact@v4
-  other:
+  wheels:
     needs: base
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, windows-latest, windows-11-arm]
-        py: ['3.14.x', '3.13.x']
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, macos-15, macos-15-intel, windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
+    env:
+      WHEELS: 1
     steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version: ${{ matrix.py }}
-    - if: runner.os != 'macOS'
-      run: pip install -ve .[cibasic]
-    - if: runner.os == 'macOS'
-      run: CC=gcc-15 pip install -ve .[cibasic]
-    - run: pytest
+      - uses: actions/checkout@v6
+      - if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
+        uses: pypa/cibuildwheel@v3.3.1
+        env:
+          CC: gcc-15
+          MACOSX_DEPLOYMENT_TARGET: 15.0
+      - if: matrix.os == 'macos-26' || matrix.os == 'macos-26-intel'
+        uses: pypa/cibuildwheel@v3.3.1
+        env:
+          CC: gcc-15
+          MACOSX_DEPLOYMENT_TARGET: 26.0
+      - if: runner.os != 'macOS'
+        uses: pypa/cibuildwheel@v3.3.1
+      - uses: actions/upload-artifact@v7
+        with:
+          name: nanopy-${{ matrix.os }}
+          path: wheelhouse/*.whl
   deploy:
     if: github.ref_type == 'tag'
-    needs: other
+    needs: wheels
     permissions:
       pages: write
       id-token: write
@@ -54,7 +63,8 @@ jobs:
     steps:
     - uses: actions/download-artifact@v8
       with:
-        name: dist
+        pattern: nanopy-*
         path: dist
+        merge-multiple: true
     - uses: pypa/gh-action-pypi-publish@release/v1
     - uses: actions/deploy-pages@v4
