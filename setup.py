@@ -32,8 +32,13 @@ e_args = {
 if k == "Windows":
     e_args["extra_compile_args"] += ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
 else:
-    e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
-    e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
+    if os.environ.get("DBG"):
+        e_args["extra_compile_args"] += ["-g", "-O0"]
+        e_args["extra_link_args"] += ["-g", "-O0"]
+        e_args["define_macros"] += [("DEBUG", None)]
+    else:
+        e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
+        e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
 
 if ED25519_IMPL:
     e_args["define_macros"] += [(ED25519_IMPL, None)]
