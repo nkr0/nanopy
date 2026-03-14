@@ -18,7 +18,7 @@
 
 typedef struct {
   uint64_t s[16];
-  short p;
+  uint8_t p;
 } nonce_state;
 
 static uint64_t xorshift1024star(nonce_state *n) {
