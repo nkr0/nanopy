@@ -46,7 +46,7 @@ jobs:
     needs: base
     strategy:
       matrix:
-        py: ['3.14.x', '3.13.x', '3.12.x', '3.11.x', '3.10.x', '3.9.x']
+        py: ['3.14.x', '3.13.x', '3.12.x', '3.11.x', '3.10.x']
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
