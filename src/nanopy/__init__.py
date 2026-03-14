@@ -99,12 +99,6 @@ class Network:
     rpc_url: str = "http://localhost:7076"
     std_unit: str = "Ӿ"
 
-    _d: type["decimal.Decimal"] = decimal.Decimal
-    _b32std: bytes = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-    _b32nano: bytes = b"13456789abcdefghijkmnopqrstuwxyz"
-    _nano2std: bytes = bytes.maketrans(_b32nano, _b32std)
-    _std2nano: bytes = bytes.maketrans(_b32std, _b32nano)
-
     def from_multiplier(self, multiplier: float) -> str:
         """Get difficulty from multiplier
 
@@ -136,7 +130,10 @@ class Network:
         p = bytes.fromhex(pk)
         checksum = hashlib.blake2b(p, digest_size=5).digest()
         addr = base64.b32encode(b"000" + p + checksum[::-1])
-        addr = addr.translate(self._std2nano)[4:]
+        b32std = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+        b32nano = b"13456789abcdefghijkmnopqrstuwxyz"
+        std2nano = bytes.maketrans(b32std, b32nano)
+        addr = addr.translate(std2nano)[4:]
         return self.prefix + addr.decode()
 
     def to_pk(self, addr: str) -> str:
@@ -148,7 +145,10 @@ class Network:
             raise ValueError(f"Invalid address: {addr}")
         if addr[: len(self.prefix)] != self.prefix:
             raise ValueError(f"Invalid address: {addr}")
-        pc = base64.b32decode((b"1111" + addr[-60:].encode()).translate(self._nano2std))
+        b32std = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+        b32nano = b"13456789abcdefghijkmnopqrstuwxyz"
+        nano2std = bytes.maketrans(b32nano, b32std)
+        pc = base64.b32decode((b"1111" + addr[-60:].encode()).translate(nano2std))
         p, checksum = pc[3:-5], pc[:-6:-1]
         if hashlib.blake2b(p, digest_size=5).digest() != checksum:
             raise ValueError(f"Invalid address: {addr}")
@@ -163,8 +163,9 @@ class Network:
         """
         if exp <= 0:
             exp = self.exp
-        nano = self._d(raw) * self._d(self._d(10) ** -exp)
-        return f"{nano.quantize(self._d(self._d(10) ** -exp)):.{exp}f}"
+        d: type["decimal.Decimal"] = decimal.Decimal
+        nano = d(raw) * d(d(10) ** -exp)
+        return f"{nano.quantize(d(d(10) ** -exp)):.{exp}f}"
 
     def to_raw(self, val: str, exp: int = 0) -> int:
         """Multiply val by 10^exp
@@ -175,7 +176,8 @@ class Network:
         """
         if exp <= 0:
             exp = self.exp
-        return int((self._d(val) * self._d(self._d(10) ** exp)).quantize(self._d(1)))
+        d: type["decimal.Decimal"] = decimal.Decimal
+        return int((d(val) * d(d(10) ** exp)).quantize(d(1)))
 
 
 NANO = Network()
@@ -185,6 +187,7 @@ class Account:
     """Account
 
     :arg network: network of this account
+    :arg addr: address of this account
     """
 
     def __init__(self, network: "Network" = NANO, addr: str = "") -> None:
