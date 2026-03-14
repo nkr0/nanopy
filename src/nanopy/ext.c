@@ -48,7 +48,6 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
     return NULL;
-  assert(p0 == 32);
   bool res = is_valid(work, h32, difficulty);
   return Py_BuildValue("i", res);
 }
@@ -62,7 +61,6 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
     return NULL;
-  assert(p0 == 32);
 
   srand(time(NULL));
   n.p = 0;
@@ -226,25 +224,22 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
 }
 
 static PyObject *publickey(PyObject *self, PyObject *args) {
-  const unsigned char *sk;
+  const uint8_t *sk;
   Py_ssize_t p0;
   ed25519_public_key pk;
 
   if (!PyArg_ParseTuple(args, "y#", &sk, &p0))
     return NULL;
-  assert(p0 == 32);
   ed25519_publickey(sk, pk);
   return Py_BuildValue("y#", pk, sizeof(pk));
 }
 
 static PyObject *sign(PyObject *self, PyObject *args) {
-  const unsigned char *sk, *m, *r;
+  const uint8_t *sk, *m, *r;
   Py_ssize_t p0, p1, p2;
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
     return NULL;
-  assert(p0 == 32);
-  assert(p2 == 32);
   ed25519_public_key pk;
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
@@ -253,13 +248,11 @@ static PyObject *sign(PyObject *self, PyObject *args) {
 }
 
 static PyObject *verify_signature(PyObject *self, PyObject *args) {
-  const unsigned char *sig, *pk, *m;
+  const uint8_t *sig, *pk, *m;
   Py_ssize_t p0, p1, p2;
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
     return NULL;
-  assert(p0 == 64);
-  assert(p1 == 32);
   bool res = ed25519_sign_open(m, p2, pk, sig) == 0;
   return Py_BuildValue("i", res);
 }
