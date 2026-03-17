@@ -2,7 +2,7 @@
 * Install by running `pip install nanopy`.
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
   * When using `Visual C`, additionally prepend the installation command with `USE_VC=1`.
-* For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
+* For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
 [![Build Status](https://travis-ci.com/npy0/nanopy.svg?branch=master)](https://travis-ci.com/npy0/nanopy) [![docs](https://readthedocs.org/projects/nanopy/badge/)](http://nanopy.rtfd.io) [![PyPI](https://img.shields.io/pypi/v/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Implementation](https://img.shields.io/pypi/implementation/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Downloads](https://img.shields.io/pypi/dm/nanopy)](https://pypistats.org/packages/nanopy) [![PyPI - License](https://img.shields.io/pypi/l/nanopy)](https://opensource.org/licenses/MIT)

@@ -68,6 +68,9 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
             e_args["extra_link_args"].extend("-framework", "OpenCL")
         else:
+            if use_vc:
+                e_args["extra_compile_args"] = []
+                e_args["extra_link_args"] = []
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
             e_args["libraries"] = ["OpenCL"]
     else:
@@ -153,7 +156,7 @@ config_arch()
 
 setup(
     name="nanopy",
-    version="21.0.0-3",
+    version="21.2",
     packages=["nanopy"],
     url="https://github.com/npy0/nanopy",
     license="MIT",
