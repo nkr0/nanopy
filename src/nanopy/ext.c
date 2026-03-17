@@ -48,6 +48,9 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
     return NULL;
+  if (p0 != 32)
+    return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
+
   bool res = is_valid(work, h32, difficulty);
   return Py_BuildValue("i", res);
 }
@@ -61,6 +64,8 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
     return NULL;
+  if (p0 != 32)
+    return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
 
   srand(time(NULL));
   n.p = 0;
@@ -287,6 +292,9 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#", &sk, &p0))
     return NULL;
+  if (p0 != 32)
+    return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
+
   ed25519_publickey(sk, pk);
   return Py_BuildValue("y#", pk, sizeof(pk));
 }
@@ -297,6 +305,11 @@ static PyObject *sign(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
     return NULL;
+  if (p0 != 32)
+    return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
+  if (p2 != 32)
+    return PyErr_Format(PyExc_ValueError, "Random must be 32 bytes");
+
   ed25519_public_key pk;
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
@@ -310,6 +323,11 @@ static PyObject *verify_signature(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
     return NULL;
+  if (p0 != 64)
+    return PyErr_Format(PyExc_ValueError, "Signature must be 64 bytes");
+  if (p1 != 32)
+    return PyErr_Format(PyExc_ValueError, "Public key must be 32 bytes");
+
   bool res = ed25519_sign_open(m, p2, pk, sig) == 0;
   return Py_BuildValue("i", res);
 }
