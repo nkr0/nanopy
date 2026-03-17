@@ -874,11 +874,12 @@ def work_cancel(_hash):
     return json.loads(session.post(work_url, data=json.dumps(data)).text)
 
 
-def work_generate(_hash, use_peers=False):
+def work_generate(_hash, use_peers=False, difficulty=None):
     data = {}
     data['action'] = 'work_generate'
     data['hash'] = _hash
     if use_peers: data['use_peers'] = True
+    if difficulty: data['difficulty'] = difficulty
     return json.loads(session.post(work_url, data=json.dumps(data)).text)
 
 
@@ -919,9 +920,10 @@ def work_peers_clear():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def work_validate(work, _hash):
+def work_validate(work, _hash, difficulty=None):
     data = {}
     data['action'] = 'work_validate'
     data['work'] = work
     data['hash'] = _hash
+    if difficulty: data['difficulty'] = difficulty
     return json.loads(session.post(work_url, data=json.dumps(data)).text)
