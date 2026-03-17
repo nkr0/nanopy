@@ -118,7 +118,7 @@ def application(environ, start_response):
     response = b''
     request_body = b''
     try:
-        if environ['SCRIPT_NAME'][5:] in ['nano', 'xrb', 'main', 'live']:
+        if environ['SCRIPT_NAME'][5:] in ['nano', 'main', 'live']:
             rpc = 'http://localhost:7076'
             representative = representative_nano
         elif environ['SCRIPT_NAME'][5:] == 'beta':
