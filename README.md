@@ -41,5 +41,8 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
   * `yapf3 --style google -i nanopy-wallet`
   * `yapf3 --style google -i -r nanopy`
 
+## Contact
+  * Find me on discord in NANO's channel. My handle is `128#2928`.
+
 ## Donations
   * `nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy`
