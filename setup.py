@@ -127,7 +127,7 @@ except:
     pass
 
 setup(name="nanopy",
-      version='19.0.0',
+      version='20.0.0',
       packages=['nanopy'],
       url='https://github.com/npy0/nanopy',
       license='MIT',
