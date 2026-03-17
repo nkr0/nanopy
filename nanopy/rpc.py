@@ -24,9 +24,9 @@ def account_info(account, representative=False, weight=False, pending=False):
     data = {}
     data['action'] = 'account_info'
     data['account'] = account
-    if representative: data['representative'] = representative
-    if weight: data['weight'] = weight
-    if pending: data['pending'] = pending
+    if representative: data['representative'] = True
+    if weight: data['weight'] = True
+    if pending: data['pending'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -34,7 +34,7 @@ def account_create(wallet, work=False):
     data = {}
     data['action'] = 'account_create'
     data['wallet'] = wallet
-    if work: data['work'] = work
+    if work: data['work'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -50,7 +50,7 @@ def account_history(account, count=1, raw=False, head=None):
     data['action'] = 'account_history'
     data['account'] = account
     data['count'] = count
-    if raw: data['raw'] = raw
+    if raw: data['raw'] = True
     if head: data['head'] = head
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
@@ -122,7 +122,7 @@ def accounts_create(wallet, count, work=False):
     data['action'] = 'accounts_create'
     data['wallet'] = wallet
     data['count'] = count
-    if work: data['work'] = work
+    if work: data['work'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -143,8 +143,8 @@ def accounts_pending(accounts,
     data['accounts'] = accounts
     data['count'] = count
     if threshold: data['threshold'] = threshold
-    if source: data['source'] = source
-    if include_active: data['include_active'] = include_active
+    if source: data['source'] = True
+    if include_active: data['include_active'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -172,9 +172,9 @@ def blocks_info(hashes, pending=False, source=False, balance=False):
     data = {}
     data['action'] = 'blocks_info'
     data['hashes'] = hashes
-    if pending: data['pending'] = pending
-    if source: data['source'] = source
-    if balance: data['balance'] = balance
+    if pending: data['pending'] = True
+    if source: data['source'] = True
+    if balance: data['balance'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -226,7 +226,7 @@ def bootstrap_lazy(hash_, force=False):
     data = {}
     data['action'] = 'bootstrap_lazy'
     data['hash'] = hash_
-    if force: data['force'] = force
+    if force: data['force'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -242,11 +242,13 @@ def bootstrap_status():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def chain(block, count):
+def chain(block, count, offset=0, reverse=False):
     data = {}
     data['action'] = 'chain'
     data['block'] = block
     data['count'] = count
+    if offset: data['offset'] = offset
+    if reverse: data['reverse'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -267,15 +269,15 @@ def confirmation_info(root, contents=True, representatives=False):
     data = {}
     data['action'] = 'confirmation_info'
     data['root'] = root
-    if not contents: data['contents'] = contents
-    if representatives: data['representatives'] = representatives
+    if not contents: data['contents'] = False
+    if representatives: data['representatives'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
 def confirmation_quorum(peer_details=False):
     data = {}
     data['action'] = 'confirmation_quorum'
-    if peer_details: data['peer_details'] = peer_details
+    if peer_details: data['peer_details'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -389,11 +391,11 @@ def ledger(account,
     data['action'] = 'ledger'
     data['account'] = account
     data['count'] = count
-    if representative: data['representative'] = representative
-    if weight: data['weight'] = weight
-    if pending: data['pending'] = pending
+    if representative: data['representative'] = True
+    if weight: data['weight'] = True
+    if pending: data['pending'] = True
     if modified_since: data['modified_since'] = modified_since
-    if sorting: data['sorting'] = sorting
+    if sorting: data['sorting'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -457,7 +459,7 @@ def process(block, force=False):
     data = {}
     data['action'] = 'process'
     data['block'] = block
-    if force: data['force'] = force
+    if force: data['force'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -488,7 +490,7 @@ def representatives(count=0, sorting=False):
     data = {}
     data['action'] = 'representatives'
     if count: data['count'] = count
-    if sorting: data['sorting'] = sorting
+    if sorting: data['sorting'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -512,8 +514,7 @@ def wallet_representative_set(wallet,
     data['action'] = 'wallet_representative_set'
     data['wallet'] = wallet
     data['representative'] = representative
-    if update_existing_accounts:
-        data['update_existing_accounts'] = update_existing_accounts
+    if update_existing_accounts: data['update_existing_accounts'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -555,10 +556,26 @@ def send(wallet, source, destination, amount, _id=None, work=None):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def sign(key='', wallet='', account='', _hash=''):
+    data = {}
+    data['action'] = 'sign'
+    if key: data['key'] = key
+    if wallet: data['wallet'] = wallet
+    if account: data['account'] = account
+    if _hash: data['_hash'] = _hash
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def stats(_type):
     data = {}
     data['action'] = 'stats'
     data['type'] = _type
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def stats_clear():
+    data = {}
+    data['action'] = 'stats_clear'
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -575,11 +592,13 @@ def validate_account_number(account):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def successors(block, count=1):
+def successors(block, count=1, offset=0, reverse=False):
     data = {}
     data['action'] = 'successors'
     data['block'] = block
     data['count'] = count
+    if offset: data['offset'] = offset
+    if reverse: data['reverse'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -589,9 +608,10 @@ def version():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def peers():
+def peers(peer_details=False):
     data = {}
     data['action'] = 'peers'
+    if peer_details: data['peer_details'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -601,8 +621,8 @@ def pending(account, count=1, threshold=0, source=False, include_active=False):
     data['account'] = account
     data['count'] = count
     if threshold: data['threshold'] = threshold
-    if source: data['source'] = source
-    if include_active: data['include_active'] = include_active
+    if source: data['source'] = True
+    if include_active: data['include_active'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -641,12 +661,18 @@ def unchecked_keys(key, count=1):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def uptime():
+    data = {}
+    data['action'] = 'uptime'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def wallet_add(wallet, key, work=False):
     data = {}
     data['action'] = 'wallet_add'
     data['wallet'] = wallet
     data['key'] = key
-    if work: data['work'] = work
+    if work: data['work'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -683,9 +709,10 @@ def wallet_contains(wallet, account):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def wallet_create():
+def wallet_create(seed=''):
     data = {}
     data['action'] = 'wallet_create'
+    if seed: data['seed'] = seed
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -717,6 +744,14 @@ def wallet_info(wallet):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def wallet_history(wallet, modified_since=0):
+    data = {}
+    data['action'] = 'wallet_history'
+    data['wallet'] = wallet
+    if modified_since: data['modified_since'] = modified_since
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def wallet_ledger(wallet,
                   representative=False,
                   weight=False,
@@ -725,9 +760,9 @@ def wallet_ledger(wallet,
     data = {}
     data['action'] = 'wallet_ledger'
     data['wallet'] = wallet
-    if representative: data['representative'] = representative
-    if weight: data['weight'] = weight
-    if pending: data['pending'] = pending
+    if representative: data['representative'] = True
+    if weight: data['weight'] = True
+    if pending: data['pending'] = True
     if modified_since: data['modified_since'] = modified_since
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
@@ -742,8 +777,8 @@ def wallet_pending(wallet,
     data['wallet'] = wallet
     data['count'] = count
     if threshold: data['threshold'] = threshold
-    if source: data['source'] = source
-    if include_active: data['include_active'] = include_active
+    if source: data['source'] = True
+    if include_active: data['include_active'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -810,7 +845,7 @@ def work_generate(_hash, use_peers=False):
     data = {}
     data['action'] = 'work_generate'
     data['hash'] = _hash
-    if use_peers: data['use_peers'] = use_peers
+    if use_peers: data['use_peers'] = True
     return json.loads(session.post(work_url, data=json.dumps(data)).text)
 
 
