@@ -72,7 +72,7 @@ def generate_block(sk, pk, account):
     while True:
         if online:
             info = rpc.account_info(nb['account'])
-            if nanopy.nano_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
+            if nanopy.account_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
                 rb = rpc.accounts_pending(
                     [nb['account']])['blocks']['xrb_' + nb['account'][-60:]]
             else:
@@ -88,7 +88,7 @@ def generate_block(sk, pk, account):
             nb['balance'] = info['balance']
             nb['representative'] = info['representative']
             print("\nBal:\t", bcolors.ok1, mrai_from_raw(nb["balance"]),
-                  bcolors.end, "NANO")
+                  bcolors.end, nanopy.mrai_name)
             print("Rep:\t", nb["representative"])
 
             if online:
@@ -133,7 +133,7 @@ def generate_block(sk, pk, account):
                 args.send_to = None
                 nb['balance'] = '0'
                 print("\nBal:\t", bcolors.ok1, mrai_from_raw(nb["balance"]),
-                      bcolors.end, "NANO")
+                      bcolors.end, nanopy.mrai_name)
                 nb['representative'] = input("Rep: \t ")
 
         if args.send_to:
@@ -141,7 +141,7 @@ def generate_block(sk, pk, account):
             print("\nTo :\t", account_get(nb['link']))
             if args.empty_to:
                 print("Amt:\t", bcolors.warn2, mrai_from_raw(nb["balance"]),
-                      bcolors.end, "NANO")
+                      bcolors.end, nanopy.mrai_name)
                 nb['balance'] = '0'
             else:
                 while True:
@@ -153,7 +153,7 @@ def generate_block(sk, pk, account):
                           "Amount must be less than or equal to balance.",
                           bcolors.end)
             print("\nBal:\t", bcolors.warn1, mrai_from_raw(nb["balance"]),
-                  bcolors.end, "NANO")
+                  bcolors.end, nanopy.mrai_name)
 
         elif rb:
             nb['link'] = rb[0]
@@ -165,7 +165,7 @@ def generate_block(sk, pk, account):
                 nb['balance'] = str(
                     int(nb['balance']) + int(config[state][rb[0]]))
             print("\nBal:\t", bcolors.ok3, mrai_from_raw(nb["balance"]),
-                  bcolors.end, "NANO")
+                  bcolors.end, nanopy.mrai_name)
 
         if (args.send_to or args.change_rep_to or rb):
             args.send_to = None
@@ -293,10 +293,12 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.network == 'beta':
-    nanopy.nano_prefix = 'xrb_'
+    nanopy.account_prefix = 'xrb_'
+    nanopy.mrai_name = '\u03B2NANO'
     lh = 'http://localhost:55000'
 elif args.network == 'banano':
-    nanopy.nano_prefix = 'ban_'
+    nanopy.account_prefix = 'ban_'
+    nanopy.mrai_name = 'BANANO'
     lh = 'http://localhost:7072'
 else:
     lh = 'http://localhost:7076'
@@ -400,8 +402,8 @@ if accounts and online:
     for account in accounts:
         print("\nAcc:\t", account)
         try:
-            print("Bal:\t", bcolors.ok1,
-                  mrai_from_raw(info[account]["balance"]), bcolors.end, "NANO")
+            print("Bal:\t", bcolors.ok1, mrai_from_raw(
+                info[account]["balance"]), bcolors.end, nanopy.mrai_name)
             if int(info[account]["pending"]):
                 print(bcolors.ok3, "Pending block(s)", bcolors.end)
         except:
