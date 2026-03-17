@@ -1,1 +1,2 @@
 include nanopy/b2b/*
+exclude nanopy/peer.py
