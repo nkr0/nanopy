@@ -13,7 +13,7 @@ def nano_account(address):
 
 		number_l = ""
 		for x in range(52): number_l+=account_lookup[acrop_key[x]]
-		number_l=bytearray(int(number_l[4:], 2).to_bytes(32, byteorder='big'))
+		number_l=int(number_l[4:], 2).to_bytes(32, byteorder='big')
 
 		check_l = ""
 		for x in range(8): check_l+=account_lookup[acrop_check[x]]
@@ -89,7 +89,7 @@ def pow_generate(hash):
 		hash_bytes = bytearray.fromhex(hash)
 		while True:
 			random_bytes = bytearray((random.getrandbits(8) for i in range(8)))
-			for r in range(0,256):
+			for r in range(256):
 				random_bytes[7] =(random_bytes[7] + r) % 256
 				h = hashlib.blake2b(digest_size=8)
 				h.update(random_bytes)
