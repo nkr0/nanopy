@@ -15,9 +15,7 @@ echo do not receive
 coverage run --append nanopy-wallet open test.kdbx test1 -i 1
 coverage run --append nanopy-wallet open test.kdbx test1 -i 1
 coverage run --append nanopy-wallet open test.kdbx test1 -i 1 -s $SRC --empty
-echo copy and broadcast
 coverage run --append nanopy-wallet open test.kdbx test1 -r $REP
-coverage run --append nanopy-wallet -b
 coverage run --append nanopy-wallet -n banano
 coverage run --append nanopy-wallet -n beta
 coverage html
