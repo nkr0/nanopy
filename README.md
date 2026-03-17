@@ -32,6 +32,7 @@ Although not part of the package, the light wallet included in the repository is
 * `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
 * `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
+* `--demo`. Run in demo mode.
 
 The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previously encrypted seeds. `open` has the following options.
 * `-i` or `--index`. Index of the account unlocked from the seed. (Default=0)
@@ -42,7 +43,6 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
   * Change representative tag can be combined with send and receive blocks.
 * `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
-* `--demo`. Run in demo mode. Never broadcast blocks.
 
 ## Support
 Contact me on [reddit](https://www.reddit.com/user/nanopy_). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
