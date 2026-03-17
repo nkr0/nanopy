@@ -1,0 +1,8 @@
+language: python
+install:
+  - pip install requests
+  - python setup.py build
+  - python setup.py install
+script:
+  - python travis.py
+
