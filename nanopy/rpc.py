@@ -1216,14 +1216,14 @@ class RPC(ABC):  # pragma: no cover
         data["count"] = count
         return self.request(data)
 
-    def wallet_workget(self, wallet: str) -> Any:
-        "https://docs.nano.org/commands/rpc-protocol/#wallet_workget"
+    def wallet_work_get(self, wallet: str) -> Any:
+        "https://docs.nano.org/commands/rpc-protocol/#wallet_work_get"
         data: dict[str, Any] = {}
         data["action"] = "wallet_workget"
         data["wallet"] = wallet
         return self.request(data)
 
-    def workget(self, wallet: str, account: str) -> Any:
+    def work_get(self, wallet: str, account: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#workget"
         data: dict[str, Any] = {}
         data["action"] = "workget"
@@ -1259,30 +1259,18 @@ class HTTP(RPC):  # pragma: no cover
     """HTTP RPC class
 
     :arg url: URL of the nano node
-    :arg headers: Optional headers for the RPC requests
-    :arg tor: Whether to connect via TOR network.
     """
 
-    def __init__(
-        self,
-        url: str = "http://localhost:7076",
-        headers: dict[str, str] | None = None,
-        tor: bool = False,
-    ):
+    def __init__(self, url: str = "http://localhost:7076"):
         self.url = url
-        self.headers = headers
         self.api = requests.session()
-        self.api.proxies = {}
-        if tor:
-            self.api.proxies["http"] = "socks5h://localhost:9050"
-            self.api.proxies["https"] = "socks5h://localhost:9050"
 
     def get(self) -> Any:
         """JSON GET request
 
         :return: JSON reponse as dict
         """
-        r = self.api.get(self.url, headers=self.headers)
+        r = self.api.get(self.url)
         r.raise_for_status()
         return r.json()
 
@@ -1292,7 +1280,7 @@ class HTTP(RPC):  # pragma: no cover
         :arg data: dict like object
         :return: JSON reponse as dict
         """
-        r = self.api.post(self.url, json=data, headers=self.headers)
+        r = self.api.post(self.url, json=data)
         r.raise_for_status()
         return r.json()
 
@@ -1310,19 +1298,10 @@ class WS(RPC):  # pragma: no cover
     """WS RPC class
 
     :arg url: URL of the nano node
-    :arg tor: Whether to connect via TOR network.
     """
 
-    def __init__(self, url: str = "http://localhost:7076", tor: bool = False):
-        if tor:
-            self.api = websocket.create_connection(
-                url,
-                http_proxy_host="localhost",
-                http_proxy_port=9050,
-                proxy_type="socks5h",
-            )
-        else:
-            self.api = websocket.create_connection(url)
+    def __init__(self, url: str = "ws://localhost:7078"):
+        self.api = websocket.create_connection(url)
 
     def __del__(self) -> None:
         self.api.close()

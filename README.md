@@ -1,6 +1,6 @@
 # nanopy
-* Install by running `pip install nanopy` or `pip install nanopy[mnemonic,rpc,tor]`.
-  * `mnemonic`, `rpc`, and `tor` install dependencies of extra features.
+* Install by running `pip install nanopy` or `pip install nanopy[mnemonic,rpc]`.
+  * `mnemonic` and `rpc` install dependencies of extra features.
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
@@ -42,7 +42,6 @@ Although not part of the package, the light wallet included in the repository ca
 * `-a`, `--audit-file`. Check state of all accounts in a file.
 * `-b`, `--broadcast`. Broadcast a block in JSON format.
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
-* `-t`, `--tor`. Communicate with RPC node via the tor network.
 
 The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. `open` has the following options.
 * `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)

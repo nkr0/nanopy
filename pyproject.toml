@@ -8,10 +8,9 @@ version = "28.0.1"
 license = "MIT"
 
 [project.optional-dependencies]
-dev = ["black", "mnemonic", "mypy", "pylint[spelling]", "pysocks", "pytest-cov", "python-socks", "requests", "setuptools", "sphinx-autodoc-typehints", "types-requests", "twine", "websocket-client"]
+dev = ["black", "mnemonic", "mypy", "pylint[spelling]", "pytest-cov", "requests", "setuptools", "sphinx-autodoc-typehints", "twine", "websocket-client"]
 mnemonic = ["mnemonic"]
 rpc = ["requests", "websocket-client"]
-tor = ["pysocks", "python-socks"]
 
 [project.urls]
 Repository = "https://github.com/npy0/nanopy"

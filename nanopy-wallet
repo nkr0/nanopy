@@ -133,7 +133,6 @@ parser.add_argument(
     help="Choose the network to interact with.",
     type=get_network,
 )
-parser.add_argument("-t", "--tor", action="store_true", help="Connect via tor.")
 
 subparsers = parser.add_subparsers(dest="sub")
 parserOpen = subparsers.add_parser("open", help="Unlock *.kdbx file")
@@ -157,8 +156,7 @@ os.chmod(config_file, 0o600)
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
-tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
-rpc = HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url)), tor=tor)
+rpc = HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url)))
 
 if args.sub:
     os.chmod(args.f, 0o600)
