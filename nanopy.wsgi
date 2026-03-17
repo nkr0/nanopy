@@ -1,5 +1,11 @@
 import json, urllib.request, urllib.parse
 
+donate = 'nano_'
+
+representative_nano = 'nano_3arg3asgtigae3xckabaaewkx3bzsh7nwz7jkmjos79ihyaxwphhm6qgjps4'
+representative_beta = 'xrb_1beta1ayfkpj1tfbhi3e9ihkocjkqi6ms5e4xrbmbybqnkza1e5jrake8wai'
+representative_banano = 'ban_3arg3asgtigae3xckabaaewkx3bzsh7nwz7jkmjos79ihyaxwphhm6qgjps4'
+
 all = [
     'account_balance', 'account_block_count', 'account_info', 'account_create',
     'account_get', 'account_history', 'account_list', 'account_move',
@@ -50,6 +56,13 @@ work = ['work_cancel', 'work_generate', 'work_validate']
 rpc_enabled = minimal
 
 
+def get_response(rpc, request_body):
+    req = urllib.request.Request(rpc, request_body)
+    with urllib.request.urlopen(req) as response_raw:
+        response = response_raw.read()
+    return response
+
+
 def application(environ, start_response):
     status = '400 Bad Request'
     response = b''
@@ -57,10 +70,16 @@ def application(environ, start_response):
     try:
         if environ['SCRIPT_NAME'][5:] in ['nano', 'xrb', 'main', 'live']:
             rpc = 'http://localhost:7076'
+            representative = representative_nano
+
         elif environ['SCRIPT_NAME'][5:] == 'beta':
             rpc = 'http://localhost:55000'
+            representative = representative_beta
+
         elif environ['SCRIPT_NAME'][5:] == 'banano':
             rpc = 'http://localhost:7072'
+            representative = representative_banano
+
         else:
             raise ValueError
 
@@ -71,6 +90,7 @@ def application(environ, start_response):
                 for key in query_raw:
                     query[key] = str(query_raw.get(key)[0])
                 request_body = json.dumps(query).encode('utf-8')
+
         elif environ['REQUEST_METHOD'] == 'POST':
             try:
                 request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -80,14 +100,61 @@ def application(environ, start_response):
                 request_body = environ['wsgi.input'].read(request_body_size)
 
         if not request_body:
+            root_info = {}
+
             data = {}
             data['action'] = 'block_count'
-            request_body = json.dumps(data).encode('utf-8')
-        if json.loads(request_body)['action'] in rpc_enabled:
-            req = urllib.request.Request(rpc, request_body)
-            with urllib.request.urlopen(req) as response_raw:
-                response = response_raw.read()
+            response = json.loads(
+                get_response(rpc,
+                             json.dumps(data).encode('utf-8')))
+            root_info['count'] = response['count']
+            root_info['unchecked'] = response['unchecked']
+
+            data = {}
+            data['action'] = 'version'
+            response = json.loads(
+                get_response(rpc,
+                             json.dumps(data).encode('utf-8')))
+            root_info['node_vendor'] = response['node_vendor']
+
+            data = {}
+            data['action'] = 'account_weight'
+            data['account'] = representative
+            response = json.loads(
+                get_response(rpc,
+                             json.dumps(data).encode('utf-8')))
+            root_info['weight'] = response['weight']
+
+            data = {}
+            data['action'] = 'available_supply'
+            response = json.loads(
+                get_response(rpc,
+                             json.dumps(data).encode('utf-8')))
+            root_info['available_supply'] = response['available']
+
+            response = b'Node version   : ' + root_info['node_vendor'][
+                10:].encode('utf-8')
+            response += b'\nSync status    : ' + (
+                '%.2f' %
+                (float(root_info['count']) * 100. /
+                 (float(root_info['count']) + float(root_info['unchecked']))) +
+                ' %').encode('utf-8')
+            response += b'\nBlocks         : ' + root_info['count'].encode(
+                'utf-8')
+            response += b'\nUnchecked      : ' + root_info['unchecked'].encode(
+                'utf-8')
+            response += b'\nRepresentative : ' + representative.encode('utf-8')
+            response += b'\nVoting weight  : ' + (
+                '%.2f' % (int(root_info['weight']) * 100. / int(
+                    root_info['available_supply'])) + ' %').encode('utf-8')
+            response += b'\nDonate         : ' + donate.encode('utf-8')
+            response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode(
+                'utf-8')
+
+        elif json.loads(request_body)['action'] in rpc_enabled:
+            response = get_response(rpc, request_body)
         status = '200 OK'
+
     except:
         pass
 
