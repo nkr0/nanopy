@@ -1,8 +1,8 @@
 nanopy
 ======
 .. toctree::
-   :maxdepth: 2
 
+   install
    npy
    rpc
 
