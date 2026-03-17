@@ -1,11 +1,5 @@
 *.so
-*.cache
-*.log
-*.status
 *.asc
-*.m4
 *.pyc
-nanopow
-configure
-makefile
 __pycache__/
+nanopy/build/
