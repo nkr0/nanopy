@@ -56,7 +56,8 @@ def get_work_ext_kwargs(use_gpu=False,
             e_args['define_macros'] = [('HAVE_OPENCL_OPENCL_H', '1')]
             e_args['extra_link_args'] = ['-framework', 'OpenCL']
         else:
-            if link_omp: e_args['libraries'] = ['omp']
+            if link_omp:
+                e_args['libraries'] = ['omp']
             e_args['extra_compile_args'] = ['-fopenmp']
             e_args['extra_link_args'] = ['-fopenmp']
     elif platform in ['linux', 'win32', 'cygwin']:

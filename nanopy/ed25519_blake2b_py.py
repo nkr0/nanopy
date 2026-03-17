@@ -10,9 +10,11 @@ def H(m):
 
 
 def expmod(b, e, m):
-    if e == 0: return 1
+    if e == 0:
+        return 1
     t = expmod(b, e // 2, m)**2 % m
-    if e & 1: t = (t * b) % m
+    if e & 1:
+        t = (t * b) % m
     return t
 
 
@@ -27,8 +29,10 @@ I = expmod(2, (q - 1) // 4, q)
 def xrecover(y):
     xx = (y * y - 1) * inv(d * y * y + 1)
     x = expmod(xx, (q + 3) // 8, q)
-    if (x * x - xx) % q != 0: x = (x * I) % q
-    if x % 2 != 0: x = q - x
+    if (x * x - xx) % q != 0:
+        x = (x * I) % q
+    if x % 2 != 0:
+        x = q - x
     return x
 
 
@@ -48,10 +52,12 @@ def edwards(P, Q):
 
 
 def scalarmult(P, e):
-    if e == 0: return [0, 1]
+    if e == 0:
+        return [0, 1]
     Q = scalarmult(P, e // 2)
     Q = edwards(Q, Q)
-    if e & 1: Q = edwards(Q, P)
+    if e & 1:
+        Q = edwards(Q, P)
     return Q
 
 
@@ -113,15 +119,19 @@ def decodeint(s):
 def decodepoint(s):
     y = sum(2**i * bit(s, i) for i in range(0, b - 1))
     x = xrecover(y)
-    if x & 1 != bit(s, b - 1): x = q - x
+    if x & 1 != bit(s, b - 1):
+        x = q - x
     P = [x, y]
-    if not isoncurve(P): raise Exception("decoding point that is not on curve")
+    if not isoncurve(P):
+        raise Exception("decoding point that is not on curve")
     return P
 
 
 def checkvalid(s, m, pk):
-    if len(s) != b // 4: raise Exception("signature length is wrong")
-    if len(pk) != b // 8: raise Exception("public-key length is wrong")
+    if len(s) != b // 4:
+        raise Exception("signature length is wrong")
+    if len(pk) != b // 8:
+        raise Exception("public-key length is wrong")
     R = decodepoint(s[0:b // 8])
     A = decodepoint(pk)
     S = decodeint(s[b // 8:b // 4])

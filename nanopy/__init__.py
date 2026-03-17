@@ -109,7 +109,8 @@ def work_validate(work, _hash, difficulty=None, multiplier=0):
     work.reverse()
     b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
     b2b_h.reverse()
-    if b2b_h >= difficulty: return True
+    if b2b_h >= difficulty:
+        return True
     return False
 
 
@@ -149,7 +150,8 @@ except ModuleNotFoundError:
                 b2b_h = bytearray(
                     hashlib.blake2b(work + _hash, digest_size=8).digest())
                 b2b_h.reverse()
-                if b2b_h >= difficulty: break
+                if b2b_h >= difficulty:
+                    break
         work.reverse()
         return work.hex()
 
@@ -203,16 +205,24 @@ def block_hash(block):
 def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
     sk = bytes.fromhex(key)
 
-    if msg: m = msg.encode()
-    elif _hash: m = bytes.fromhex(_hash)
-    elif block: m = bytes.fromhex(block_hash(block))
-    else: return None
+    if msg:
+        m = msg.encode()
+    elif _hash:
+        m = bytes.fromhex(_hash)
+    elif block:
+        m = bytes.fromhex(block_hash(block))
+    else:
+        return None
 
     if not pk:
-        if account: pk = bytes.fromhex(account_key(account))
-        elif block: pk = bytes.fromhex(account_key(block['account']))
-        else: pk = ed25519_blake2b.publickey(sk)
-    else: pk = bytes.fromhex(pk)
+        if account:
+            pk = bytes.fromhex(account_key(account))
+        elif block:
+            pk = bytes.fromhex(account_key(block['account']))
+        else:
+            pk = ed25519_blake2b.publickey(sk)
+    else:
+        pk = bytes.fromhex(pk)
 
     if ed25519_blake2b_c:
         return ed25519_blake2b.signature(m, os.urandom(32), sk, pk).hex()
