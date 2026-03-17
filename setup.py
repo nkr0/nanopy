@@ -150,7 +150,7 @@ if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
 env = os.environ
 try:
     env["CC"] = os.getenv("CC") or find_gcc(
-        *(15, 5), dirs=os.getenv("PATH").split(os.pathsep)
+        *(19, 5), dirs=os.getenv("PATH").split(os.pathsep)
     )
 except:
     pass
@@ -162,7 +162,7 @@ config_arch()
 
 setup(
     name="nanopy",
-    version="24.0",
+    version="25.0",
     packages=["nanopy"],
     url="https://github.com/npy0/nanopy",
     license="MIT",
