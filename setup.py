@@ -1,19 +1,19 @@
-import os, sys
+import os, sys, platform
 from setuptools import setup, Extension
 
 
-def find_gcc(*min_max, dirs):
+def find_gcc(*max_min, dirs):
     """
-    Looks in `dirs` for gcc-{min_max}, starting with max.
+    Looks in `dirs` for gcc-{max_min}, starting with max.
 
     If no gcc-{version} is found, `None` is returned.
 
-    :param min_max: tuple of min and max gcc versions
+    :param max_min: tuple of max and min gcc versions
     :param dirs: list of directories to look in
     :return: gcc name or None
     """
 
-    for version in range(*min_max).__reversed__():
+    for version in range(*max_min, -1):
         f_name = "gcc-{0}".format(version)
 
         for _dir in dirs:
@@ -28,7 +28,7 @@ def config_arch():
     global BLAKE2B_SRC
     global BLAKE2B_DIR
     global ED25519_IMPL
-    m = os.uname().machine
+    m = platform.machine()
     BLAKE2B_DIR = "nanopy/blake2b/"
     ED25519_IMPL = "ED25519_64BIT"
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
@@ -115,31 +115,23 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
         "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
-        "define_macros": [],
+        "define_macros": [
+            (ED25519_IMPL, "1"),
+            ("ED25519_CUSTOMRNG", "1"),
+            ("ED25519_CUSTOMHASH", "1"),
+        ],
     }
 
     if platform == "win32" and use_vc:
         e_args["extra_compile_args"] = [
-            "/ED25519_SSE2",
-            "/ED25519_CUSTOMRNG",
-            "/ED25519_CUSTOMHASH",
             "/arch:SSE2",
             "/arch:AVX",
             "/arch:AVX2",
         ]
         e_args["extra_link_args"] = [
-            "/ED25519_SSE2",
-            "/ED25519_CUSTOMRNG",
-            "/ED25519_CUSTOMHASH",
             "/arch:SSE2",
             "/arch:AVX",
             "/arch:AVX2",
-        ]
-    else:
-        e_args["define_macros"] = [
-            (ED25519_IMPL, "1"),
-            ("ED25519_CUSTOMRNG", "1"),
-            ("ED25519_CUSTOMHASH", "1"),
         ]
 
     return e_args
@@ -151,7 +143,7 @@ if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
 env = os.environ
 try:
     env["CC"] = os.getenv("CC") or find_gcc(
-        *(5, 9), dirs=os.getenv("PATH").split(os.pathsep)
+        *(10, 5), dirs=os.getenv("PATH").split(os.pathsep)
     )
 except:
     pass
