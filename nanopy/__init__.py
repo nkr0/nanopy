@@ -1,8 +1,4 @@
-import sys, os, random, json, ctypes, requests, ed25519_blake2b, hashlib
-
-rpc = requests.session()
-rpc.proxies = {}
-url=''
+import sys, os, random, ctypes, hashlib, nanopy.ed25519_blake2b
 
 def nano_block(): return dict([('type', 'state'), ('account', ''), ('previous', '0000000000000000000000000000000000000000000000000000000000000000'), ('balance', ''), ('representative', ''), ('link', '0000000000000000000000000000000000000000000000000000000000000000'), ('work', ''), ('signature', '')])
 
@@ -58,7 +54,7 @@ def seed_keys(seed, index):
 	h.update(index.to_bytes(4, byteorder='big'))
 
 	account_key = h.digest()
-	return account_key, ed25519_blake2b.publickey(account_key)
+	return account_key, nanopy.ed25519_blake2b.publickey(account_key)
 
 def seed_nano(seed, index):
 	_, pk = seed_keys(seed, index)
@@ -113,56 +109,4 @@ def block_hash(block):
 
 	return bh.digest()
 
-def sign_block(seed, index, block):	return ed25519_blake2b.signature(block_hash(block),*seed_keys(seed, index)).hex()
-
-def account_info(account):
-	data={}
-	data['action']='account_info'
-	data['account']=account
-	data['representative']='true'
-	data['weight']='true'
-	data['pending']='true'
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-def accounts_pending(accounts):
-	data={}
-	data['action']='accounts_pending'
-	data['accounts']=accounts
-	data['count']=1
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-def accounts_balances(accounts):
-	# ~ data={}
-	# ~ data['action']='accounts_balances'
-	# ~ data['accounts']=accounts
-	# ~ return json.loads(rpc.post(url, data = json.dumps(data)).text)
-	##### temporary solution until api is available ###
-	info={}
-	for account in accounts:
-		info[account]=account_info(account)
-	return info
-
-def available_supply():
-	data={}
-	data['action']='available_supply'
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-def blocks_info(hashes):
-	data={}
-	data['action']='blocks_info'
-	data['hashes']=hashes
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-def work_generate(hash):
-	data={}
-	data['action']='work_generate'
-	data['hash']=hash
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-def process(block):
-	data={}
-	data['action']='process'
-	data['block']=block
-	return json.loads(rpc.post(url, data = json.dumps(data)).text)
-
-# ~ if __name__ == '__main__':
+def sign_block(seed, index, block):	return nanopy.ed25519_blake2b.signature(block_hash(block),*seed_keys(seed, index)).hex()
