@@ -19,8 +19,16 @@ Addresses can be input in both `xrb_` and `nano_`. However, the RPC responses fr
   * Change representative tag can be combined with send and receive blocks.
 * `--remote`. Compute PoW on the RPC node.
   * Work generation is local by default. If the C library is compiled, that is used. Otherwise, the python function is used.
-  * Use this command to compile the C library. `gcc -lb2 -fopenmp -shared -Wl,-soname,libnanopow -o libnanopow.so -fPIC nano_pow.c`
 * `--audit-seed`. Check state of all accounts from index 0 to the specified limit.
 * `--audit-file`. Check state of all accounts in a file.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
 * `--demo`. Run in demo mode. Never broadcast blocks.
+
+## C library for work generation
+  * For CPU blake2 libraries are required. `sudo apt-get install libb2-dev`
+  * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev`
+  * Install the library by running,
+`autoconf
+./configure
+make`
+  * To use GPU, configure as `./configure --enable-gpu`
