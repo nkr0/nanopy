@@ -16,20 +16,22 @@
 #include <omp.h>
 #endif
 
-static uint64_t s[16];
-static int p;
+typedef struct {
+  uint64_t s[16];
+  short p;
+} nonce_state;
 
-uint64_t xorshift1024star(void) {
-  const uint64_t s0 = s[p++];
-  uint64_t s1 = s[p &= 15];
+static uint64_t xorshift1024star(nonce_state *n) {
+  const uint64_t s0 = n->s[n->p++];
+  uint64_t s1 = n->s[n->p &= 15];
   s1 ^= s1 << 31;        // a
   s1 ^= s1 >> 11;        // b
   s1 ^= s0 ^ (s0 >> 30); // c
-  s[p] = s1;
+  n->s[n->p] = s1;
   return s1 * 1181783497276652981ull;
 }
 
-bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
+static bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
   uint64_t b2b_h;
   blake2b_state b2b;
   blake2b_init(&b2b, 8);
@@ -55,6 +57,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
   int i;
   uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
+  nonce_state n;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
@@ -62,8 +65,9 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   assert(p0 == 32);
 
   srand(time(NULL));
+  n.p = 0;
   for (i = 0; i < 16; i++)
-    s[i] = (uint64_t)rand() << 32 | rand();
+    n.s[i] = (uint64_t)rand() << 32 | rand();
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
   int err;
@@ -144,8 +148,8 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
                              0, NULL, NULL);
   assert(err == CL_SUCCESS);
 
-  while (work == 0) {
-    nonce = xorshift1024star();
+  while (!work) {
+    nonce = xorshift1024star(&n);
 
     err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0, NULL,
                                NULL);
@@ -187,11 +191,11 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   err = clReleaseContext(context);
   assert(err == CL_SUCCESS);
 #else
-  while (work == 0) {
-    nonce = xorshift1024star();
+  while (!work) {
+    nonce = xorshift1024star(&n);
 #pragma omp parallel for
     for (i = 0; i < work_size; i++) {
-      if (work == 0 && is_valid(nonce + i, h32, difficulty)) {
+      if (!work && is_valid(nonce + i, h32, difficulty)) {
 #pragma omp critical
         work = nonce + i;
       }
