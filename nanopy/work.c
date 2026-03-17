@@ -148,6 +148,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
     return NULL;
+  assert(p0 == 32);
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
@@ -160,207 +161,121 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   cl_platform_id cpPlatform;
 
   err = clGetPlatformIDs(1, &cpPlatform, &num);
-  if (err != CL_SUCCESS) {
-    printf("clGetPlatformIDs failed with error code %d\n", err);
-    goto FAIL;
-  } else if (num == 0) {
-    printf("clGetPlatformIDs failed to find a gpu device\n");
-    goto FAIL;
-  } else {
-    size_t length = strlen(opencl_program);
-    cl_mem d_nonce, d_work, d_h32, d_difficulty;
-    cl_device_id device_id;
-    cl_context context;
-    cl_command_queue queue;
-    cl_program program;
-    cl_kernel kernel;
+  assert(err == CL_SUCCESS);
+  if (num == 0) {
+    PyErr_SetString(PyExc_RuntimeError, "No GPUs found");
+    return NULL;
+  }
 
-    err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-    if (err != CL_SUCCESS) {
-      printf("clGetDeviceIDs failed with error code %d\n", err);
-      goto FAIL;
-    }
+  size_t length = strlen(opencl_program);
+  cl_mem d_nonce, d_work, d_h32, d_difficulty;
+  cl_device_id device_id;
+  cl_context context;
+  cl_command_queue queue;
+  cl_program program;
+  cl_kernel kernel;
 
-    context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateContext failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+  assert(err == CL_SUCCESS);
+
+  context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+  assert(err == CL_SUCCESS);
 
 #ifndef __APPLE__
-    queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateCommandQueueWithProperties failed with error code %d\n",
-             err);
-      goto FAIL;
-    }
+  queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
+  assert(err == CL_SUCCESS);
 #else
-    queue = clCreateCommandQueue(context, device_id, 0, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateCommandQueue failed with error code %d\n", err);
-      goto FAIL;
-    }
+  queue = clCreateCommandQueue(context, device_id, 0, &err);
+  assert(err == CL_SUCCESS);
 #endif
 
-    program = clCreateProgramWithSource(
-        context, 1, (const char **)&opencl_program, &length, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateProgramWithSource failed with error code %d\n", err);
-      goto FAIL;
-    }
+  program = clCreateProgramWithSource(
+      context, 1, (const char **)&opencl_program, &length, &err);
+  assert(err == CL_SUCCESS);
 
-    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-    if (err != CL_SUCCESS) {
-      printf("clBuildProgram failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+  assert(err == CL_SUCCESS);
 
-    d_nonce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                             8, &nonce, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  d_nonce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
+                           &nonce, &err);
+  assert(err == CL_SUCCESS);
 
-    d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            8, &work, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
+                          &work, &err);
+  assert(err == CL_SUCCESS);
 
-    d_h32 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                           32, h32, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  d_h32 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 32,
+                         h32, &err);
+  assert(err == CL_SUCCESS);
 
-    d_difficulty =
-        clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
-                       &difficulty, &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  d_difficulty = clCreateBuffer(
+      context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8, &difficulty, &err);
+  assert(err == CL_SUCCESS);
 
-    kernel = clCreateKernel(program, "nano_work", &err);
-    if (err != CL_SUCCESS) {
-      printf("clCreateKernel failed with error code %d\n", err);
-      goto FAIL;
-    }
+  kernel = clCreateKernel(program, "nano_work", &err);
+  assert(err == CL_SUCCESS);
 
-    err = clSetKernelArg(kernel, 0, sizeof(d_nonce), &d_nonce);
-    if (err != CL_SUCCESS) {
-      printf("clSetKernelArg failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clSetKernelArg(kernel, 0, sizeof(d_nonce), &d_nonce);
+  assert(err == CL_SUCCESS);
 
-    err = clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
-    if (err != CL_SUCCESS) {
-      printf("clSetKernelArg failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
+  assert(err == CL_SUCCESS);
 
-    err = clSetKernelArg(kernel, 2, sizeof(d_h32), &d_h32);
-    if (err != CL_SUCCESS) {
-      printf("clSetKernelArg failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clSetKernelArg(kernel, 2, sizeof(d_h32), &d_h32);
+  assert(err == CL_SUCCESS);
 
-    err = clSetKernelArg(kernel, 3, sizeof(d_difficulty), &d_difficulty);
-    if (err != CL_SUCCESS) {
-      printf("clSetKernelArg failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clSetKernelArg(kernel, 3, sizeof(d_difficulty), &d_difficulty);
+  assert(err == CL_SUCCESS);
 
-    err =
-        clEnqueueWriteBuffer(queue, d_h32, CL_FALSE, 0, 32, h32, 0, NULL, NULL);
-    if (err != CL_SUCCESS) {
-      printf("clEnqueueWriteBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clEnqueueWriteBuffer(queue, d_h32, CL_FALSE, 0, 32, h32, 0, NULL, NULL);
+  assert(err == CL_SUCCESS);
 
-    err = clEnqueueWriteBuffer(queue, d_difficulty, CL_FALSE, 0, 8, &difficulty,
-                               0, NULL, NULL);
-    if (err != CL_SUCCESS) {
-      printf("clEnqueueWriteBuffer failed with error code %d\n", err);
-      goto FAIL;
-    }
+  err = clEnqueueWriteBuffer(queue, d_difficulty, CL_FALSE, 0, 8, &difficulty,
+                             0, NULL, NULL);
+  assert(err == CL_SUCCESS);
 
-    while (work == 0) {
-      nonce = xorshift1024star();
+  while (work == 0) {
+    nonce = xorshift1024star();
 
-      err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0,
+    err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0, NULL,
+                               NULL);
+    assert(err == CL_SUCCESS);
+
+    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
                                  NULL, NULL);
-      if (err != CL_SUCCESS) {
-        printf("clEnqueueWriteBuffer failed with error code %d\n", err);
-        goto FAIL;
-      }
+    assert(err == CL_SUCCESS);
 
-      err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
-                                   NULL, NULL);
-      if (err != CL_SUCCESS) {
-        printf("clEnqueueNDRangeKernel failed with error code %d\n", err);
-        goto FAIL;
-      }
+    err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &work, 0, NULL,
+                              NULL);
+    assert(err == CL_SUCCESS);
 
-      err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &work, 0, NULL,
-                                NULL);
-      if (err != CL_SUCCESS) {
-        printf("clEnqueueReadBuffer failed with error code %d\n", err);
-        goto FAIL;
-      }
-
-      err = clFinish(queue);
-      if (err != CL_SUCCESS) {
-        printf("clFinish failed with error code %d\n", err);
-        goto FAIL;
-      }
-    }
-
-    err = clReleaseMemObject(d_nonce);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseMemObject failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseMemObject(d_work);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseMemObject failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseMemObject(d_h32);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseMemObject failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseMemObject(d_difficulty);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseMemObject failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseKernel(kernel);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseKernel failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseProgram(program);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseProgram failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseCommandQueue(queue);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseCommandQueue failed with error code %d\n", err);
-      goto FAIL;
-    }
-    err = clReleaseContext(context);
-    if (err != CL_SUCCESS) {
-      printf("clReleaseContext failed with error code %d\n", err);
-      goto FAIL;
-    }
+    err = clFinish(queue);
+    assert(err == CL_SUCCESS);
   }
-FAIL:
+
+  err = clReleaseMemObject(d_nonce);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseMemObject(d_work);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseMemObject(d_h32);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseMemObject(d_difficulty);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseKernel(kernel);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseProgram(program);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseCommandQueue(queue);
+  assert(err == CL_SUCCESS);
+
+  err = clReleaseContext(context);
+  assert(err == CL_SUCCESS);
 #else
   while (work == 0) {
     nonce = xorshift1024star();
@@ -405,9 +320,4 @@ static PyMethodDef m_methods[] = {{"generate", generate, METH_VARARGS, NULL},
 static struct PyModuleDef work_module = {PyModuleDef_HEAD_INIT, "work", NULL,
                                          -1, m_methods};
 
-PyMODINIT_FUNC PyInit_work(void) {
-  PyObject *m = PyModule_Create(&work_module);
-  if (m == NULL)
-    return NULL;
-  return m;
-}
+PyMODINIT_FUNC PyInit_work(void) { return PyModule_Create(&work_module); }
