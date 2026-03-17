@@ -95,13 +95,22 @@ except ModuleNotFoundError:
     pass
 
 
+def from_multiplier(multiplier):
+    return format(
+        int((int(work_difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)),
+        '016x')
+
+
+def to_multiplier(difficulty):
+    return float((1 << 64) - int(work_difficulty, 16)) / float(
+        (1 << 64) - int(difficulty, 16))
+
+
 def work_validate(work, _hash, difficulty=None, multiplier=0):
     work = bytearray.fromhex(work)
     _hash = bytes.fromhex(_hash)
     if multiplier:
-        difficulty = format(
-            int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
-                (1 << 64)), '016x')
+        difficulty = from_multiplier(multiplier)
     else:
         difficulty = difficulty if difficulty else work_difficulty
     difficulty = bytes.fromhex(difficulty)
@@ -119,9 +128,7 @@ try:
 
     def work_generate(_hash, difficulty=None, multiplier=0):
         if multiplier:
-            difficulty = format(
-                int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
-                    (1 << 64)), '016x')
+            difficulty = from_multiplier(multiplier)
         else:
             difficulty = difficulty if difficulty else work_difficulty
         work = format(
@@ -137,9 +144,7 @@ except ModuleNotFoundError:
         _hash = bytes.fromhex(_hash)
         b2b_h = bytearray.fromhex('0' * 16)
         if multiplier:
-            difficulty = format(
-                int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
-                    (1 << 64)), '016x')
+            difficulty = from_multiplier(multiplier)
         else:
             difficulty = difficulty if difficulty else work_difficulty
         difficulty = bytes.fromhex(difficulty)
