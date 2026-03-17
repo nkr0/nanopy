@@ -4,14 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanopy"
-version = "27.0.5"
+version = "27.0.6"
 license = "MIT"
 
 [project.optional-dependencies]
+dev = ["black", "mnemonic", "mypy", "pylint[spelling]", "pysocks", "pytest-cov", "python-socks", "requests", "setuptools", "sphinx-autodoc-typehints", "types-requests", "twine", "websocket-client"]
 mnemonic = ["mnemonic"]
-rpc = ["requests"]
-tor = ["pysocks"]
-wssrpc = ["websocket-client"]
+rpc = ["requests", "websocket-client"]
+tor = ["pysocks", "python-socks"]
 
 [project.urls]
 Repository = "https://github.com/npy0/nanopy"
+
+[tool.coverage.report]
+fail_under = 100
+
+[tool.mypy]
+files = "nanopy, nanopy-wallet, tests"
+strict = true
+
+[tool.pylint]
+disable = ["c-extension-no-member", "too-many-arguments", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
+
+[tool.pytest.ini_options]
+addopts = "--cov nanopy"
+
+[tool.setuptools]
+packages = ["nanopy"]

@@ -1,6 +1,6 @@
 # nanopy
-* Install by running `pip install nanopy` or `pip install nanopy[mnemonic,rpc,tor,wssrpc]`.
-  * `mnemonic`, `rpc`, `tor`, and `wssrpc` install dependencies of extra features.
+* Install by running `pip install nanopy` or `pip install nanopy[mnemonic,rpc,tor]`.
+  * `mnemonic`, `rpc`, and `tor` install dependencies of extra features.
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
@@ -18,24 +18,21 @@
 Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
 
 ### Wallet options
-* The wallet looks for default configuration in `$HOME/.config/nanopy/<network>.conf`.
-  * `<network>` is one of nano, banano, or beta. nano is the default.
-  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
+* The wallet looks for default configuration in `$HOME/.config/nanopy.conf`.
+  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy.conf`.
 * `-a`, `--audit-file`. Check state of all accounts in a file.
-* `-b`, `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
+* `-b`, `--broadcast`. Broadcast a block in JSON format.
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t`, `--tor`. Communicate with RPC node via the tor network.
 
 The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. `open` has the following options.
 * `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
-* `-d`, `--demo`. Run in demo mode.
 * `--empty`. Empty funds to the specified send address.
 * `-g`, `--group`. Group in which to open key from. (Default=root)
 * `-i`, `--index`. Index of the account unlocked from the seed. (Default=0)
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`.
   * Generated seeds are base85 encoded and stored in a user selected *.kdbx file.
-* `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 * `-r`, `--rep`. Supply representative address to change representative.
   * Change representative tag can be combined with send and receive blocks.
 * `-s`, `--send`. Supply destination address to create a send block.
@@ -44,5 +41,5 @@ The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *
 Contact me on discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
 ```
 clang-format -i nanopy/*.c
-black nanopy docs nanopy-wallet setup.py ghtest.py
+black docs nanopy tests nanopy-wallet setup.py
 ```
