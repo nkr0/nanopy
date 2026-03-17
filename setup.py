@@ -33,12 +33,12 @@ def config_arch():
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
         BLAKE2B_DIR += "sse"
         ED25519_IMPL = "ED25519_SSE2"
-    elif (m.startswith("arm") and sys.maxsize > 2 ** 32) or m.startswith("aarch64"):
+    elif (m.startswith("arm") and sys.maxsize > 2**32) or m.startswith("aarch64"):
         BLAKE2B_DIR += "neon"
     else:
         BLAKE2B_DIR += "ref"
     BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
-    print(m, sys.maxsize > 2 ** 32, BLAKE2B_SRC, ED25519_IMPL)
+    print(m, sys.maxsize > 2**32, BLAKE2B_SRC, ED25519_IMPL)
 
 
 def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
