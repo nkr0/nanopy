@@ -1,33 +1,46 @@
 import socket
 
-address = 'peering.nano.org'
+address = "peering.nano.org"
 port = 7075
 
 enum_network = {}
-for i, network_id in enumerate(['network_test', 'network_beta', 'network_live'],
-                               start=ord('A')):
-    enum_network[network_id] = i.to_bytes(1, byteorder='big')
+for i, network_id in enumerate(
+    ["network_test", "network_beta", "network_live"], start=ord("A")
+):
+    enum_network[network_id] = i.to_bytes(1, byteorder="big")
 
 enum_msgtype = {}
-for i, msgtype in enumerate([
-        'invalid', 'not_a_type', 'keepalive', 'publish', 'confirm_req',
-        'confirm_ack', 'bulk_pull', 'bulk_push', 'frontier_req',
-        'bulk_pull_blocks', 'node_id_handshake', 'bulk_pull_account'
-]):
-    enum_msgtype[msgtype] = i.to_bytes(1, byteorder='big')
+for i, msgtype in enumerate(
+    [
+        "invalid",
+        "not_a_type",
+        "keepalive",
+        "publish",
+        "confirm_req",
+        "confirm_ack",
+        "bulk_pull",
+        "bulk_push",
+        "frontier_req",
+        "bulk_pull_blocks",
+        "node_id_handshake",
+        "bulk_pull_account",
+    ]
+):
+    enum_msgtype[msgtype] = i.to_bytes(1, byteorder="big")
 
 enum_blocktype = {}
 for i, blocktype in enumerate(
-    ['invalid', 'not_a_block', 'send', 'receive', 'open', 'change', 'state']):
-    enum_blocktype[blocktype] = i.to_bytes(1, byteorder='big')
+    ["invalid", "not_a_block", "send", "receive", "open", "change", "state"]
+):
+    enum_blocktype[blocktype] = i.to_bytes(1, byteorder="big")
 
-magic = b'R'
-network_id = enum_network['network_live']
-version_max = (16).to_bytes(1, byteorder='big')
-version_using = (16).to_bytes(1, byteorder='big')
-version_min = (13).to_bytes(1, byteorder='big')
-message_type = enum_msgtype['keepalive']
-extensions = (0x0000).to_bytes(2, byteorder='big')
+magic = b"R"
+network_id = enum_network["network_live"]
+version_max = (16).to_bytes(1, byteorder="big")
+version_using = (16).to_bytes(1, byteorder="big")
+version_min = (13).to_bytes(1, byteorder="big")
+message_type = enum_msgtype["keepalive"]
+extensions = (0x0000).to_bytes(2, byteorder="big")
 # ~ extensions = (0xffff & 0x0001).to_bytes(2, byteorder='big')
 # ~ extensions = (0xffff & 0x0002).to_bytes(2, byteorder='big')
 # ~ extensions = ((0xffff & 0x0f00)>>8).to_bytes(2, byteorder='big')
@@ -37,17 +50,26 @@ extensions = (0x0000).to_bytes(2, byteorder='big')
 # ~ age = bytes.fromhex('ffffffff')
 # ~ count = bytes.fromhex('ffffffff')
 # ~ body = start + age + count
-peer = bytes.fromhex('000000000000000000000000000000000000')
+peer = bytes.fromhex("000000000000000000000000000000000000")
 body = peer
 for i in range(7):
     body += peer
 
-sock = socket.socket(socket.AF_INET,
-                     socket.SOCK_DGRAM)  #SOCK_DGRAM - UDP # SOCK_STREAM - TCP
+sock = socket.socket(
+    socket.AF_INET, socket.SOCK_DGRAM
+)  # SOCK_DGRAM - UDP # SOCK_STREAM - TCP
 # ~ sock.bind(('', 7075))
 # ~ sock.connect((address, port))
-msg = magic + enum_network[
-    'network_live'] + version_max + version_using + version_min + message_type + extensions + body
+msg = (
+    magic
+    + enum_network["network_live"]
+    + version_max
+    + version_using
+    + version_min
+    + message_type
+    + extensions
+    + body
+)
 # ~ sock.send(msg)
 sock.sendto(msg, (address, port))
 print(msg.hex())

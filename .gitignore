@@ -3,16 +3,9 @@
 *.so
 *.egg-info
 *.bkp
-.env
-.venv
 test*
 __pycache__/
 build/
 dist/
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 nanopy/__pycache__/
-docs/_build
+docs/build

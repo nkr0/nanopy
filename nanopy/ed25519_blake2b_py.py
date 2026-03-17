@@ -1,8 +1,8 @@
 import hashlib
 
 b = 256
-q = 2**255 - 19
-l = 2**252 + 27742317777372353535851937790883648493
+q = 2 ** 255 - 19
+l = 2 ** 252 + 27742317777372353535851937790883648493
 
 
 def H(m):
@@ -12,7 +12,7 @@ def H(m):
 def expmod(b, e, m):
     if e == 0:
         return 1
-    t = expmod(b, e // 2, m)**2 % m
+    t = expmod(b, e // 2, m) ** 2 % m
     if e & 1:
         t = (t * b) % m
     return t
@@ -63,22 +63,18 @@ def scalarmult(P, e):
 
 def encodeint(y):
     bits = [(y >> i) & 1 for i in range(b)]
-    return b''.join([
-        bytes([sum([bits[i * 8 + j] << j
-                    for j in range(8)])])
-        for i in range(b // 8)
-    ])
+    return b"".join(
+        [bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b // 8)]
+    )
 
 
 def encodepoint(P):
     x = P[0]
     y = P[1]
     bits = [(y >> i) & 1 for i in range(b - 1)] + [x & 1]
-    return b''.join([
-        bytes([sum([bits[i * 8 + j] << j
-                    for j in range(8)])])
-        for i in range(b // 8)
-    ])
+    return b"".join(
+        [bytes([sum([bits[i * 8 + j] << j for j in range(8)])]) for i in range(b // 8)]
+    )
 
 
 def bit(h, i):
@@ -87,20 +83,20 @@ def bit(h, i):
 
 def publickey(sk):
     h = H(sk)
-    a = 2**(b - 2) + sum(2**i * bit(h, i) for i in range(3, b - 2))
+    a = 2 ** (b - 2) + sum(2 ** i * bit(h, i) for i in range(3, b - 2))
     A = scalarmult(B, a)
     return encodepoint(A)
 
 
 def Hint(m):
     h = H(m)
-    return sum(2**i * bit(h, i) for i in range(2 * b))
+    return sum(2 ** i * bit(h, i) for i in range(2 * b))
 
 
 def signature(m, sk, pk):
     h = H(sk)
-    a = 2**(b - 2) + sum(2**i * bit(h, i) for i in range(3, b - 2))
-    r = Hint(b''.join([bytes([h[i]]) for i in range(b // 8, b // 4)]) + m)
+    a = 2 ** (b - 2) + sum(2 ** i * bit(h, i) for i in range(3, b - 2))
+    r = Hint(b"".join([bytes([h[i]]) for i in range(b // 8, b // 4)]) + m)
     R = scalarmult(B, r)
     S = (r + Hint(encodepoint(R) + pk + m) * a) % l
     return encodepoint(R) + encodeint(S)
@@ -113,11 +109,11 @@ def isoncurve(P):
 
 
 def decodeint(s):
-    return sum(2**i * bit(s, i) for i in range(0, b))
+    return sum(2 ** i * bit(s, i) for i in range(0, b))
 
 
 def decodepoint(s):
-    y = sum(2**i * bit(s, i) for i in range(0, b - 1))
+    y = sum(2 ** i * bit(s, i) for i in range(0, b - 1))
     x = xrecover(y)
     if x & 1 != bit(s, b - 1):
         x = q - x
@@ -132,9 +128,9 @@ def checkvalid(s, m, pk):
         raise Exception("signature length is wrong")
     if len(pk) != b // 8:
         raise Exception("public-key length is wrong")
-    R = decodepoint(s[0:b // 8])
+    R = decodepoint(s[0 : b // 8])
     A = decodepoint(pk)
-    S = decodeint(s[b // 8:b // 4])
+    S = decodeint(s[b // 8 : b // 4])
     h = Hint(encodepoint(R) + pk + m)
     if scalarmult(B, S) != edwards(R, scalarmult(A, h)):
         raise Exception("signature does not pass verification")
