@@ -21,7 +21,7 @@ Although not part of the package, the light wallet included in the repository ca
 * The wallet looks for default configuration in `$HOME/.config/nanopy/<network>.conf`.
   * `<network>` is one of nano, banano, or beta. nano is the default.
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
-* `-n`, `--new`. Generate a new seed and derive index 0 account from it.
+* `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
   * Generated seeds are stored in a GnuPG AES256 encrypted file.
   * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512. Adjust options by editing `gpg.conf`.
@@ -30,7 +30,7 @@ Although not part of the package, the light wallet included in the repository ca
   * To get the seed, `gpg -d FILE`
 * `-a`, `--audit-file`. Check state of all accounts in a file.
 * `-b`, `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
-* `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
+* `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t`, `--tor`. Communicate with RPC node via the tor network.
 * `-d`, `--demo`. Run in demo mode.
 
