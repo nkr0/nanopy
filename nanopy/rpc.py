@@ -569,7 +569,14 @@ class RPC:
         return self._post(data)
 
     def process(
-        self, block, force=False, subtype=None, json_block=False, watch_work=True, async=False):
+        self,
+        block,
+        force=False,
+        subtype=None,
+        json_block=False,
+        watch_work=True,
+        _async=False,
+    ):
         "https://docs.nano.org/commands/rpc-protocol/#process"
         data = {}
         data["action"] = "process"
@@ -585,7 +592,7 @@ class RPC:
             data["json_block"] = True
         if not watch_work:
             data["watch_work"] = False
-        if async:
+        if _async:
             data["async"] = True
         return self._post(data)
 
@@ -620,7 +627,9 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def receivable_exists(self, _hash, include_active=False, include_only_confirmed=True):
+    def receivable_exists(
+        self, _hash, include_active=False, include_only_confirmed=True
+    ):
         "https://docs.nano.org/commands/rpc-protocol/#receivable_exists"
         data = {}
         data["action"] = "receivable_exists"

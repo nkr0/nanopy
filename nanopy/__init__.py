@@ -163,7 +163,6 @@ try:
             sk, key = h[:32], h[32:]
         return key_expand(sk.hex())
 
-
 except ModuleNotFoundError:
     pass
 
@@ -242,7 +241,6 @@ try:
         )
         assert work_validate(work, _hash, difficulty)
         return work
-
 
 except ModuleNotFoundError:
     print("\033[93m" + "No work extension" + "\033[0m")
