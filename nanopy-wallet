@@ -351,8 +351,8 @@ if args.new:
     if pwd == getpass.getpass(prompt="Enter password again: "):
 
         seed = os.urandom(32).hex()
-        
-        _, _, account0=deterministic_key(seed, 0)
+
+        _, _, account0 = deterministic_key(seed, 0)
 
         with open(account0 + ".asc", "w") as f:
             asc = gpg.encrypt(

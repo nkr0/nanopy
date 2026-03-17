@@ -3,7 +3,9 @@ Python implementation of NANO-related functions.
 
 ## C library for work generation
   * For CPU blake2 libraries are required. `sudo apt-get install libb2-dev`
-  * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev`
+  * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
+
+Install the library by running `python setup.py build && python setup.py install`.
 
 ## Wallet options
 * The wallet looks for default configuration in `$HOME/.config/nanopy-confs/<network>.conf`.
@@ -39,6 +41,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
   * When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
   * `clang-format --style google -i nanopy/work.c`
   * `yapf --style google -i -r nanopy`
+  * `yapf --style google -i nanopy-wallet`
 
 ## Contact
   * Find me on discord in NANO's channel. My handle is `128#2928`.

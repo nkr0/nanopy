@@ -269,6 +269,48 @@ def frontier_count():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def mrai_from_raw(amount):
+    data = {}
+    data['action'] = 'mrai_from_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def mrai_to_raw(amount):
+    data = {}
+    data['action'] = 'mrai_to_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def krai_from_raw(amount):
+    data = {}
+    data['action'] = 'krai_from_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def krai_to_raw(amount):
+    data = {}
+    data['action'] = 'krai_to_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def rai_from_raw(amount):
+    data = {}
+    data['action'] = 'rai_from_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def rai_to_raw(amount):
+    data = {}
+    data['action'] = 'rai_to_raw'
+    data['amount'] = amount
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def keepalive(address, port):
     data = {}
     data['action'] = 'keepalive'
@@ -322,6 +364,37 @@ def block_create(balance, key, representative, link, previous, work=None):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def payment_begin(wallet):
+    data = {}
+    data['action'] = 'payment_begin'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def payment_init(wallet):
+    data = {}
+    data['action'] = 'payment_init'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def payment_end(account, wallet):
+    data = {}
+    data['action'] = 'payment_end'
+    data['account'] = account
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def payment_wait(account, amount, timeout):
+    data = {}
+    data['action'] = 'payment_wait'
+    data['account'] = account
+    data['amount'] = amount
+    data['timeout'] = timeout
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def process(block, force=False):
     data = {}
     data['action'] = 'process'
@@ -346,12 +419,6 @@ def receive_minimum():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def representatives():
-    data = {}
-    data['action'] = 'representatives'
-    return json.loads(session.post(url, data=json.dumps(data)).text)
-
-
 def receive_minimum_set(amount):
     data = {}
     data['action'] = 'receive_minimum_set'
@@ -373,8 +440,359 @@ def representatives_online():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def work_generate(_hash):
+def wallet_representative(wallet):
+    data = {}
+    data['action'] = 'wallet_representative'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_representative_set(wallet, representative):
+    data = {}
+    data['action'] = 'wallet_representative_set'
+    data['wallet'] = wallet
+    data['representative'] = representative
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def republish(_hash, count=0, sources=0, destinations=0):
+    data = {}
+    data['action'] = 'republish'
+    data['hash'] = _hash
+    if sources:
+        data['sources'] = sources
+        data['count'] = count
+    if destinations:
+        data['destinations'] = destinations
+        data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def search_pending(wallet):
+    data = {}
+    data['action'] = 'search_pending'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def search_pending_all():
+    data = {}
+    data['action'] = 'search_pending_all'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def send(wallet, source, destination, amount, _id=None, work=None):
+    data = {}
+    data['action'] = 'send'
+    data['wallet'] = wallet
+    data['source'] = source
+    data['destination'] = destination
+    data['amount'] = amount
+    if _id:
+        data['id'] = _id
+    if work:
+        data['work'] = work
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def stats(_type):
+    data = {}
+    data['action'] = 'stats'
+    data['type'] = _type
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def stop():
+    data = {}
+    data['action'] = 'stop'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def validate_account_number(account):
+    data = {}
+    data['action'] = 'validate_account_number'
+    data['account'] = account
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def successors(block, count=1):
+    data = {}
+    data['action'] = 'successors'
+    data['block'] = block
+    data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def version():
+    data = {}
+    data['action'] = 'version'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def peers():
+    data = {}
+    data['action'] = 'peers'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def pending(account, count=1, threshold=0, source=False, include_active=False):
+    data = {}
+    data['action'] = 'pending'
+    data['account'] = account
+    data['count'] = count
+    if threshold: data['threshold'] = threshold
+    if source: data['source'] = source
+    if include_active: data['include_active'] = include_active
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def pending_exists(_hash):
+    data = {}
+    data['action'] = 'pending_exists'
+    data['hash'] = _hash
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def unchecked(count=1):
+    data = {}
+    data['action'] = 'unchecked'
+    data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def unchecked_clear():
+    data = {}
+    data['action'] = 'unchecked_clear'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def unchecked_get(_hash):
+    data = {}
+    data['action'] = 'unchecked_get'
+    data['hash'] = _hash
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def unchecked_keys(key, count=1):
+    data = {}
+    data['action'] = 'unchecked_keys'
+    data['key'] = key
+    data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_add(wallet, key, work=True):
+    data = {}
+    data['action'] = 'wallet_add'
+    data['wallet'] = wallet
+    data['key'] = key
+    if not work: data['work'] = work
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_add_watch(wallet, accounts):
+    data = {}
+    data['action'] = 'wallet_add_watch'
+    data['wallet'] = wallet
+    data['accounts'] = accounts
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_balances(wallet, threshold=0):
+    data = {}
+    data['action'] = 'wallet_balances'
+    data['wallet'] = wallet
+    if threshold: data['threshold'] = threshold
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_change_seed(wallet, seed):
+    data = {}
+    data['action'] = 'wallet_change_seed'
+    data['wallet'] = wallet
+    data['seed'] = seed
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_contains(wallet, account):
+    data = {}
+    data['action'] = 'wallet_contains'
+    data['wallet'] = wallet
+    data['account'] = account
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_create():
+    data = {}
+    data['action'] = 'wallet_create'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_destroy(wallet):
+    data = {}
+    data['action'] = 'wallet_destroy'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_export(wallet):
+    data = {}
+    data['action'] = 'wallet_export'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_frontiers(wallet):
+    data = {}
+    data['action'] = 'wallet_frontiers'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_info(wallet):
+    data = {}
+    data['action'] = 'wallet_info'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_ledger(wallet,
+                  representative=False,
+                  weight=False,
+                  pending=False,
+                  modified_since=None):
+    data = {}
+    data['action'] = 'wallet_ledger'
+    data['wallet'] = wallet
+    if representative: data['representative'] = representative
+    if weight: data['weight'] = weight
+    if pending: data['pending'] = pending
+    if modified_since: data['modified_since'] = modified_since
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_pending(wallet,
+                   count=1,
+                   threshold=0,
+                   source=False,
+                   include_active=False):
+    data = {}
+    data['action'] = 'wallet_pending'
+    data['wallet'] = wallet
+    data['count'] = count
+    if threshold: data['threshold'] = threshold
+    if source: data['source'] = source
+    if include_active: data['include_active'] = include_active
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_republish(wallet, count=1):
+    data = {}
+    data['action'] = 'wallet_republish'
+    data['wallet'] = wallet
+    data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_work_get(wallet):
+    data = {}
+    data['action'] = 'wallet_work_get'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def password_change(wallet, password):
+    data = {}
+    data['action'] = 'password_change'
+    data['wallet'] = wallet
+    data['password'] = password
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def password_enter(wallet, password):
+    data = {}
+    data['action'] = 'password_enter'
+    data['wallet'] = wallet
+    data['password'] = password
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def password_valid(wallet):
+    data = {}
+    data['action'] = 'password_valid'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_lock(wallet):
+    data = {}
+    data['action'] = 'wallet_lock'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def wallet_locked(wallet):
+    data = {}
+    data['action'] = 'wallet_locked'
+    data['wallet'] = wallet
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_cancel(_hash):
+    data = {}
+    data['action'] = 'work_cancel'
+    data['hash'] = _hash
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_generate(_hash, use_peers=False):
     data = {}
     data['action'] = 'work_generate'
+    data['hash'] = _hash
+    if use_peers: data['use_peers'] = use_peers
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_get(wallet, account):
+    data = {}
+    data['action'] = 'work_get'
+    data['wallet'] = wallet
+    data['account'] = account
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_set(wallet, account, work):
+    data = {}
+    data['action'] = 'work_get'
+    data['wallet'] = wallet
+    data['account'] = account
+    data['work'] = work
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_peer_add(address, port):
+    data = {}
+    data['action'] = 'work_peer_add'
+    data['address'] = address
+    data['port'] = port
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_peers():
+    data = {}
+    data['action'] = 'work_peers'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_peers_clear():
+    data = {}
+    data['action'] = 'work_peers_clear'
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
+def work_validate(work, _hash):
+    data = {}
+    data['action'] = 'work_validate'
+    data['work'] = work
     data['hash'] = _hash
     return json.loads(session.post(url, data=json.dumps(data)).text)
