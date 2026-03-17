@@ -413,51 +413,137 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     for (j = 0; j < 4; j++) ((uint16_t *)&s[i])[j] = rand();
 
 #if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
-  cl_platform_id cpPlatform;
+  int err;
   cl_uint num;
+  cl_platform_id cpPlatform;
 
-  clGetPlatformIDs(1, &cpPlatform, &num);
-  if (num > 0) {
+  err = clGetPlatformIDs(1, &cpPlatform, &num);
+  if (err != CL_SUCCESS) {
+    printf("clGetPlatformIDs failed with error code %d\n", err);
+    goto FAIL;
+  } else if (num == 0) {
+    printf("clGetPlatformIDs failed to find a gpu device\n");
+    goto FAIL;
+  } else {
     size_t length = strlen(opencl_program);
     cl_mem d_rand, d_work, d_str;
     cl_device_id device_id;
     cl_program program;
 
-    clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-    cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, NULL);
+    err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+    if (err != CL_SUCCESS) {
+      printf("clGetDeviceIDs failed with error code %d\n", err);
+      goto FAIL;
+    }
+
+    cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateContext failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     cl_command_queue queue =
-        clCreateCommandQueueWithProperties(context, device_id, 0, NULL);
+        clCreateCommandQueueWithProperties(context, device_id, 0, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateCommandQueueWithProperties failed with error code %d\n",
+             err);
+      goto FAIL;
+    }
 
     program = clCreateProgramWithSource(
-        context, 1, (const char **)&opencl_program, &length, NULL);
-    clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+        context, 1, (const char **)&opencl_program, &length, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateProgramWithSource failed with error code %d\n", err);
+      goto FAIL;
+    }
+
+    err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+    if (err != CL_SUCCESS) {
+      printf("clBuildProgram failed with error code %d\n", err);
+      goto FAIL;
+    }
 
     d_rand = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            8, &r_str, NULL);
+                            8, &r_str, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            8, &workb, NULL);
+                            8, &workb, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     d_str = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                           32, str, NULL);
+                           32, str, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
 
-    cl_kernel kernel = clCreateKernel(program, "raiblocks_work", NULL);
+    cl_kernel kernel = clCreateKernel(program, "raiblocks_work", &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateKernel failed with error code %d\n", err);
+      goto FAIL;
+    }
 
-    clSetKernelArg(kernel, 0, sizeof(d_rand), &d_rand);
-    clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
-    clSetKernelArg(kernel, 2, sizeof(d_str), &d_str);
+    err = clSetKernelArg(kernel, 0, sizeof(d_rand), &d_rand);
+    if (err != CL_SUCCESS) {
+      printf("clSetKernelArg failed with error code %d\n", err);
+      goto FAIL;
+    }
+
+    err = clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
+    if (err != CL_SUCCESS) {
+      printf("clSetKernelArg failed with error code %d\n", err);
+      goto FAIL;
+    }
+
+    err = clSetKernelArg(kernel, 2, sizeof(d_str), &d_str);
+    if (err != CL_SUCCESS) {
+      printf("clSetKernelArg failed with error code %d\n", err);
+      goto FAIL;
+    }
 
     while (workb == 0) {
       r_str = xorshift1024star();
 
-      clEnqueueWriteBuffer(queue, d_rand, CL_FALSE, 0, 8, &r_str, 0, NULL,
-                           NULL);
-      clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL, NULL);
+      err = clEnqueueWriteBuffer(queue, d_rand, CL_FALSE, 0, 8, &r_str, 0, NULL,
+                                 NULL);
+      if (err != CL_SUCCESS) {
+        printf("clEnqueueWriteBuffer failed with error code %d\n", err);
+        goto FAIL;
+      }
 
-      clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0, NULL,
-                             NULL);
+      err = clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL,
+                                 NULL);
+      if (err != CL_SUCCESS) {
+        printf("clEnqueueWriteBuffer failed with error code %d\n", err);
+        goto FAIL;
+      }
 
-      clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &workb, 0, NULL, NULL);
+      err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
+                                   NULL, NULL);
+      if (err != CL_SUCCESS) {
+        printf("clEnqueueNDRangeKernel failed with error code %d\n", err);
+        goto FAIL;
+      }
 
-      clFinish(queue);
+      err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &workb, 0, NULL,
+                                NULL);
+      if (err != CL_SUCCESS) {
+        printf("clEnqueueReadBuffer failed with error code %d\n", err);
+        goto FAIL;
+      }
+
+      err = clFinish(queue);
+      if (err != CL_SUCCESS) {
+        printf("clFinish failed with error code %d\n", err);
+        goto FAIL;
+      }
     }
 
     clReleaseMemObject(d_rand);
@@ -495,6 +581,9 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   }
 #endif
   swapLong(&workb);
+#if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
+FAIL:
+#endif
   return Py_BuildValue("K", workb);
 }
 
