@@ -1,5 +1,9 @@
 # nanopy
-Install by running `pip install nanopy`.
+* Install by running `pip install nanopy`.
+* Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
+  * When using `Visual C`, additionally prepend the installation command with `USE_VC=1`.
+* For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
+  * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
 ## Usage
 * Functions in the core library are written in the same template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://docs.nano.org/commands/rpc-protocol/#work_generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
@@ -7,12 +11,6 @@ Install by running `pip install nanopy`.
   * Only purely local `action`s are supported in the core library (work generation, signing, account key derivations, etc.).
 * Functions in the `rpc` sub-module follow the exact template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). Unlike the core library, there is no reason to omit an `action` or parameter. Thus the library is a fully compatible API to nano-node's RPC.
 * [nano's RPC docs](https://docs.nano.org/commands/rpc-protocol/) can be used as a manual for this library. There are no changes in `action` or `parameter` names, except in a few cases \(`hash`, `id`, `type`\) where the parameter names are keywords in python. For those exceptions, arguments are prepended with an underscore \(`_hash`, `_id`, `_type`\).
-
-## Building from source
-* Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
-  * When using `Visual C`, additionally prepend the installation command with `USE_VC=1`.
-* For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
-  * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
 ## Wallet
 Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
@@ -45,7 +43,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE`, to unlock previously en
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 
 ## Support
-Contact me on [reddit](https://www.reddit.com/user/nanopy_). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
+Contact me on nano's [forum](https://forum.nano.org/u/npy) (`npy`) or discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
 ```
 clang-format --style google -i nanopy/*.c
 yapf --style google -i -r nanopy nanopy-wallet setup.py
