@@ -40,8 +40,8 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
     e_args = {
         "name": "nanopy.work",
         "sources": ["nanopy/blake2b/blake2b.c", "nanopy/work.c"],
-        "extra_compile_args": [],
-        "extra_link_args": [],
+        "extra_compile_args": ["-O3", "-march=native"],
+        "extra_link_args": ["-O3", "-march=native"],
         "libraries": [],
         "define_macros": [],
     }
@@ -49,12 +49,12 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
     if platform == "darwin":
         if use_gpu:
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
-            e_args["extra_link_args"] = ["-framework", "OpenCL"]
+            e_args["extra_link_args"].extend("-framework", "OpenCL")
         else:
             if link_omp:
                 e_args["libraries"] = ["omp"]
-            e_args["extra_compile_args"] = ["-fopenmp"]
-            e_args["extra_link_args"] = ["-fopenmp"]
+            e_args["extra_compile_args"].append("-fopenmp")
+            e_args["extra_link_args"].append("-fopenmp")
     elif platform in ["linux", "win32", "cygwin"]:
         if use_gpu:
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
@@ -75,8 +75,8 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
                     "/arch:AVX2",
                 ]
             else:
-                e_args["extra_compile_args"] = ["-fopenmp"]
-                e_args["extra_link_args"] = ["-fopenmp"]
+                e_args["extra_compile_args"].append("-fopenmp")
+                e_args["extra_link_args"].append("-fopenmp")
     else:
         raise OSError("Unsupported OS platform")
 
@@ -100,8 +100,8 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
             "nanopy/ed25519-donna/ed25519.c",
             "nanopy/ed25519_blake2b.c",
         ],
-        "extra_compile_args": [],
-        "extra_link_args": [],
+        "extra_compile_args": ["-O3", "-march=native"],
+        "extra_link_args": ["-O3", "-march=native"],
         "define_macros": [],
     }
 
@@ -142,7 +142,7 @@ except:
 
 setup(
     name="nanopy",
-    version="20.0.0",
+    version="21.0.0",
     packages=["nanopy"],
     url="https://github.com/npy0/nanopy",
     license="MIT",
