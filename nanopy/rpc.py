@@ -241,10 +241,10 @@ class RPC:
         data['hash'] = _hash
         return self._post(data)
 
-    def block_count(self, include_cemented=False):
+    def block_count(self, include_cemented=True):
         data = {}
         data['action'] = 'block_count'
-        if include_cemented: data['include_cemented'] = True
+        if not include_cemented: data['include_cemented'] = False
         return self._post(data)
 
     def block_count_type(self):
