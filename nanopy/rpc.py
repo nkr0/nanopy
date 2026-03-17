@@ -473,6 +473,12 @@ class RPC:
         data["index"] = index
         return self._post(data)
 
+    def election_statistics(self):
+        "https://docs.nano.org/commands/rpc-protocol/#election_statistics"
+        data = {}
+        data["action"] = "election_statistics"
+        return self._post(data)
+
     def epoch_upgrade(self, epoch, key, count=0, threads=0):
         "https://docs.nano.org/commands/rpc-protocol/#epoch_upgrade"
         data = {}
