@@ -22,7 +22,7 @@ def nano_account(address):
 
 		h = hashlib.blake2b(digest_size=5)
 		h.update(bytes.fromhex(number_l))
-		if (h.hexdigest() == check_l):return number_l #.hex.upper()
+		if (h.hexdigest() == check_l):return number_l
 	return False
 
 def account_nano(account):
@@ -45,7 +45,7 @@ def account_nano(account):
 	encode_account = ''
 	for x in range(0,int(len(account)/5)): encode_account += account_lookup[account[x*5:x*5+5]]
 
-	return 'xrb_'+encode_account+encode_check
+	return 'nano_'+encode_account+encode_check
 
 def seed_keys(seed, index):
 	h = hashlib.blake2b(digest_size=32)
