@@ -1,4 +1,4 @@
-import hashlib, decimal, nanopy.ed25519_blake2b
+import hashlib, decimal, hmac, mnemonic, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
 mrai_name = 'NANO'
@@ -81,13 +81,42 @@ def key_expand(key):
     return key, pk, account_get(pk)
 
 
-def deterministic_key(seed, index):
+def deterministic_key(seed, index=0):
     h = hashlib.blake2b(digest_size=32)
 
     h.update(bytes.fromhex(seed))
     h.update(index.to_bytes(4, byteorder='big'))
 
     sk = h.digest()
+    return key_expand(sk.hex())
+
+
+def generate_mnemonic(strength=256, language='english'):
+    m = mnemonic.Mnemonic(language)
+    return m.generate(strength=strength)
+
+
+def mnemonic_key(words, index=0, passphrase='', language='english'):
+    m = mnemonic.Mnemonic(language)
+    assert (m.check(words))
+    privdev = 0x80000000
+    sk_path = ['m', 44, 165, index]
+
+    for i in sk_path:
+        if i == 'm':
+            key = 'ed25519 seed'.encode('utf-8')
+            msg = m.to_seed(words, passphrase)
+        else:
+            i = i | privdev
+            if ((i & privdev) != 0):
+                sk = b'\x00' + sk
+            else:
+                sk = b'\x00' + nanopy.ed25519_blake2b.publickey(sk)
+            msg = sk + i.to_bytes(4, byteorder='big')
+
+        h = hmac.new(key, msg, hashlib.sha512).digest()
+        sk, key = h[:32], h[32:]
+
     return key_expand(sk.hex())
 
 
