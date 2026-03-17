@@ -47,8 +47,8 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
   if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
     return NULL;
   assert(p0 == 32);
-
-  return Py_BuildValue("i", is_valid(work, h32, difficulty));
+  bool res = is_valid(work, h32, difficulty);
+  return Py_BuildValue("p", res);
 }
 
 static PyObject *work_generate(PyObject *self, PyObject *args) {
@@ -229,7 +229,7 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
     return NULL;
   assert(p0 == 32);
   ed25519_publickey(sk, pk);
-  return Py_BuildValue("y#", &pk, 32);
+  return Py_BuildValue("y#", pk, sizeof(pk));
 }
 
 static PyObject *sign(PyObject *self, PyObject *args) {
@@ -244,7 +244,7 @@ static PyObject *sign(PyObject *self, PyObject *args) {
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
   ed25519_sign(m, p1, r, sk, pk, sig);
-  return Py_BuildValue("y#", &sig, 64);
+  return Py_BuildValue("y#", sig, sizeof(sig));
 }
 
 static PyObject *verify_signature(PyObject *self, PyObject *args) {
@@ -255,7 +255,8 @@ static PyObject *verify_signature(PyObject *self, PyObject *args) {
     return NULL;
   assert(p0 == 64);
   assert(p1 == 32);
-  return Py_BuildValue("i", ed25519_sign_open(m, p2, pk, sig) == 0);
+  bool res = ed25519_sign_open(m, p2, pk, sig) == 0;
+  return Py_BuildValue("p", res);
 }
 
 static PyMethodDef m_methods[] = {
