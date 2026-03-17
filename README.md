@@ -1,11 +1,9 @@
 # nanopy
-Python 3 implementation of NANO-related functions and an RPC light wallet.
-
-Addresses can be input in both `xrb_` and `nano_`. However, the RPC responses from the nodes are still in `xrb_` format.
+Python implementation of NANO-related functions and an RPC light wallet.
 
 ## Wallet options
-* The wallet looks for default configuration in `$HOME/.config/nanopy-wallet.conf`.
-  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy-wallet.conf`.
+* The wallet looks for default configuration in `$HOME/.config/nanopy-confs/<network>.conf`.
+  * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy-confs/<network>.conf`.
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
   * Generated seeds are stored in a GnuPG AES256 encrypted file.
@@ -15,6 +13,8 @@ Addresses can be input in both `xrb_` and `nano_`. However, the RPC responses fr
   * To get the seed, `gpg -d FILE.asc`
 * `--audit-file`. Check state of all accounts in a file.
 * `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
+* `--network`. Choose the network to interact with. main, beta, banano.
+  * The default network is main. On the main network, addresses can be input with either `xrb_` or `nano_` prefix. However, the RPC responses from the nodes are still in `xrb_` format.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
 
 The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previously encrypted seeds. `open` has the following options.
@@ -28,7 +28,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 * `--remote`. Compute work on the RPC node.
   * Work generation is local by default. If the C library is compiled, that is used. Otherwise, the python function is used.
 * `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
-* `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy-wallet.conf`. Refer to the sample file for more details.
+* `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy-confs/<network>.conf`. Refer to the sample file for more details.
 * `--demo`. Run in demo mode. Never broadcast blocks.
 
 ## C library for work generation
