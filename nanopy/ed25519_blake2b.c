@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
 #include "blake2.h"
@@ -31,31 +32,34 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
 
 static PyObject *publickey(PyObject *self, PyObject *args) {
   const unsigned char *sk;
-  int i;
+  Py_ssize_t p0;
   ed25519_public_key pk;
 
-  if (!PyArg_ParseTuple(args, "y#", &sk, &i)) return NULL;
+  if (!PyArg_ParseTuple(args, "y#", &sk, &p0))
+    return NULL;
   ed25519_publickey(sk, pk);
   return Py_BuildValue("y#", &pk, 32);
 }
 
 static PyObject *signature(PyObject *self, PyObject *args) {
   const unsigned char *m, *randr, *sk, *pk;
-  int i, j, k, l;
+  Py_ssize_t p0, p1, p2, p3;
   ed25519_signature sig;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#y#", &m, &i, &randr, &j, &sk, &k, &pk, &l))
+  if (!PyArg_ParseTuple(args, "y#y#y#y#", &m, &p0, &randr, &p1, &sk, &p2, &pk,
+                        &p3))
     return NULL;
-  ed25519_sign(m, i, randr, sk, pk, sig);
+  ed25519_sign(m, p0, randr, sk, pk, sig);
   return Py_BuildValue("y#", &sig, 64);
 }
 
 static PyObject *checkvalid(PyObject *self, PyObject *args) {
   const unsigned char *sig, *m, *pk;
-  int i, j, k;
+  Py_ssize_t p0, p1, p2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &i, &m, &j, &pk, &k)) return NULL;
-  return Py_BuildValue("i", ed25519_sign_open(m, j, pk, sig));
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &m, &p1, &pk, &p2))
+    return NULL;
+  return Py_BuildValue("i", ed25519_sign_open(m, p1, pk, sig));
 }
 
 static PyMethodDef m_methods[] = {
@@ -69,6 +73,7 @@ static struct PyModuleDef ed25519_blake2b_module = {
 
 PyMODINIT_FUNC PyInit_ed25519_blake2b(void) {
   PyObject *m = PyModule_Create(&ed25519_blake2b_module);
-  if (m == NULL) return NULL;
+  if (m == NULL)
+    return NULL;
   return m;
 }

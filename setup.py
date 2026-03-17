@@ -30,16 +30,16 @@ def config_arch():
     global ED25519_IMPL
     m = platform.machine()
     BLAKE2B_DIR = "nanopy/blake2b/"
-    ED25519_IMPL = "ED25519_64BIT"
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
         BLAKE2B_DIR += "sse"
         ED25519_IMPL = "ED25519_SSE2"
-    elif m.startswith("arm") or m.startswith("aarch64"):
+    elif (m.startswith("arm") and sys.maxsize > 2 ** 32) or m.startswith("aarch64"):
         BLAKE2B_DIR += "neon"
+        ED25519_IMPL = "ED25519_64BIT"
     else:
         BLAKE2B_DIR += "ref"
     BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
-    print("arch:", m, BLAKE2B_DIR, BLAKE2B_SRC, ED25519_IMPL)
+    print(m, sys.maxsize > 2 ** 32, BLAKE2B_SRC, ED25519_IMPL)
 
 
 def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
@@ -115,12 +115,11 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
         "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
-        "define_macros": [
-            (ED25519_IMPL, "1"),
-            ("ED25519_CUSTOMRNG", "1"),
-            ("ED25519_CUSTOMHASH", "1"),
-        ],
+        "define_macros": [("ED25519_CUSTOMRNG", "1"), ("ED25519_CUSTOMHASH", "1"),],
     }
+
+    if ED25519_IMPL:
+        e_args["define_macros"].append((ED25519_IMPL, "1"))
 
     if platform == "win32" and use_vc:
         e_args["extra_compile_args"] = [
