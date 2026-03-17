@@ -12,7 +12,7 @@
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
 // this is the variable opencl_program in raiblocks/rai/node/openclwork.cpp
-char *opencl_program1 = R"%%%(
+const char *opencl_program = R"%%%(
 enum blake2b_constant
 {
 	BLAKE2B_BLOCKBYTES = 128,
@@ -359,8 +359,9 @@ static void ucharcpyglb (uchar * dst, __global uchar const * src, size_t count)
 	}
 }
 
-__kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_a, __global uchar * item_a)
+__kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_a, __global uchar * item_a, __global ulong * threshold)
 {
+  ulong threshold_l = *threshold;
 	int const thread = get_global_id (0);
 	uchar item_l [32];
 	ucharcpyglb (item_l, item_a, 32);
@@ -371,8 +372,7 @@ __kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_
 	blake2b_update (&state, item_l, 32);
 	ulong result;
 	blake2b_final (&state, (uchar *) &result, sizeof (result));
-	if (result >= )%%%";
-char *opencl_program2 = R"%%%()
+	if (result >= threshold_l)
 	//if (result >= 0xff00000000000000ul)
 	{
 		*result_a = attempt_l;
@@ -404,10 +404,10 @@ void swapLong(uint64_t *X) {
 static PyObject *generate(PyObject *self, PyObject *args) {
   int i, j;
   uint8_t *str;
-  uint64_t work_limit = 0, workb = 0, r_str = 0;
+  uint64_t threshold = 0, workb = 0, r_str = 0;
   const size_t work_size = 1024 * 1024;  // default value from nano
 
-  if (!PyArg_ParseTuple(args, "y#K", &str, &i, &work_limit)) return NULL;
+  if (!PyArg_ParseTuple(args, "y#K", &str, &i, &threshold)) return NULL;
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
@@ -426,17 +426,13 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     printf("clGetPlatformIDs failed to find a gpu device\n");
     goto FAIL;
   } else {
-    size_t length = strlen(opencl_program1) + 21 + strlen(opencl_program2);
-    char *opencl_program = malloc(length);
-    cl_mem d_rand, d_work, d_str;
+    size_t length = strlen(opencl_program);
+    cl_mem d_rand, d_work, d_str, d_threshold;
     cl_device_id device_id;
     cl_context context;
     cl_command_queue queue;
     cl_program program;
     cl_kernel kernel;
-
-    sprintf(opencl_program, "%s%lu%s", opencl_program1, work_limit,
-            opencl_program2);
 
     err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS) {
@@ -499,6 +495,13 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
+    d_threshold = clCreateBuffer(
+        context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8, &threshold, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     kernel = clCreateKernel(program, "raiblocks_work", &err);
     if (err != CL_SUCCESS) {
       printf("clCreateKernel failed with error code %d\n", err);
@@ -523,8 +526,21 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
+    err = clSetKernelArg(kernel, 3, sizeof(d_threshold), &d_threshold);
+    if (err != CL_SUCCESS) {
+      printf("clSetKernelArg failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     err =
         clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+      printf("clEnqueueWriteBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
+
+    err = clEnqueueWriteBuffer(queue, d_threshold, CL_FALSE, 0, 8, &threshold,
+                               0, NULL, NULL);
     if (err != CL_SUCCESS) {
       printf("clEnqueueWriteBuffer failed with error code %d\n", err);
       goto FAIL;
@@ -561,8 +577,6 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       }
     }
 
-    free(opencl_program);
-
     err = clReleaseMemObject(d_rand);
     if (err != CL_SUCCESS) {
       printf("clReleaseMemObject failed with error code %d\n", err);
@@ -574,6 +588,11 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
     err = clReleaseMemObject(d_str);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseMemObject failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseMemObject(d_threshold);
     if (err != CL_SUCCESS) {
       printf("clReleaseMemObject failed with error code %d\n", err);
       goto FAIL;
@@ -617,7 +636,7 @@ FAIL:
 
       swapLong(&b2b_b);
 
-      if (b2b_b >= work_limit) {
+      if (b2b_b >= threshold) {
 #pragma omp atomic write
         workb = r_str_l;
 #pragma omp cancel for
