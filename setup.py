@@ -20,17 +20,17 @@ else:
 setup(
     name="nanopy",
     version='0.0.1',
+    packages=['nanopy'],
     description='Python implementation of NANO-related functions.',
     url='https://github.com/nano128/nanopy',
     author='128',
-    scripts=['__init__.py', 'ed25519_blake2b.py', 'rpc.py'],
     license='MIT',
     python_requires='>=3.0',
     install_requires=['requests'],
     ext_modules=[
         Extension(
-            'work',
-            sources=['work.c'],
+            'nanopy.work',
+            sources=['nanopy/work.c'],
             extra_compile_args=eca,
             extra_link_args=ela,
             libraries=libs,
