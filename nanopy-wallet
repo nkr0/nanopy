@@ -296,15 +296,15 @@ args = parser.parse_args()
 if args.network == 'beta':
     nanopy.account_prefix = 'xrb_'
     nanopy.mrai_name = '\u03B2NANO'
-    lh = 'http://localhost:55000'
+    rpc.url = 'http://localhost:55000'
     available_supply = 340272367920938463463374607431768151531
 elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
     nanopy.mrai_name = 'BANANO'
-    lh = 'http://localhost:7072'
+    rpc.url = 'http://localhost:7072'
     available_supply = 3402723679209384634633746074317681515310
 else:
-    lh = 'http://localhost:7076'
+    rpc.url = 'http://localhost:7076'
     available_supply = 133248289196499221154116917710445381553
 
 config_file = os.path.expanduser(
@@ -327,7 +327,7 @@ if online:
         online = True
 
 if online:
-    rpc.url = config['DEFAULT'].get('rpc', fallback=lh)
+    rpc.url = config['DEFAULT'].get('rpc', fallback=rpc.url)
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
         rpc.session.proxies['http'] = 'socks5h://localhost:9050'
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
