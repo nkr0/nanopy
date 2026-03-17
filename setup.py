@@ -91,7 +91,7 @@ setup(
     author='128',
     license='MIT',
     python_requires='>=3.6',
-    install_requires=['requests', 'mnemonic'],
+    install_requires=['requests'],
     ext_modules=[
         Extension(**get_ext_kwargs(
             use_gpu=True if env.get('USE_GPU') == '1' else False,
