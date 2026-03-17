@@ -2,7 +2,8 @@ import json, requests
 
 session = requests.session()
 session.proxies = {}
-url = 'http://localhost:7076'
+url = ''
+work_url = ''
 
 
 def account_balance(account):
@@ -742,7 +743,7 @@ def work_cancel(_hash):
     data = {}
     data['action'] = 'work_cancel'
     data['hash'] = _hash
-    return json.loads(session.post(url, data=json.dumps(data)).text)
+    return json.loads(session.post(work_url, data=json.dumps(data)).text)
 
 
 def work_generate(_hash, use_peers=False):
@@ -750,7 +751,7 @@ def work_generate(_hash, use_peers=False):
     data['action'] = 'work_generate'
     data['hash'] = _hash
     if use_peers: data['use_peers'] = use_peers
-    return json.loads(session.post(url, data=json.dumps(data)).text)
+    return json.loads(session.post(work_url, data=json.dumps(data)).text)
 
 
 def work_get(wallet, account):
@@ -763,7 +764,7 @@ def work_get(wallet, account):
 
 def work_set(wallet, account, work):
     data = {}
-    data['action'] = 'work_get'
+    data['action'] = 'work_set'
     data['wallet'] = wallet
     data['account'] = account
     data['work'] = work
@@ -795,4 +796,4 @@ def work_validate(work, _hash):
     data['action'] = 'work_validate'
     data['work'] = work
     data['hash'] = _hash
-    return json.loads(session.post(url, data=json.dumps(data)).text)
+    return json.loads(session.post(work_url, data=json.dumps(data)).text)
