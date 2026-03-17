@@ -6,4 +6,5 @@ test*
 __pycache__/
 build/
 dist/
+html/
 nanopy/__pycache__/
