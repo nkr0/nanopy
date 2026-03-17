@@ -147,9 +147,10 @@ def application(environ, start_response):
             response += b'\nVoting weight  : ' + (
                 '%.2f' % (int(root_info['weight']) * 100. / int(
                     root_info['available_supply'])) + ' %').encode('utf-8')
-            response += b'\nDonate         : ' + donate.encode('utf-8')
             response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode(
                 'utf-8')
+            response += b'\n\n\nDonate         : ' + donate.encode('utf-8')
+            response += b'\nGitHub         : https://github.com/nano128/nanopy'
 
         elif json.loads(request_body)['action'] in rpc_enabled:
             response = get_response(rpc, request_body)
