@@ -17,14 +17,14 @@
 static uint64_t s[16];
 static int p;
 
-uint64_t xorshift1024star(void) { // nano-node/nano/node/xorshift.hpp
+uint64_t xorshift1024star(void) {
   const uint64_t s0 = s[p++];
   uint64_t s1 = s[p &= 15];
   s1 ^= s1 << 31;        // a
   s1 ^= s1 >> 11;        // b
   s1 ^= s0 ^ (s0 >> 30); // c
   s[p] = s1;
-  return s1 * (uint64_t)1181783497276652981;
+  return s1 * 1181783497276652981ull;
 }
 
 bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
@@ -51,7 +51,7 @@ static PyObject *validate(PyObject *self, PyObject *args) {
 
 static PyObject *generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
-  uint64_t i, j, difficulty, work = 0, nonce, work_size = 1024 * 1024;
+  uint64_t i, difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
@@ -60,8 +60,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
-    for (j = 0; j < 4; j++)
-      ((uint16_t *)&s[i])[j] = rand();
+    s[i] = (uint64_t)rand() << 32 | rand();
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
   int err;

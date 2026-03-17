@@ -3,21 +3,36 @@ nanopy
 ######
 """
 
-import os, hashlib, base64, decimal, hmac, nanopy.work
-import nanopy.ed25519_blake2b as ed25519_blake2b
+import base64
+import binascii
+import decimal
+import hashlib
+import hmac
+import os
+from . import work  # type: ignore
+from . import ed25519_blake2b  # type: ignore
 
-account_prefix = "nano_"
-work_difficulty = "ffffffc000000000"
-standard_exponent = 30
+ACCOUNT_PREFIX = "nano_"
+DIFFICULTY = "ffffffc000000000"
+EXPONENT = 30
 
-decimal.getcontext().traps[decimal.Inexact] = 1
+decimal.setcontext(decimal.BasicContext)
+decimal.getcontext().traps[decimal.Inexact] = True
+decimal.getcontext().traps[decimal.Subnormal] = True
 decimal.getcontext().prec = 40
 _D = decimal.Decimal
 
-_B32 = b"13456789abcdefghijkmnopqrstuwxyz"
+B32STD = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+B32NANO = b"13456789abcdefghijkmnopqrstuwxyz"
+NANO2B32 = bytes.maketrans(B32NANO, B32STD)
+B322NANO = bytes.maketrans(B32STD, B32NANO)
 
 
-def state_block():
+def state_block() -> dict[str, str]:
+    """Get a dict with fields of a state block
+
+    :return: a state block
+    """
     return dict(
         [
             ("type", "state"),
@@ -32,84 +47,78 @@ def state_block():
     )
 
 
-def account_key(account):
+def account_key(account: str) -> str:
     """Get the public key for account
 
-    :param str account: account number
+    :arg account: account number
     :return: 64 hex-char public key
-    :rtype: str
     :raise AssertionError: for invalid account
     """
     assert (
-        len(account) == len(account_prefix) + 60
-        and account[: len(account_prefix)] == account_prefix
+        len(account) == len(ACCOUNT_PREFIX) + 60
+        and account[: len(ACCOUNT_PREFIX)] == ACCOUNT_PREFIX
     )
 
-    account = b"1111" + account[-60:].encode()
-    account = account.translate(bytes.maketrans(_B32, base64._b32alphabet))
-    key = base64.b32decode(account)
+    p = base64.b32decode((b"1111" + account[-60:].encode()).translate(NANO2B32))
 
-    checksum = key[:-6:-1]
-    key = key[3:-5]
+    checksum = p[:-6:-1]
+    p = p[3:-5]
 
-    assert hashlib.blake2b(key, digest_size=5).digest() == checksum
+    assert hashlib.blake2b(p, digest_size=5).digest() == checksum
 
-    return key.hex()
+    return p.hex()
 
 
-def account_get(key):
+def account_get(pk: str) -> str:
     """Get account number for the public key
 
-    :param str key: 64 hex-char public key
+    :arg pk: 64 hex-char public key
     :return: account number
-    :rtype: str
     :raise AssertionError: for invalid key
     """
-    assert len(key) == 64
+    assert len(pk) == 64
 
-    key = bytes.fromhex(key)
-    checksum = hashlib.blake2b(key, digest_size=5).digest()
-    key = b"\x00\x00\x00" + key + checksum[::-1]
-    account = base64.b32encode(key)
-    account = account.translate(bytes.maketrans(base64._b32alphabet, _B32))[4:]
+    p = bytes.fromhex(pk)
+    checksum = hashlib.blake2b(p, digest_size=5).digest()
+    p = b"\x00\x00\x00" + p + checksum[::-1]
+    account = base64.b32encode(p)
+    account = account.translate(B322NANO)[4:]
 
-    return account_prefix + account.decode()
+    return ACCOUNT_PREFIX + account.decode()
 
 
-def validate_account_number(account):
+def validate_account_number(account: str) -> bool:
     """Check whether account is a valid account number using checksum
 
-    :param str account: account number
-    :return: ``True``/``False``
-    :rtype: bool
+    :arg account: account number
     """
     try:
         account_key(account)
         return True
-    except:
+    except AssertionError:
+        return False
+    except binascii.Error:
         return False
 
 
-def key_expand(key):
+def key_expand(sk: str) -> tuple[str, str, str]:
     """Derive public key and account number from private key
 
-    :param str key: 64 hex-char private key
+    :arg sk: 64 hex-char private key
     :return: (private key, public key, account number)
-    :rtype: tuple
     :raise AssertionError: for invalid key
     """
-    assert len(key) == 64
-    pk = ed25519_blake2b.publickey(bytes.fromhex(key)).hex()
-    return key, pk, account_get(pk)
+    assert len(sk) == 64
+    pk = ed25519_blake2b.publickey(bytes.fromhex(sk)).hex()
+    return sk, pk, account_get(pk)
 
 
-def deterministic_key(seed, index=0):
+def deterministic_key(seed: str, index: int = 0) -> tuple[str, str, str]:
     """Derive deterministic keypair from seed based on index
 
-    :param str seed: 64 hex-char seed
-    :param int index: index number, 0 to 2^32 - 1
+    :arg seed: 64 hex-char seed
+    :arg index: index number, 0 to 2^32 - 1
     :return: (private key, public key, account number)
-    :rtype: tuple
     :raise AssertionError: for invalid seed
     """
     assert len(seed) == 64
@@ -123,161 +132,141 @@ def deterministic_key(seed, index=0):
 try:
     import mnemonic
 
-    def generate_mnemonic(strength=256, language="english"):
+    def generate_mnemonic(strength: int = 256, language: str = "english") -> str:
         """Generate a BIP39 type mnemonic. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
-        :param int strength: choose from 128, 160, 192, 224, 256
-        :param str language: one of the installed word list languages
+        :arg strength: choose from 128, 160, 192, 224, 256
+        :arg language: one of the installed word list languages
         :return: word list
-        :rtype: str
         """
         m = mnemonic.Mnemonic(language)
         return m.generate(strength=strength)
 
-    def mnemonic_key(words, index=0, passphrase="", language="english"):
-        """Derive deterministic keypair from mnemonic based on index. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
+    def mnemonic_key(
+        words: str, index: int = 0, passphrase: str = "", language: str = "english"
+    ) -> tuple[str, str, str]:
+        """Derive deterministic keypair from mnemonic based on index. Requires
+          `mnemonic <https://pypi.org/project/mnemonic>`_
 
-        :param str words: word list
+        :arg words: word list
+        :arg index: account index
+        :arg passphrase: passphrase to generate seed
+        :arg language: word list language
         :return: (private key, public key, account number)
-        :rtype: tuple
-        :raise AssertionError: for invalid key
+        :raise AssertionError: for invalid string of words
         """
         m = mnemonic.Mnemonic(language)
         assert m.check(words)
-        for i in ["m", 44, 165, index]:
-            if i == "m":
-                key = b"ed25519 seed"
-                msg = m.to_seed(words, passphrase)
-            else:
-                i = i | 0x80000000
-                msg = b"\x00" + sk + i.to_bytes(4, byteorder="big")
+        key = b"ed25519 seed"
+        msg = m.to_seed(words, passphrase)
+        h = hmac.new(key, msg, hashlib.sha512).digest()
+        sk, key = h[:32], h[32:]
+        for i in [44, 165, index]:
+            i = i | 0x80000000
+            msg = b"\x00" + sk + i.to_bytes(4, byteorder="big")
             h = hmac.new(key, msg, hashlib.sha512).digest()
             sk, key = h[:32], h[32:]
         return key_expand(sk.hex())
 
-except ModuleNotFoundError:
-    pass
+except ModuleNotFoundError:  # pragma: no cover
+    pass  # pragma: no cover
 
 
-def from_multiplier(multiplier):
+def from_multiplier(multiplier: float) -> str:
     """Get difficulty from multiplier
 
-    :param float multiplier: positive number
+    :arg multiplier: positive number
     :return: 16 hex-char difficulty
-    :rtype: str
     """
     return format(
-        int((int(work_difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)), "016x"
+        int((int(DIFFICULTY, 16) - (1 << 64)) / multiplier + (1 << 64)), "016x"
     )
 
 
-def to_multiplier(difficulty):
+def to_multiplier(difficulty: str) -> float:
     """Get multiplier from difficulty
 
-    :param str difficulty: 16 hex-char difficulty
+    :arg difficulty: 16 hex-char difficulty
     :return: multiplier
-    :rtype: float
     """
-    return float((1 << 64) - int(work_difficulty, 16)) / float(
+    return float((1 << 64) - int(DIFFICULTY, 16)) / float(
         (1 << 64) - int(difficulty, 16)
     )
 
 
-def work_validate(work, _hash, difficulty=None, multiplier=0):
-    """Check whether work is valid for _hash.
+def work_validate(
+    _work: str, _hash: str, difficulty: str = "", multiplier: float = 0
+) -> bool:
+    """Check whether _work is valid for _hash.
 
-    :param str work: 16 hex-char work
-    :param str _hash: 64 hex-char hash
-    :param str difficulty: 16 hex-char difficulty
-    :param float multiplier: positive number, overrides difficulty
-    :return: ``True``/``False``
-    :rtype: bool
+    :arg _work: 16 hex-char work
+    :arg _hash: 64 hex-char hash
+    :arg difficulty: 16 hex-char difficulty
+    :arg multiplier: positive number, overrides difficulty
     """
-    assert len(work) == 16
-    assert len(_hash) == 64
     if multiplier:
         difficulty = from_multiplier(multiplier)
-    else:
-        difficulty = difficulty if difficulty else work_difficulty
+    elif not difficulty:
+        difficulty = DIFFICULTY
+    assert len(_work) == 16
+    assert len(_hash) == 64
+    assert len(difficulty) == 16
     return bool(
-        nanopy.work.validate(int(work, 16), bytes.fromhex(_hash), int(difficulty, 16))
+        work.validate(int(_work, 16), bytes.fromhex(_hash), int(difficulty, 16))
     )
 
 
-def work_generate(_hash, difficulty=None, multiplier=0):
-    """Check whether work is valid for _hash.
+def work_generate(_hash: str, difficulty: str = "", multiplier: float = 0) -> str:
+    """Compute work for _hash.
 
-    :param str _hash: 64 hex-char hash
-    :param str difficulty: 16 hex-char difficulty
-    :param float multiplier: positive number, overrides difficulty
+    :arg _hash: 64 hex-char hash
+    :arg difficulty: 16 hex-char difficulty
+    :arg multiplier: positive number, overrides difficulty
     :return: 16 hex-char work
-    :rtype: str
     """
-    assert len(_hash) == 64
     if multiplier:
         difficulty = from_multiplier(multiplier)
-    else:
-        difficulty = difficulty if difficulty else work_difficulty
-    work = format(
-        nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)), "016x"
-    )
-    return work
+    elif not difficulty:
+        difficulty = DIFFICULTY
+    assert len(_hash) == 64
+    assert len(difficulty) == 16
+    return format(work.generate(bytes.fromhex(_hash), int(difficulty, 16)), "016x")
 
 
-def from_raw(amount, exp=0):
+def from_raw(amount: str, exp: int = 0) -> str:
     """Divide amount by 10^exp
 
-    :param str amount: amount
-    :param int exp: positive number
+    :arg amount: amount
+    :arg exp: positive number
     :return: amount divided by 10^exp
-    :rtype: str
     """
-    assert type(amount) is str
-    exp = exp if exp else standard_exponent
+    assert isinstance(amount, str)
+    if exp <= 0:
+        exp = EXPONENT
     nano = _D(amount) * _D(_D(10) ** -exp)
     return format(nano.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
 
 
-def to_raw(amount, exp=0):
+def to_raw(amount: str, exp: int = 0) -> str:
     """Multiply amount by 10^exp
 
-    :param str amount: amount
-    :param int exp: positive number
+    :arg amount: amount
+    :arg exp: positive number
     :return: amount multiplied by 10^exp
-    :rtype: str
     """
-    assert type(amount) is str
-    exp = exp if exp else standard_exponent
+    assert isinstance(amount, str)
+    if exp <= 0:
+        exp = EXPONENT
     raw = _D(amount) * _D(_D(10) ** exp)
     return str(raw.quantize(_D(1)))
 
 
-def raw_to_nano(amount):
-    """Divide a raw amount down by the raw-nano ratio (10^30)
-
-    :param str amount: amount in raw
-    :return: amount in nano
-    :rtype: str
-    """
-    return from_raw(amount, exp=30)
-
-
-def nano_to_raw(amount):
-    """Multiply a nano amount by the raw-nano ratio (10^30)
-
-    :param str amount: amount in nano
-    :return: amount in raw
-    :rtype: str
-    """
-    return to_raw(amount, exp=30)
-
-
-def block_hash(block):
+def block_hash(block: dict[str, str]) -> str:
     """Compute block hash
 
-    :param dict block: "account", "previous", "representative", "balance", and "link" are the required entries
+    :arg block: "account", "previous", "representative", "balance", and "link" are the required
+      entries
     :return: 64 hex-char hash
-    :rtype: str
     """
     return hashlib.blake2b(
         bytes.fromhex(
@@ -293,78 +282,70 @@ def block_hash(block):
     ).hexdigest()
 
 
-def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
-    """Sign a block, hash, or message
+def sign(sk: str, _hash: str) -> str:
+    """Sign a hash
 
-    :param str key: 64 hex-char private key
-    :param dict block: "account", "previous", "representative", "balance", and "link" are the required entries
-    :param str _hash: 64 hex-char hash. Overrides ``block``.
-    :param str msg: message to sign. Overrides ``_hash`` and ``block``.
-    :param str account: account
-    :param str pk: 64 hex-char public key
+    :arg sk: 64 hex-char private key
+    :arg _hash: 64 hex-char hash
     :return: 128 hex-char signature
-    :rtype: str
     """
-    sk = bytes.fromhex(key)
 
-    if msg:
-        m = msg.encode()
-    elif _hash:
-        m = bytes.fromhex(_hash)
-    elif block:
-        m = bytes.fromhex(block_hash(block))
-    else:
-        return None
+    assert len(sk) == 64
+    assert len(_hash) == 64
 
-    if not pk:
-        if account:
-            pk = bytes.fromhex(account_key(account))
-        elif block:
-            pk = bytes.fromhex(account_key(block["account"]))
-        else:
-            pk = ed25519_blake2b.publickey(sk)
-    else:
-        pk = bytes.fromhex(pk)
+    h = bytes.fromhex(_hash)
+    s = bytes.fromhex(sk)
 
-    return ed25519_blake2b.signature(m, os.urandom(32), sk, pk).hex()
+    return str(ed25519_blake2b.signature(s, h, os.urandom(32)).hex())
 
 
-def verify_signature(msg, sig, pk):
-    """Verify signature for message with public key
+def verify_signature(sig: str, pk: str, _hash: str) -> bool:
+    """Verify signature for hash with public key
 
-    :param str message: message to verify
-    :param str signature: signature for the message
-    :param str pk: public key for the signature
-    :return bool: True if valid, False otherwise
+    :arg sig: signature for the message
+    :arg pk: public key for the signature
+    :arg _hash: 64 hex-char hash
+    :return: True if valid, False otherwise
     """
-    m = msg.encode()
+
     s = bytes.fromhex(sig)
-    k = bytes.fromhex(pk)
+    p = bytes.fromhex(pk)
+    h = bytes.fromhex(_hash)
 
-    return bool(ed25519_blake2b.checkvalid(s, m, k))
+    return bool(ed25519_blake2b.checkvalid(s, p, h))
 
 
 def block_create(
-    key, previous, representative, balance, link, work=None, difficulty=None
-):
+    sk: str,
+    previous: str,
+    representative: str,
+    balance: str,
+    link: str,
+    _work: str = "",
+    difficulty: str = "",
+) -> dict[str, str]:
     """Create a block
 
-    :param str key: 64 hex-char private key
-    :param str previous: 64 hex-char previous hash
-    :param str representative: representative address
-    :param str balance: balance in raw
-    :param str link: 64 hex-char link
-    :param str work: 16 hex-char work
-    :param str difficulty: 16 hex-char difficulty: send/change require a minimum #fffffff800000000 and receive requires #fffffe0000000000. Default is #ffffffc000000000.
+    :arg sk: 64 hex-char private key
+    :arg previous: 64 hex-char previous hash
+    :arg representative: representative address
+    :arg balance: balance in raw
+    :arg link: 64 hex-char link
+    :arg _work: 16 hex-char work
+    :arg difficulty: 16 hex-char difficulty: send/change require a minimum #fffffff800000000
+      and receive requires #fffffe0000000000. Default is #ffffffc000000000.
     :return: a block with work and signature
-    :rtype: dict
     """
     nb = state_block()
-    nb["account"] = account_get(ed25519_blake2b.publickey(bytes.fromhex(key)).hex())
-    nb["previous"] = previous
+    _, pk, acc = key_expand(sk)
+    work_hash = previous if previous else pk
+    if not difficulty:
+        difficulty = DIFFICULTY
+    nb["account"] = acc
+    nb["previous"] = previous if previous else "0" * 64
     nb["representative"] = representative
     nb["balance"] = balance
     nb["link"] = link
-    nb["work"] = work if work else work_generate(block_hash(nb), difficulty)
-    nb["signature"] = sign(key, block=nb)
+    nb["work"] = _work if _work else work_generate(work_hash, difficulty)
+    nb["signature"] = sign(sk, block_hash(nb))
     return nb
