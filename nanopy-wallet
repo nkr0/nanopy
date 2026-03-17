@@ -78,8 +78,15 @@ def generate_block(sk, pk, account):
         if online:
             info = rpc.account_info(nb['account'])
             if nanopy.account_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
-                rb = rpc.accounts_pending(
-                    [nb['account']])['blocks']['xrb_' + nb['account'][-60:]]
+                try:
+                    rb = rpc.accounts_pending(
+                        [nb['account']])['blocks'][nb['account']]
+                    print('\033[92m' +
+                          "Fixed!!! Upstream changed RPC responses to nano_" +
+                          '\033[0m')
+                except:
+                    rb = rpc.accounts_pending(
+                        [nb['account']])['blocks']['xrb_' + nb['account'][-60:]]
             else:
                 rb = rpc.accounts_pending(
                     [nb['account']])['blocks'][nb['account']]
