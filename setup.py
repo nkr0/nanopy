@@ -35,7 +35,6 @@ def config_arch():
         ED25519_IMPL = "ED25519_SSE2"
     elif (m.startswith("arm") and sys.maxsize > 2 ** 32) or m.startswith("aarch64"):
         BLAKE2B_DIR += "neon"
-        ED25519_IMPL = "ED25519_64BIT"
     else:
         BLAKE2B_DIR += "ref"
     BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
