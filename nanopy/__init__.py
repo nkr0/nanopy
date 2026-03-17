@@ -99,7 +99,6 @@ def generate_mnemonic(strength=256, language='english'):
 def mnemonic_key(words, index=0, passphrase='', language='english'):
     m = mnemonic.Mnemonic(language)
     assert (m.check(words))
-    privdev = 0x80000000
     sk_path = ['m', 44, 165, index]
 
     for i in sk_path:
@@ -107,12 +106,8 @@ def mnemonic_key(words, index=0, passphrase='', language='english'):
             key = 'ed25519 seed'.encode('utf-8')
             msg = m.to_seed(words, passphrase)
         else:
-            i = i | privdev
-            if ((i & privdev) != 0):
-                sk = b'\x00' + sk
-            else:
-                sk = b'\x00' + nanopy.ed25519_blake2b.publickey(sk)
-            msg = sk + i.to_bytes(4, byteorder='big')
+            i = i | 0x80000000
+            msg = b'\x00' + sk + i.to_bytes(4, byteorder='big')
 
         h = hmac.new(key, msg, hashlib.sha512).digest()
         sk, key = h[:32], h[32:]
