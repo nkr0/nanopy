@@ -3,7 +3,7 @@ import hashlib, decimal, nanopy.ed25519_blake2b
 account_prefix = 'nano_'
 mrai_name = 'NANO'
 available_supply = 133248289196499221154116917710445381553
-work_limit = 'ffffffc000000000'
+work_threshold = 'ffffffc000000000'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 decimal.getcontext().prec = 40
@@ -94,7 +94,7 @@ def deterministic_key(seed, index):
 def work_validate(work, _hash):
     workb = bytearray.fromhex(work)
     hashb = bytearray.fromhex(_hash)
-    work_limitb = bytearray.fromhex(work_limit)
+    work_thresholdb = bytearray.fromhex(work_threshold)
 
     workb.reverse()
 
@@ -105,7 +105,7 @@ def work_validate(work, _hash):
     final = bytearray(h.digest())
     final.reverse()
 
-    if final > work_limitb: return True
+    if final > work_thresholdb: return True
     return False
 
 
@@ -114,7 +114,7 @@ try:
 
     def work_generate(_hash):
         work = format(
-            nanopy.work.generate(bytes.fromhex(_hash), int(work_limit, 16)),
+            nanopy.work.generate(bytes.fromhex(_hash), int(work_threshold, 16)),
             '016x')
         assert work_validate(work, _hash)
         return work
@@ -125,8 +125,8 @@ except ModuleNotFoundError:
     def work_generate(_hash):
         hashb = bytearray.fromhex(_hash)
         b2bb = bytearray.fromhex('0000000000000000')
-        work_limitb = bytearray.fromhex(work_limit)
-        while b2bb < work_limitb:
+        work_thresholdb = bytearray.fromhex(work_threshold)
+        while b2bb < work_thresholdb:
             workb = bytearray((random.getrandbits(8) for i in range(8)))
             for r in range(0, 256):
                 workb[7] = (workb[7] + r) % 256
@@ -135,7 +135,7 @@ except ModuleNotFoundError:
                 h.update(hashb)
                 b2bb = bytearray(h.digest())
                 b2bb.reverse()
-                if b2bb >= work_limitb: break
+                if b2bb >= work_thresholdb: break
 
         workb.reverse()
         assert work_validate(workb.hex(), _hash)
