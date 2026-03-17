@@ -424,9 +424,10 @@ def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
     else:
         return ed25519_blake2b.signature(m, sk, pk).hex()
 
+
 def verify_signature(msg, sig, pk):
     """Verify signature for message with public key
-  
+
     :param str message: message to verify
     :param str signature: signature for the message
     :param str pk: public key for the signature

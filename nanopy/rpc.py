@@ -13,9 +13,9 @@ class RPC:
     :arg str url: URL of the nano node
     :arg dict headers: Optional headers for the RPC requests
     :arg bool tor: Whether to connect via TOR network.
-    
+
     Refer `docs <https://docs.nano.org/commands/rpc-protocol>`_ for information on methods.
-    
+
     Return type is ``dict`` for all methods except ``disconnect``.
     """
 
@@ -65,11 +65,13 @@ class RPC:
         if self.__mode == "websockets":
             self.session.close()
 
-    def account_balance(self, account):
+    def account_balance(self, account, include_only_confirmed=True):
         "https://docs.nano.org/commands/rpc-protocol/#account_balance"
         data = {}
         data["action"] = "account_balance"
         data["account"] = account
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
     def account_block_count(self, account):
@@ -79,11 +81,20 @@ class RPC:
         data["account"] = account
         return self._post(data)
 
-    def account_info(self, account, representative=False, weight=False, pending=False):
+    def account_info(
+        self,
+        account,
+        include_confirmed=False,
+        representative=False,
+        weight=False,
+        pending=False,
+    ):
         "https://docs.nano.org/commands/rpc-protocol/#account_info"
         data = {}
         data["action"] = "account_info"
         data["account"] = account
+        if include_confirmed:
+            data["include_confirmed"] = True
         if representative:
             data["representative"] = True
         if weight:
