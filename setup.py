@@ -133,6 +133,6 @@ setup(
         Extension(
             **get_work_ext_kwargs(env.get("USE_GPU") == "1")
         ),
-        Extension(**get_ed25519_blake2b_ext_kwargs(),
+        Extension(**get_ed25519_blake2b_ext_kwargs()),
     ],
 )
