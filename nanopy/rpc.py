@@ -258,6 +258,13 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
+    def accounts_representatives(self, accounts):
+        "https://docs.nano.org/commands/rpc-protocol/#accounts_representatives"
+        data = {}
+        data["action"] = "accounts_representatives"
+        data["accounts"] = accounts
+        return self._post(data)
+
     def active_difficulty(self, include_trend=False):
         "https://docs.nano.org/commands/rpc-protocol/#active_difficulty"
         data = {}
@@ -850,7 +857,7 @@ class RPC:
             data["peer_details"] = True
         return self._post(data)
 
-    def pending(
+    def receivable(
         self,
         account,
         count=0,
@@ -861,9 +868,9 @@ class RPC:
         sorting=False,
         include_only_confirmed=True,
     ):
-        "https://docs.nano.org/commands/rpc-protocol/#pending"
+        "https://docs.nano.org/commands/rpc-protocol/#receivable"
         data = {}
-        data["action"] = "pending"
+        data["action"] = "receivable"
         data["account"] = account
         if count:
             data["count"] = count
@@ -881,10 +888,10 @@ class RPC:
             data["include_only_confirmed"] = False
         return self._post(data)
 
-    def pending_exists(self, _hash, include_active=False, include_only_confirmed=True):
-        "https://docs.nano.org/commands/rpc-protocol/#pending_exists"
+    def receivable_exists(self, _hash, include_active=False, include_only_confirmed=True):
+        "https://docs.nano.org/commands/rpc-protocol/#receivable_exists"
         data = {}
-        data["action"] = "pending_exists"
+        data["action"] = "receivable_exists"
         data["hash"] = _hash
         if include_active:
             data["include_active"] = True
@@ -1039,7 +1046,7 @@ class RPC:
         wallet,
         representative=False,
         weight=False,
-        pending=False,
+        receivable=False,
         modified_since=None,
     ):
         "https://docs.nano.org/commands/rpc-protocol/#wallet_ledger"
@@ -1050,8 +1057,8 @@ class RPC:
             data["representative"] = True
         if weight:
             data["weight"] = True
-        if pending:
-            data["pending"] = True
+        if receivable:
+            data["receivable"] = True
         if modified_since:
             data["modified_since"] = modified_since
         return self._post(data)
