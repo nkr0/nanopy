@@ -103,7 +103,8 @@ def generate_block(sk, pk, account):
             if online:
                 try:  # nag users to change representative
                     if int(
-                            rpc.account_info(nb['representative'], weight=True)['weight']
+                            rpc.account_info(nb['representative'],
+                                             weight=True)['weight']
                     ) * 100 / available_supply > 0.2 and not args.change_rep_to:
                         print(
                             bcolors.warn1,
@@ -432,9 +433,3 @@ if accounts and online:
             print('')
         except:
             print(bcolors.warn2, info[account], bcolors.end, '\n')
-
-ticker = json.loads(
-    rpc.session.
-    get('https://min-api.cryptocompare.com/data/price?fsym=NANO&tsyms=USD,BTC'
-       ).text)
-print('USD', ticker['USD'], '\tBTC', ticker['BTC'])
