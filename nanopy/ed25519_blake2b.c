@@ -1,11 +1,11 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
 
-#include "blake2.h"
-#include "ed25519-donna/ed25519-hash-custom.h"
-#include "ed25519-donna/ed25519.h"
+#include <blake2.h>
+#include <ed25519-hash-custom.h>
+#include <ed25519.h>
 
-void ed25519_randombytes_unsafe(void *out, size_t outlen) {}
+void ed25519_randombytes_unsafe(void * /*out*/, size_t /*outlen*/) {}
 
 void ed25519_hash_init(ed25519_hash_context *ctx) { blake2b_init(ctx, 64); }
 
@@ -25,7 +25,7 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
   ed25519_hash_final(&ctx, out);
 }
 
-static PyObject *publickey(PyObject *self, PyObject *args) {
+static PyObject *publickey(PyObject * /*self*/, PyObject *args) {
   const unsigned char *sk;
   Py_ssize_t p0;
   ed25519_public_key pk;
@@ -37,7 +37,7 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
   return Py_BuildValue("y#", &pk, 32);
 }
 
-static PyObject *signature(PyObject *self, PyObject *args) {
+static PyObject *signature(PyObject * /*self*/, PyObject *args) {
   const unsigned char *m, *randr, *sk, *pk;
   Py_ssize_t p0, p1, p2, p3;
   ed25519_signature sig;
@@ -52,7 +52,7 @@ static PyObject *signature(PyObject *self, PyObject *args) {
   return Py_BuildValue("y#", &sig, 64);
 }
 
-static PyObject *checkvalid(PyObject *self, PyObject *args) {
+static PyObject *checkvalid(PyObject * /*self*/, PyObject *args) {
   const unsigned char *sig, *m, *pk;
   Py_ssize_t p0, p1, p2;
 
@@ -69,8 +69,15 @@ static PyMethodDef m_methods[] = {
     {"checkvalid", checkvalid, METH_VARARGS, NULL},
     {NULL, NULL, 0, NULL}};
 
-static struct PyModuleDef ed25519_blake2b_module = {
-    PyModuleDef_HEAD_INIT, "ed25519_blake2b", NULL, -1, m_methods};
+static struct PyModuleDef ed25519_blake2b_module = {PyModuleDef_HEAD_INIT,
+                                                    "ed25519_blake2b",
+                                                    NULL,
+                                                    -1,
+                                                    m_methods,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL,
+                                                    NULL};
 
 PyMODINIT_FUNC PyInit_ed25519_blake2b(void) {
   return PyModule_Create(&ed25519_blake2b_module);
