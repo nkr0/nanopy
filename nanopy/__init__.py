@@ -4,7 +4,6 @@ account_prefix = 'nano_'
 mrai_name = 'NANO'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
-# ~ decimal.getcontext().traps[decimal.Rounded] = 1
 decimal.getcontext().prec = 40
 D = decimal.Decimal
 
@@ -116,7 +115,7 @@ def work_generate(_hash):
 def mrai_from_raw(amount):
     assert type(amount) is str
     mrai = D(amount) * D(D(10)**-30)
-    return str(mrai.quantize(D(D(10)**-30)))
+    return format(mrai.quantize(D(D(10)**-30)), '.30f')
 
 
 def mrai_to_raw(amount):
@@ -128,7 +127,7 @@ def mrai_to_raw(amount):
 def krai_from_raw(amount):
     assert type(amount) is str
     krai = D(amount) * D(D(10)**-27)
-    return str(krai.quantize(D(D(10)**-27)))
+    return format(krai.quantize(D(D(10)**-27)), '.27f')
 
 
 def krai_to_raw(amount):
@@ -140,7 +139,7 @@ def krai_to_raw(amount):
 def rai_from_raw(amount):
     assert type(amount) is str
     rai = D(amount) * D(D(10)**-24)
-    return str(rai.quantize(D(D(10)**-24)))
+    return format(rai.quantize(D(D(10)**-24)), '.24f')
 
 
 def rai_to_raw(amount):
