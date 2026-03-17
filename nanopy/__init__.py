@@ -3,26 +3,22 @@ import hashlib, nanopy.ed25519_blake2b, nanopy.work
 nano_prefix = 'nano_'
 
 
-def nano_block():
-    return dict(
-        [('type', 'state'), ('account', ''),
-         ('previous',
-          '0000000000000000000000000000000000000000000000000000000000000000'),
-         ('balance', ''), ('representative', ''),
-         ('link',
-          '0000000000000000000000000000000000000000000000000000000000000000'),
-         ('work', ''), ('signature', '')])
+def account_key(account):
+    if nano_prefix in ['nano_', 'xrb_']:  # stupid inconsistent main network.
+        assert (len(account) == 64 and
+                account[:4] == 'xrb_') or (len(account) == 65 and
+                                           (account[:5] == 'nano_'))
+    else:
+        assert len(account) == len(nano_prefix) + 60 and account[:len(
+            nano_prefix)] == nano_prefix
 
-
-def nano_account(address):
-    # ~ assert (len(address) == len(nano_prefix)+60)
     account_map = "13456789abcdefghijkmnopqrstuwxyz"
     account_lookup = {}
     for x in range(32):
         account_lookup[account_map[x]] = format(x, '05b')
 
-    acrop_key = address[-60:-8]
-    acrop_check = address[-8:]
+    acrop_key = account[-60:-8]
+    acrop_check = account[-8:]
 
     number_l = ''.join(account_lookup[acrop_key[x]] for x in range(52))
     number_l = int(number_l[4:], 2).to_bytes(32, byteorder='big')
@@ -33,19 +29,21 @@ def nano_account(address):
 
     h = hashlib.blake2b(digest_size=5)
     h.update(number_l)
-    assert (h.digest() == check_l)
+
+    assert h.digest() == check_l
+
     return number_l.hex()
 
 
-def account_nano(account):
-    assert (len(account) == 64)
+def account_get(key):
+    assert len(key) == 64
     account_map = "13456789abcdefghijkmnopqrstuwxyz"
     account_lookup = {}
     for x in range(32):
         account_lookup[format(x, '05b')] = account_map[x]
 
     h = hashlib.blake2b(digest_size=5)
-    h.update(bytes.fromhex(account))
+    h.update(bytes.fromhex(key))
     checksum = bytearray(h.digest())
 
     checksum.reverse()
@@ -54,55 +52,70 @@ def account_nano(account):
     encode_check = ''.join(
         account_lookup[checksum[x * 5:x * 5 + 5]] for x in range(8))
 
-    account = format(int(account, 16), '0260b')
+    keyb = format(int(key, 16), '0260b')
 
     encode_account = ''.join(
-        account_lookup[account[x * 5:x * 5 + 5]] for x in range(52))
+        account_lookup[keyb[x * 5:x * 5 + 5]] for x in range(52))
 
     return nano_prefix + encode_account + encode_check
 
 
-def seed_keys(seed, index):
+def validate_account_number(account):
+    try:
+        account_key(account)
+        return True
+    except AssertionError:
+        return False
+
+
+def key_expand(key):
+    sk = bytes.fromhex(key)
+    pk = nanopy.ed25519_blake2b.publickey(sk).hex()
+    return key, pk, account_get(pk)
+
+
+def deterministic_key(seed, index):
     h = hashlib.blake2b(digest_size=32)
 
     h.update(bytes.fromhex(seed))
     h.update(index.to_bytes(4, byteorder='big'))
 
-    account_key = h.digest()
-    return account_key.hex(), nanopy.ed25519_blake2b.publickey(
-        account_key).hex()
+    sk = h.digest()
+    return key_expand(sk.hex())
 
 
-def seed_nano(seed, index):
-    _, pk = seed_keys(seed, index)
-    return account_nano(pk)
+def work_validate(work, _hash):
+    workb = bytearray.fromhex(work)
+    hashb = bytearray.fromhex(_hash)
 
-
-def pow_threshold(check):
-    if check > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00': return True
-    return False
-
-
-def pow_validate(PoW, previous_hash):
-    pow_data = bytearray.fromhex(PoW)
-    hash_data = bytearray.fromhex(previous_hash)
-
-    pow_data.reverse()
+    workb.reverse()
 
     h = hashlib.blake2b(digest_size=8)
-    h.update(pow_data)
-    h.update(hash_data)
+    h.update(workb)
+    h.update(hashb)
 
     final = bytearray(h.digest())
     final.reverse()
 
-    return pow_threshold(final)
+    if final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00': return True
+    return False
 
 
-def pow_generate(previous_hash):
-    PoW = format(nanopy.work.generate(bytes.fromhex(previous_hash)), '016x')
-    assert (pow_validate(PoW, previous_hash))
-    return PoW
+def work_generate(_hash):
+    work = format(nanopy.work.generate(bytes.fromhex(_hash)), '016x')
+    assert work_validate(work, _hash)
+    return work
+
+
+def base_block():
+    return dict(
+        [('type', 'state'), ('account', ''),
+         ('previous',
+          '0000000000000000000000000000000000000000000000000000000000000000'),
+         ('balance', ''), ('representative', ''),
+         ('link',
+          '0000000000000000000000000000000000000000000000000000000000000000'),
+         ('work', ''), ('signature', '')])
 
 
 def block_hash(block):
@@ -111,9 +124,9 @@ def block_hash(block):
     bh.update(
         bytes.fromhex(
             "0000000000000000000000000000000000000000000000000000000000000006"))
-    bh.update(bytes.fromhex(nano_account(block["account"])))
+    bh.update(bytes.fromhex(account_key(block["account"])))
     bh.update(bytes.fromhex(block["previous"]))
-    bh.update(bytes.fromhex(nano_account(block["representative"])))
+    bh.update(bytes.fromhex(account_key(block["representative"])))
     bh.update(bytes.fromhex(format(int(block["balance"]), '032x')))
     bh.update(bytes.fromhex(block["link"]))
 
