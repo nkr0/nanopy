@@ -11,7 +11,6 @@ Python implementation of NANO-related functions.
   * `yapf --style google -i -r nanopy`
 
 ## Contact
-  * email `42086377+nano128@users.noreply.github.com`.
   * Find me on discord in NANO's channel. My handle is `128#2928`.
 
 ## Donations
