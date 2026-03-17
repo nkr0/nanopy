@@ -12,5 +12,5 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",
 ]
-autodoc_mock_imports = ["nanopy.ed25519_blake2b", "nanopy.work"]
+autodoc_mock_imports = ["nanopy.ext"]
 intersphinx_mapping = {"python": ("https://docs.python.org/3", None)}
