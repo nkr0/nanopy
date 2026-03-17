@@ -1,4 +1,4 @@
-import hashlib, base64, decimal, hmac
+import os, hashlib, base64, decimal, hmac
 try:
     import nanopy.ed25519_blake2b as ed25519_blake2b
 except ModuleNotFoundError:
@@ -188,5 +188,5 @@ def block_hash(block):
 
 def sign_block(sk, pk, block):
     return ed25519_blake2b.signature(
-        bytes.fromhex(block_hash(block)), bytes.fromhex(sk),
+        bytes.fromhex(block_hash(block)), os.urandom(32), bytes.fromhex(sk),
         bytes.fromhex(pk)).hex()
