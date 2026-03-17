@@ -13,6 +13,7 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.x'
+      - run: pip install -Ur requirements.txt
       - name: Build Linux/MacOS
         if: runner.os != 'Windows'
         run: python setup.py build_ext -i
@@ -45,6 +46,7 @@ jobs:
             apt-get update -q -y
             apt-get install -q -y gcc python3-dev python3-pip
           run: |
+            pip install -Ur requirements.txt
             python3 setup.py build_ext -i
             python3 ghtest.py
 
