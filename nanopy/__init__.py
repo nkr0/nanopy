@@ -105,9 +105,8 @@ class Network:
         :arg multiplier: positive number
         :return: 16 hex char difficulty
         """
-        return format(
-            int((int(self.difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)), "016x"
-        )
+        d = int((int(self.difficulty, 16) - (1 << 64)) / multiplier + (1 << 64))
+        return f"{d:016x}"
 
     def to_multiplier(self, difficulty: str) -> float:
         """Get multiplier from difficulty
@@ -161,7 +160,7 @@ class Network:
         if exp <= 0:
             exp = self.exp
         nano = self._D(raw) * self._D(self._D(10) ** -exp)
-        return format(nano.quantize(self._D(self._D(10) ** -exp)), "." + str(exp) + "f")
+        return f"{nano.quantize(self._D(self._D(10) ** -exp)):.{exp}f}"
 
     def to_raw(self, val: str, exp: int = 0) -> int:
         """Multiply val by 10^exp
@@ -408,13 +407,7 @@ class StateBlock:
         "64 hex char hash digest of block"
         return hashlib.blake2b(
             bytes.fromhex(
-                "0" * 63
-                + "6"
-                + self.acc.pk
-                + self.prev
-                + self.rep.pk
-                + format(self.bal, "032x")
-                + self.link
+                f"{'0' * 63}6{self.acc.pk}{self.prev}{self.rep.pk}{self.bal:032x}{self.link}"
             ),
             digest_size=32,
         ).hexdigest()
@@ -450,9 +443,8 @@ class StateBlock:
         :arg difficulty: 16 hex char difficulty
         """
         assert len(bytes.fromhex(difficulty)) == 8
-        self.work = format(
-            ext.work_generate(bytes.fromhex(self.prev), int(difficulty, 16)), "016x"
-        )
+        w = ext.work_generate(bytes.fromhex(self.prev), int(difficulty, 16))
+        self.work = f"{w:016x}"
 
     def work_validate(self, difficulty: str) -> bool:
         """Check whether block has a valid work.
