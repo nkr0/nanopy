@@ -357,6 +357,14 @@ class RPC:
         data['index'] = index
         return self._post(data)
 
+    def epoch_upgrade(self, epoch, key, count=0):
+        data = {}
+        data['action'] = 'epoch_upgrade'
+        data['epoch'] = epoch
+        data['key'] = key
+        if count: data['count'] = count
+        return self._post(data)
+
     def frontiers(self, account, count=1):
         data = {}
         data['action'] = 'frontiers'
