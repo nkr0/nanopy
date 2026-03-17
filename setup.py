@@ -1,49 +1,86 @@
 # -*- coding: utf-8 -*-
 
-import sys
 import os
+import sys
 from setuptools import setup, Extension
 
-eca = ela = libs = macros = None
 
-GCC_MIN_MAX = (5, 9)  # Look for gcc versions between 5 and 9
-POW_GPU = os.environ.pop('USE_GPU', False)  # Enable GPU work generation using OpenCL
-LINK_OMP = os.environ.pop('LINK_OMP', False)  # Link with the OMP library (OSX)
+def _find_gcc(*min_max, dirs):
+    """
+    Looks in `dirs` for gcc-{GCC_MIN_MAX}, starting with MAX.
 
+    If no gcc-{VERSION} is found, `None` is returned.
 
-def get_gcc():
-    path = os.getenv('PATH').split(os.path.pathsep)
+    :param dirs: list of directories to look in
+    :return: gcc name or None
+    """
 
-    for version in range(*GCC_MIN_MAX).__reversed__():
+    for version in range(*min_max).__reversed__():
         f_name = 'gcc-{0}'.format(version)
 
-        for _dir in path:
+        for _dir in dirs:
             full_path = os.path.join(_dir, f_name)
             if os.path.exists(full_path) and os.access(full_path, os.X_OK):
                 return f_name
 
-    raise FileNotFoundError('Requires gcc version between {0[0]} and {0[1]}'.format(GCC_MIN_MAX))
+    return None
 
 
-if sys.platform == 'darwin':
-    if POW_GPU:
-        macros = [('HAVE_OPENCL_OPENCL_H', '1')]
-        ela = ['-framework', 'OpenCL']
+def ext_args(**kwargs):
+    """
+    decides compiler based on passed kwargs and builds compiler args
+
+    :param:gcc: user-supplied gcc compiler
+    :param:use_gpu: use OpenCL GPU work generation (default False)
+    :param:link_omp: Link with the OMP library (OSX) (default False)
+    :param:platform: OS platform
+    :param:gcc_min_max: look for gcc between these versions
+
+    :return: (compiler, compiler_args)
+    """
+
+    e_args = {
+        'name': 'nanopy.work',
+        'sources': ['nanopy/work.c'],
+        'extra_compile_args': [],
+        'extra_link_args': [],
+        'libraries': [],
+        'define_macros': [],
+    }
+
+    platform = kwargs.get('platform')
+    use_gpu = kwargs.get('use_gpu')
+
+    if platform == 'darwin':
+        if use_gpu:
+            e_args['define_macros'] = [('HAVE_OPENCL_OPENCL_H', '1')]
+            e_args['extra_link_args'] = ['-framework', 'OpenCL']
+        else:
+            e_args['libraries'] = ['b2', 'omp'] if kwargs.get('link_omp') else ['b2']
+            e_args['extra_compile_args'] = ['-fopenmp']
+    elif platform == 'linux':
+        if use_gpu:
+            e_args['define_macros'] = [('HAVE_CL_CL_H', '1')]
+            e_args['libraries'] = ['OpenCL']
+        else:
+            e_args['extra_compile_args'] = ['-fopenmp']
+            e_args['libraries'] = ['b2']
     else:
-        libs = ['b2', 'omp'] if LINK_OMP else ['b2']
-        eca = ['-fopenmp']
-elif sys.platform == 'linux':
-    if POW_GPU:
-        macros = [('HAVE_CL_CL_H', '1')]
-        libs = ['OpenCL']
-    else:
-        libs = ['b2']
-        eca = ['-fopenmp']
-else:
-    raise OSError('Unsupported OS platform')
+        raise OSError('Unsupported OS platform')
 
-# Use the most recent version of gcc
-os.environ['CC'] = get_gcc()
+    # return user provided gcc or greatest version found
+    return kwargs.get('gcc') or _find_gcc(*kwargs.get('gcc_min_max'), dirs=kwargs.get('path')), e_args
+
+
+env = os.environ
+env['CC'], ext_kwargs = ext_args(
+    gcc=env.get('CC', None),
+    use_gpu=True if env.get('USE_GPU') == '1' else False,
+    link_omp=True if env.get('LINK_OMP') == '1' else False,
+    path=os.getenv('PATH').split(os.path.pathsep),
+    gcc_min_max=(5, 9),
+    platform=sys.platform
+)
 
 setup(
     name="nanopy",
@@ -55,12 +92,5 @@ setup(
     license='MIT',
     python_requires='>=3.6',
     install_requires=['requests'],
-    ext_modules=[
-        Extension(
-            'nanopy.work',
-            sources=['nanopy/work.c'],
-            extra_compile_args=eca,
-            extra_link_args=ela,
-            libraries=libs,
-            define_macros=macros)
-    ])
+    ext_modules=[Extension(**ext_kwargs)]
+)
