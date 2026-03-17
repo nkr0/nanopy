@@ -289,28 +289,38 @@ class RPC:
             data['json_block'] = True
         return self._post(data)
 
-    def bootstrap(self, address, port, bypass_frontier_confirmation=False):
+    def bootstrap(self,
+                  address,
+                  port,
+                  bypass_frontier_confirmation=False,
+                  _id=''):
         data = {}
         data['action'] = 'bootstrap'
         data['address'] = address
         data['port'] = port
         if bypass_frontier_confirmation:
             data['bypass_frontier_confirmation'] = True
+        if _id:
+            data['id'] = _id
         return self._post(data)
 
-    def bootstrap_lazy(self, hash_, force=False):
+    def bootstrap_lazy(self, hash_, force=False, _id=''):
         data = {}
         data['action'] = 'bootstrap_lazy'
         data['hash'] = hash_
         if force:
             data['force'] = True
+        if _id:
+            data['id'] = _id
         return self._post(data)
 
-    def bootstrap_any(self, force=False):
+    def bootstrap_any(self, force=False, _id=''):
         data = {}
         data['action'] = 'bootstrap_any'
         if force:
             data['force'] = True
+        if _id:
+            data['id'] = _id
         return self._post(data)
 
     def bootstrap_status(self):
