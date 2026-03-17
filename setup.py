@@ -27,7 +27,10 @@ def find_gcc(*min_max, dirs):
     return None
 
 
-def get_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
+def get_work_ext_kwargs(use_gpu=False,
+                        link_omp=False,
+                        use_vc=False,
+                        platform=None):
     """
     builds extension kwargs depending on environment
 
@@ -41,7 +44,7 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
 
     e_args = {
         'name': 'nanopy.work',
-        'sources': ['nanopy/b2b/blake2b.c', 'nanopy/work.c'],
+        'sources': ['nanopy/blake2b/blake2b.c', 'nanopy/work.c'],
         'extra_compile_args': [],
         'extra_link_args': [],
         'libraries': [],
@@ -78,9 +81,51 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
     return e_args
 
 
+def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
+    """
+    builds extension kwargs depending on environment
+
+    :param use_vc: use Visual C compiler (Windows)
+    :param platform: OS platform
+
+    :return: extension kwargs
+    """
+
+    e_args = {
+        'name':
+        'nanopy.ed25519_blake2b',
+        'sources': [
+            'nanopy/blake2b/blake2b.c', 'nanopy/ed25519-donna/ed25519.c',
+            'nanopy/ed25519_blake2b.c'
+        ],
+        'extra_compile_args': [],
+        'extra_link_args': [],
+        'define_macros': [],
+    }
+
+    if platform == 'win32' and use_vc:
+        e_args['extra_compile_args'] = [
+            '/ED25519_SSE2', '/ED25519_CUSTOMRNG', '/ED25519_CUSTOMHASH',
+            '/arch:SSE2', '/arch:AVX', '/arch:AVX2'
+        ]
+        e_args['extra_link_args'] = [
+            '/ED25519_SSE2', '/ED25519_CUSTOMRNG', '/ED25519_CUSTOMHASH',
+            '/arch:SSE2', '/arch:AVX', '/arch:AVX2'
+        ]
+    else:
+        e_args['define_macros'] = [('ED25519_SSE2', '1'),
+                                   ('ED25519_CUSTOMRNG', '1'),
+                                   ('ED25519_CUSTOMHASH', '1')]
+
+    return e_args
+
+
 env = os.environ
-env['CC'] = os.getenv('CC') or find_gcc(
-    *(5, 9), dirs=os.getenv('PATH').split(os.pathsep))
+try:
+    env['CC'] = os.getenv('CC') or find_gcc(
+        *(5, 9), dirs=os.getenv('PATH').split(os.pathsep))
+except:
+    pass
 
 setup(
     name="nanopy",
@@ -93,9 +138,12 @@ setup(
     python_requires='>=3.6',
     install_requires=['requests'],
     ext_modules=[
-        Extension(**get_ext_kwargs(
+        Extension(**get_work_ext_kwargs(
             use_gpu=True if env.get('USE_GPU') == '1' else False,
             link_omp=True if env.get('LINK_OMP') == '1' else False,
+            use_vc=True if env.get('USE_VC') == '1' else False,
+            platform=sys.platform)),
+        Extension(**get_ed25519_blake2b_ext_kwargs(
             use_vc=True if env.get('USE_VC') == '1' else False,
             platform=sys.platform))
     ])
