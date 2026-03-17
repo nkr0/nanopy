@@ -1,20 +1,17 @@
 import os, timeit
 import nanopy as npy
 from nanopy.rpc import RPC
-from nanopy.ed25519_blake2b import checkvalid, publickey
 
 # signature
 
-tk = "0000000000000000000000000000000000000000000000000000000000000000"
-m = "test"
-assert (
-    checkvalid(
-        bytes.fromhex(npy.sign(tk, _hash=None, msg=m)),
-        m.encode(),
-        publickey(bytes.fromhex(tk)),
-    )
-    == 0
+tk, pk, _ = npy.key_expand(
+    "0000000000000000000000000000000000000000000000000000000000000000"
 )
+m = "test"
+sig = npy.sign(tk, msg=m)
+assert npy.verify_signature(m, sig, pk)
+m = "fail"
+assert not npy.verify_signature(m, sig, pk)
 
 # work computation
 

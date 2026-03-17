@@ -133,5 +133,6 @@ def checkvalid(s, m, pk):
     S = decodeint(s[b // 8 : b // 4])
     h = Hint(encodepoint(R) + pk + m)
     if scalarmult(B, S) != edwards(R, scalarmult(A, h)):
-        raise Exception("signature does not pass verification")
+        #raise Exception("signature does not pass verification")
+        return False
     return True
