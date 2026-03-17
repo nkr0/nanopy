@@ -513,7 +513,8 @@ class RPC:
                      link=None,
                      work=None,
                      version='work_1',
-                     json_block=False):
+                     json_block=False,
+                     difficulty=None):
         data = {}
         data['action'] = 'block_create'
         data['type'] = 'state'
@@ -534,6 +535,8 @@ class RPC:
         data['previous'] = previous
         if work:
             data['work'] = work
+        elif difficulty:
+            data['difficulty'] = difficulty
         # Currently 'work_1' is the default and only valid option.
         # if version in []: data['version'] = version
         if json_block:
