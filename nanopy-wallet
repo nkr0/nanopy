@@ -30,7 +30,7 @@ def get_no_value_options(section):
     except:
         pass
     try:
-        options.remove('torip')
+        options.remove('mmdb')
     except:
         pass
     try:
@@ -333,13 +333,15 @@ if online:
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
         rpc.session.proxies['http'] = 'socks5h://localhost:9050'
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
-        if config['DEFAULT'].getboolean('torip', fallback=False):
+        mmdb = config['DEFAULT'].get('mmdb')
+        if mmdb:
             try:
-                from geolite2 import geolite2
+                import maxminddb
                 torip = json.loads(
                     rpc.session.get('http://httpbin.org/ip').text)['origin']
-                reader = geolite2.reader()
+                reader = maxminddb.open_database(mmdb)
                 match = reader.get(torip)
+                reader.close()
                 print('\033[92m' + torip, ' ',
                       match['country']['names']['en'] + '\033[0m')
             except:
