@@ -14,23 +14,6 @@ Install by running `pip install nanopy`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
-## WSGI node API
-* `nanopy.wsgi` is a WSGI-Python script that routes requests from a public port to the node RPC. It has no Python dependencies and will run on pure Python.
-* By default the tool looks for node RPC at `http://localhost:<port>`. `<port>` number varies depending on the url. If the url is one of `/rpc-nano`, `/rpc-main`, `/rpc-live`, `<port>` is 7076. `/rpc-beta` sets `<port>` as 55000. `/rpc-banano` sets `<port>` as 7072. This means you can have multiple nodes running on the same machine and serve their corresponding RPCs at separate urls.
-* It is not safe to make all the RPC methods available. Hence, by default only a `minimal` set of RPC methods are made available. You can adjust the list `rpc_enabled` in `nanopy.wsgi` to change the list of methods that are made available. For e.g., if you want to provide work computation services, you can set `rpc_enabled = minimal + work`. To provide some nano specific tools, `rpc_enabled += tools`.
-
-### Apache2 - mod_wsgi framework
-* `sudo apt-get install libapache2-mod-wsgi-py3`
-* Add the directives below into apache conf file, `/etc/apache2/sites-available/000-default.conf`. Modify the path as necessary. Node API will be served at `http://localhost/rpc-<network>` and RPC methods can be submitted as GET/POST requests.
-```
-WSGIScriptAliasMatch ^/rpc-(.{3,6}) /path/to/nanopy.wsgi
-<Directory /path/to>
-    Require all granted
-</Directory>
-```
-* `sudo a2enmod wsgi && sudo systemctl restart apache2`
-* If you want to throttle/rate-limit/authenticate your clients, apache2 has several modules that can help you with this. `mod_evasive, mod_ratelimit, mod_auth*`.
-
 ## Wallet
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
 
