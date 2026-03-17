@@ -73,7 +73,7 @@ env['CC'] = env.get('CC', None) or find_gcc(
 
 setup(
     name="nanopy",
-    version='17.0.0',
+    version='18.0.0',
     packages=['nanopy'],
     description='Python implementation of NANO-related functions.',
     url='https://github.com/nano128/nanopy',
