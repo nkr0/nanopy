@@ -432,14 +432,11 @@ def verify_signature(msg, sig, pk):
     :param str pk: public key for the signature
     :return bool: True if valid, False otherwise
     """
-#    :param bytes message: message to verify
-#    :param bytes signature: signature for the message
-#    :param bytes pk: public key for the signature
     m = msg.encode()
     s = bytes.fromhex(sig)
     k = bytes.fromhex(pk)
 
-    return ed25519_blake2b.checkvalid(s, m, k)
+    return bool(ed25519_blake2b.checkvalid(s, m, k))
 
 
 def block_create(key, previous, representative, balance, link):
