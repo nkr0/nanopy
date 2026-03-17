@@ -1,3 +1,4 @@
+#define PY_SSIZE_T_CLEAN
 #include <Python.h>
 #include <time.h>
 
@@ -332,27 +333,30 @@ __kernel void nano_work (__global ulong const * attempt, __global ulong * result
 static uint64_t s[16];
 static int p;
 
-uint64_t xorshift1024star(void) {  // nano-node/nano/node/xorshift.hpp
+uint64_t xorshift1024star(void) { // nano-node/nano/node/xorshift.hpp
   const uint64_t s0 = s[p++];
   uint64_t s1 = s[p &= 15];
-  s1 ^= s1 << 31;         // a
-  s1 ^= s1 >> 11;         // b
-  s1 ^= s0 ^ (s0 >> 30);  // c
+  s1 ^= s1 << 31;        // a
+  s1 ^= s1 >> 11;        // b
+  s1 ^= s0 ^ (s0 >> 30); // c
   s[p] = s1;
   return s1 * (uint64_t)1181783497276652981;
 }
 
 static PyObject *generate(PyObject *self, PyObject *args) {
-  int i, j;
+  size_t i, j;
   uint8_t *h32;
   uint64_t difficulty = 0, work = 0, nonce = 0;
-  const size_t work_size = 1024 * 1024;  // default value from nano
+  const size_t work_size = 1024 * 1024; // default value from nano
+  Py_ssize_t p0;
 
-  if (!PyArg_ParseTuple(args, "y#K", &h32, &i, &difficulty)) return NULL;
+  if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
+    return NULL;
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
-    for (j = 0; j < 4; j++) ((uint16_t *)&s[i])[j] = rand();
+    for (j = 0; j < 4; j++)
+      ((uint16_t *)&s[i])[j] = rand();
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
   int err;
@@ -607,6 +611,7 @@ static struct PyModuleDef work_module = {PyModuleDef_HEAD_INIT, "work", NULL,
 
 PyMODINIT_FUNC PyInit_work(void) {
   PyObject *m = PyModule_Create(&work_module);
-  if (m == NULL) return NULL;
+  if (m == NULL)
+    return NULL;
   return m;
 }
