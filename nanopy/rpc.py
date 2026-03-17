@@ -163,11 +163,13 @@ class RPC:
         data["account"] = account
         return self._post(data)
 
-    def accounts_balances(self, accounts):
+    def accounts_balances(self, accounts, include_only_confirmed=True):
         "https://docs.nano.org/commands/rpc-protocol/#accounts_balances"
         data = {}
         data["action"] = "accounts_balances"
         data["accounts"] = accounts
+        if not include_only_confirmed:
+            data["include_only_confirmed"] = False
         return self._post(data)
 
     def accounts_frontiers(self, accounts):
