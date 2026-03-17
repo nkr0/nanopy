@@ -15,10 +15,10 @@ jobs:
       language: shell
       before_install:
         - choco install python
-      env: PATH=/c/Python39:/c/Python39/Scripts:$PATH
+      env: PATH=/c/Python310:/c/Python310/Scripts:$PATH
       install:
-        - pip install -U pip
         - python -V
+        - pip install -U pip
         - pip -V
         - pip install -Ur requirements.txt
         - USE_VC=1 python setup.py build_ext -i
