@@ -2,7 +2,7 @@
 
 import argparse, getpass, gnupg, os, json, configparser, requests
 from nanopy import *
-import nanopy.rpc as rpc
+from nanopy.rpc import RPC
 
 
 class bcolors:
@@ -287,6 +287,7 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+rpc = RPC()
 mrai_name = 'NANO'
 available_supply = 133248289196499221154116917710445381553
 if args.network == 'beta':
