@@ -8,13 +8,13 @@ except ModuleNotFoundError:
 
 account_prefix = 'nano_'
 work_difficulty = 'ffffffc000000000'
+standard_exponent = 30
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 decimal.getcontext().prec = 40
-D = decimal.Decimal
+_D = decimal.Decimal
 
-RFC_3548 = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
-ENCODING = b'13456789abcdefghijkmnopqrstuwxyz'
+_B32 = b'13456789abcdefghijkmnopqrstuwxyz'
 
 
 def state_block():
@@ -24,10 +24,16 @@ def state_block():
 
 
 def account_key(account):
-    assert len(account) >= 60
+    if account_prefix in ['nano_', 'xrb_']:
+        assert (len(account) == 64 and
+                account[:4] == 'xrb_') or (len(account) == 65 and
+                                           (account[:5] == 'nano_'))
+    else:
+        assert len(account) == len(account_prefix) + 60 and account[:len(
+            account_prefix)] == account_prefix
 
     account = b'1111' + account[-60:].encode()
-    account = account.translate(bytes.maketrans(ENCODING, RFC_3548))
+    account = account.translate(bytes.maketrans(_B32, base64._b32alphabet))
     key = base64.b32decode(account)
 
     checksum = key[:-6:-1]
@@ -45,7 +51,7 @@ def account_get(key):
     checksum = hashlib.blake2b(key, digest_size=5).digest()
     key = b'\x00\x00\x00' + key + checksum[::-1]
     account = base64.b32encode(key)
-    account = account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
+    account = account.translate(bytes.maketrans(base64._b32alphabet, _B32))[4:]
 
     return account_prefix + account.decode()
 
@@ -65,9 +71,9 @@ def key_expand(key):
 
 def deterministic_key(seed, index=0):
     return key_expand(
-        hashlib.blake2b(
-            bytes.fromhex(seed) + index.to_bytes(4, byteorder='big'),
-            digest_size=32).hexdigest())
+        hashlib.blake2b(bytes.fromhex(seed) +
+                        index.to_bytes(4, byteorder='big'),
+                        digest_size=32).hexdigest())
 
 
 try:
@@ -138,40 +144,42 @@ except ModuleNotFoundError:
         return work.hex()
 
 
-def mrai_from_raw(amount):
+def from_raw(amount, exp=0):
     assert type(amount) is str
-    mrai = D(amount) * D(D(10)**-30)
-    return format(mrai.quantize(D(D(10)**-30)), '.30f')
+    exp = exp if exp else standard_exponent
+    mrai = _D(amount) * _D(_D(10)**-exp)
+    return format(mrai.quantize(_D(_D(10)**-exp)), '.' + str(exp) + 'f')
+
+
+def to_raw(amount, exp=0):
+    assert type(amount) is str
+    exp = exp if exp else standard_exponent
+    raw = _D(amount) * _D(_D(10)**exp)
+    return str(raw.quantize(_D(1)))
+
+
+def mrai_from_raw(amount):
+    return from_raw(amount, exp=30)
 
 
 def mrai_to_raw(amount):
-    assert type(amount) is str
-    raw = D(amount) * D(D(10)**30)
-    return str(raw.quantize(D(1)))
+    return to_raw(amount, exp=30)
 
 
 def krai_from_raw(amount):
-    assert type(amount) is str
-    krai = D(amount) * D(D(10)**-27)
-    return format(krai.quantize(D(D(10)**-27)), '.27f')
+    return from_raw(amount, exp=27)
 
 
 def krai_to_raw(amount):
-    assert type(amount) is str
-    raw = D(amount) * D(D(10)**27)
-    return str(raw.quantize(D(1)))
+    return to_raw(amount, exp=27)
 
 
 def rai_from_raw(amount):
-    assert type(amount) is str
-    rai = D(amount) * D(D(10)**-24)
-    return format(rai.quantize(D(D(10)**-24)), '.24f')
+    return from_raw(amount, exp=24)
 
 
 def rai_to_raw(amount):
-    assert type(amount) is str
-    raw = D(amount) * D(D(10)**24)
-    return str(raw.quantize(D(1)))
+    return to_raw(amount, exp=24)
 
 
 def block_hash(block):
@@ -204,11 +212,12 @@ def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
 
 def block_create(key, previous, representative, balance, link):
     nb = state_block()
-    nb['account'] = account_get(ed25519_blake2b.publickey(bytes.fromhex(key)).hex())
+    nb['account'] = account_get(
+        ed25519_blake2b.publickey(bytes.fromhex(key)).hex())
     nb['previous'] = previous
     nb['representative'] = representative
     nb['balance'] = balance
     nb['link'] = link
     nb['work'] = work_generate(block_hash(nb))
-    nb['signature'] = sign(key,block=nb)
+    nb['signature'] = sign(key, block=nb)
     return nb

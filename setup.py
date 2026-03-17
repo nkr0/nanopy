@@ -127,23 +127,19 @@ try:
 except:
     pass
 
-setup(
-    name="nanopy",
-    version='19.0.0',
-    packages=['nanopy'],
-    description='Python implementation of NANO-related functions.',
-    url='https://github.com/nano128/nanopy',
-    author='128',
-    license='MIT',
-    python_requires='>=3.6',
-    install_requires=['requests'],
-    ext_modules=[
-        Extension(**get_work_ext_kwargs(
-            use_gpu=True if env.get('USE_GPU') == '1' else False,
-            link_omp=True if env.get('LINK_OMP') == '1' else False,
-            use_vc=True if env.get('USE_VC') == '1' else False,
-            platform=sys.platform)),
-        Extension(**get_ed25519_blake2b_ext_kwargs(
-            use_vc=True if env.get('USE_VC') == '1' else False,
-            platform=sys.platform))
-    ])
+setup(name="nanopy",
+      version='19.0.0',
+      packages=['nanopy'],
+      url='https://github.com/nanopie/nanopy',
+      license='MIT',
+      python_requires='>=3.6',
+      ext_modules=[
+          Extension(**get_work_ext_kwargs(
+              use_gpu=True if env.get('USE_GPU') == '1' else False,
+              link_omp=True if env.get('LINK_OMP') == '1' else False,
+              use_vc=True if env.get('USE_VC') == '1' else False,
+              platform=sys.platform)),
+          Extension(**get_ed25519_blake2b_ext_kwargs(
+              use_vc=True if env.get('USE_VC') == '1' else False,
+              platform=sys.platform))
+      ])
