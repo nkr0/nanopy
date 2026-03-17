@@ -1,5 +1,6 @@
 language: python
   - "3.6"
+cache: pip
 install:
   - pip install -U requests mnemonic
   - python setup.py build_ext --inplace

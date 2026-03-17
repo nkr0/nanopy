@@ -4,9 +4,9 @@ sys.path.insert(0, os.path.abspath('../'))
 
 project = 'nanopy'
 author = 'npy'
-copyright = str(date.today().year)+', '+author
+copyright = str(date.today().year) + ', ' + author + ', MIT License'
 
-extensions = ['sphinx.ext.autodoc','sphinx.ext.intersphinx']
+extensions = ['sphinx.ext.autodoc', 'sphinx.ext.intersphinx']
 intersphinx_mapping = {'python': ('https://docs.python.org/3', None)}
 
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
