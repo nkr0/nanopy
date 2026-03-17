@@ -4,13 +4,14 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanopy"
-version = "27.0.2"
+version = "27.0.3"
 license = "MIT"
 
 [project.optional-dependencies]
-rpc = ["requests"]
-wssrpc = ["requests", "websocket-client"]
 mnemonic = ["mnemonic"]
+rpc = ["requests"]
+tor = ["pysocks"]
+wssrpc = ["websocket-client"]
 
 [project.urls]
 Repository = "https://github.com/npy0/nanopy"
