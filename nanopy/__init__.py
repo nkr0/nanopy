@@ -99,11 +99,10 @@ def generate_mnemonic(strength=256, language='english'):
 def mnemonic_key(words, index=0, passphrase='', language='english'):
     m = mnemonic.Mnemonic(language)
     assert (m.check(words))
-    sk_path = ['m', 44, 165, index]
 
-    for i in sk_path:
+    for i in ['m', 44, 165, index]:
         if i == 'm':
-            key = 'ed25519 seed'.encode('utf-8')
+            key = b'ed25519 seed'
             msg = m.to_seed(words, passphrase)
         else:
             i = i | 0x80000000
