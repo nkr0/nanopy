@@ -666,11 +666,12 @@ def wallet_balances(wallet, threshold=0):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def wallet_change_seed(wallet, seed):
+def wallet_change_seed(wallet, seed, count=0):
     data = {}
     data['action'] = 'wallet_change_seed'
     data['wallet'] = wallet
     data['seed'] = seed
+    if count: data['count'] = count
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
