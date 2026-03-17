@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import argparse, getpass, gnupg, os, json, configparser, requests
+import argparse, gpg, os, json, configparser, requests
 from nanopy import *
 from nanopy.rpc import RPC
 
@@ -309,51 +309,32 @@ try:
 except:
     unlock = False
 
-gpg = gnupg.GPG()
+gpg_ctx = gpg.Context(armor=True,
+                      home_dir=os.path.dirname(os.path.realpath(__file__)))
 
 accounts = []
 
 if args.new:
-
-    pwd = getpass.getpass()
-
-    if pwd == getpass.getpass(prompt='Enter password again: '):
-
-        seed = os.urandom(32).hex()
-
-        _, _, account0 = deterministic_key(seed, 0)
-
-        with open(account0 + '.asc', 'w') as f:
-            asc = gpg.encrypt(seed,
-                              symmetric='AES256',
-                              passphrase=pwd,
-                              recipients=None,
-                              extra_args=['--s2k-digest-algo', 'SHA512'])
-            print(f.name[:-4])
-            print(str(asc))
-            f.write(str(asc))
-    else:
-        print(bcolors.warn2, 'Passwords do not match.', bcolors.end)
+    seed = os.urandom(32).hex()
+    _, _, account0 = deterministic_key(seed, 0)
+    cipher, _, _ = gpg_ctx.encrypt(seed.encode(), sign=False)
+    print(account0, '\n', cipher.decode())
+    with open(account0 + '.asc', 'wb') as f:
+        f.write(cipher)
 
 elif args.audit_file:
     accounts = [line.rstrip(b'\n').decode() for line in args.audit_file]
 
 elif unlock:
+    seed = gpg_ctx.decrypt(args.f.read())[0].decode()
 
-    seed = gpg.decrypt_file(args.f, passphrase=getpass.getpass())
-
-    if seed.ok:
-
-        if args.audit:
-            for i in range(args.index + 1):
-                _, _, account_i = deterministic_key(str(seed)[:64], i)
-                accounts.append(account_i)
-
-        else:
-            generate_block(*deterministic_key(str(seed)[:64], args.index))
+    if args.audit:
+        for i in range(args.index + 1):
+            _, _, account_i = deterministic_key(str(seed)[:64], i)
+            accounts.append(account_i)
 
     else:
-        print(bcolors.warn2, seed.status, bcolors.end)
+        generate_block(*deterministic_key(str(seed)[:64], args.index))
 
 elif args.broadcast and online:
     ack = rpc.process(

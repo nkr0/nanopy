@@ -24,13 +24,8 @@ def state_block():
 
 
 def account_key(account):
-    if account_prefix in ['nano_', 'xrb_']:
-        assert (len(account) == 64 and
-                account[:4] == 'xrb_') or (len(account) == 65 and
-                                           (account[:5] == 'nano_'))
-    else:
-        assert len(account) == len(account_prefix) + 60 and account[:len(
-            account_prefix)] == account_prefix
+    assert len(account) == len(
+        account_prefix) + 60 and account[:len(account_prefix)] == account_prefix
 
     account = b'1111' + account[-60:].encode()
     account = account.translate(bytes.maketrans(_B32, base64._b32alphabet))
