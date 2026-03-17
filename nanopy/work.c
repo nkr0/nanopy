@@ -591,6 +591,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       printf("clReleaseContext failed with error code %d\n", err);
       goto FAIL;
     }
+  FAIL:
   }
 #else
   while (workb == 0) {
@@ -619,9 +620,6 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   }
 #endif
   swapLong(&workb);
-#if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
-FAIL:
-#endif
   return Py_BuildValue("K", workb);
 }
 

@@ -305,7 +305,7 @@ if online:
 
 if online:
     import nanopy.rpc as rpc
-    rpc.url = config['DEFAULT'].get('rpc', fallback='https://getcanoe.io/rpc')
+    rpc.url = config['DEFAULT'].get('rpc', fallback='http://localhost:7076')
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
         rpc.session.proxies['http'] = 'socks5h://localhost:9050'
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
