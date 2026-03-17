@@ -24,6 +24,7 @@ setup(
     description='Python implementation of NANO-related functions.',
     url='https://github.com/nano128/nanopy',
     author='128',
+    author_email="42086377+nano128@users.noreply.github.com",
     license='MIT',
     python_requires='>=3.0',
     install_requires=['requests'],
