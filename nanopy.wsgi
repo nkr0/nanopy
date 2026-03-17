@@ -150,7 +150,7 @@ def application(environ, start_response):
             response += b'\nAvailable RPC  : ' + ', '.join(rpc_enabled).encode(
                 'utf-8')
             response += b'\n\n\nDonate         : ' + donate.encode('utf-8')
-            response += b'\nGitHub         : https://github.com/nano128/nanopy'
+            response += b'\nGitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi'
 
         elif json.loads(request_body)['action'] in rpc_enabled:
             response = get_response(rpc, request_body)
