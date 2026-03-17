@@ -11,6 +11,8 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
       - run: pip install -Ur requirements.txt
       - name: Build Linux/MacOS
         if: runner.os != 'Windows'
