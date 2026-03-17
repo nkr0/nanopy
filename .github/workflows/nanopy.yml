@@ -3,24 +3,24 @@ jobs:
   base:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-      - run: pip install -ve .[cifull]
-      - run: coverage run -m pytest
-      - run: coverage report
-      - run: black --check *.py */*.py */*/*.py nanopy-wallet
-      - run: clang-format --dry-run -Werror src/nanopy/ext.c
-      - run: mypy
-      - run: pylint src
-      - run: sphinx-build -W docs _site
-      - run: sudo apt update
-      - run: sudo apt install libomp-dev ocl-icd-opencl-dev
-      - run: CC=clang pip install -ve .
-      - run: pytest
-      - run: USE_GPU=1 pip install -ve .
-      - uses: actions/upload-pages-artifact@v4
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.x'
+    - run: pip install -ve .[cifull]
+    - run: coverage run -m pytest
+    - run: coverage report
+    - run: black --check *.py */*.py */*/*.py nanopy-wallet
+    - run: clang-format --dry-run -Werror src/nanopy/ext.c
+    - run: mypy
+    - run: pylint src
+    - run: sphinx-build -W docs _site
+    - run: sudo apt update
+    - run: sudo apt install libomp-dev ocl-icd-opencl-dev
+    - run: CC=clang pip install -ve .
+    - run: pytest
+    - run: USE_GPU=1 pip install -ve .
+    - uses: actions/upload-pages-artifact@v4
   other:
     needs: base
     strategy:
@@ -28,15 +28,15 @@ jobs:
         os: [ubuntu-24.04-arm, macos-26-intel, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-      - if: runner.os != 'macOS'
-        run: pip install -ve .[cibasic]
-      - if: runner.os == 'macOS'
-        run: CC=gcc-15 pip install -ve .[cibasic]
-      - run: pytest
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.x'
+    - if: runner.os != 'macOS'
+      run: pip install -ve .[cibasic]
+    - if: runner.os == 'macOS'
+      run: CC=gcc-15 pip install -ve .[cibasic]
+    - run: pytest
   deploy:
     if: github.ref_type == 'tag'
     needs: other
@@ -46,11 +46,10 @@ jobs:
     environment: release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: '3.x'
-      - run: pip install setuptools
-      - run: python3 setup.py sdist
-      - uses: pypa/gh-action-pypi-publish@release/v1
-      - uses: actions/deploy-pages@v4
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: '3.x'
+    - run: pipx run build -s
+    - uses: pypa/gh-action-pypi-publish@release/v1
+    - uses: actions/deploy-pages@v4
