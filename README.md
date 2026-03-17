@@ -2,10 +2,12 @@
 Python implementation of NANO-related functions.
 
 ## C library for work generation
-* For CPU blake2 libraries are required. `sudo apt-get install libb2-dev`
+* Install the library from PyPI by running `pip install nanopy`.
+* Install the library from source by running `python setup.py build && python setup.py install`.
+* Point to custom compiler by prepending the installation command with `CC=path/to/custom/c/compiler`.
+  * When using `Visual C`, additionally prepend the installation command with `USE_VS=1`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
-
-Install the library by running `python setup.py build && python setup.py install`.
+  * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
 ## WSGI node API
 * `nanopy.wsgi` is a WSGI-Python script that routes requests from a public port to the node RPC. It has no Python dependencies and will run on pure Python.
