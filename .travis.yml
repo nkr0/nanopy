@@ -4,7 +4,6 @@ env: OMP_NUM_THREADS=2
 jobs:
   include:
     - name: "amd64"
-      arch: amd64
     - name: "arm64"
       arch: arm64
     - name: "macOS"
@@ -28,7 +27,6 @@ jobs:
         - python travis.py
         - python setup.py build_sphinx
     - name: "gpu"
-      arch: amd64
       dist: focal
       install:
         - sudo apt-get update
