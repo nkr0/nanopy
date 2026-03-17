@@ -7,12 +7,14 @@ libs = []
 macros = []
 
 if '--enable-gpu' in sys.argv:
-    sys.argv.remove('--enable-gpu')
-    libs = ['OpenCL']
+    sys.argv.remove('--enable-gpu')    
     macros = [('HAVE_CL_CL_H', '1')]
     if sys.platform == 'darwin':
         macros = [('HAVE_OPENCL_OPENCL_H', '1')]
+        libs = []
         ela = ['-framework', 'OpenCL']
+    else:
+        libs = ['OpenCL']
 else:
     libs = ['b2']
     eca = ['-fopenmp']
