@@ -91,10 +91,11 @@ def deterministic_key(seed, index):
     return key_expand(sk.hex())
 
 
-def work_validate(work, _hash):
+def work_validate(work, _hash, threshold=None):
     workb = bytearray.fromhex(work)
     hashb = bytearray.fromhex(_hash)
-    work_thresholdb = bytearray.fromhex(work_threshold)
+    threshold = threshold if threshold else work_threshold
+    thresholdb = bytearray.fromhex(threshold)
 
     workb.reverse()
 
@@ -105,28 +106,30 @@ def work_validate(work, _hash):
     final = bytearray(h.digest())
     final.reverse()
 
-    if final > work_thresholdb: return True
+    if final > thresholdb: return True
     return False
 
 
 try:
     import nanopy.work
 
-    def work_generate(_hash):
+    def work_generate(_hash, threshold=None):
+        threshold = threshold if threshold else work_threshold
         work = format(
-            nanopy.work.generate(bytes.fromhex(_hash), int(work_threshold, 16)),
+            nanopy.work.generate(bytes.fromhex(_hash), int(threshold, 16)),
             '016x')
-        assert work_validate(work, _hash)
+        assert work_validate(work, _hash, threshold)
         return work
 except ModuleNotFoundError:
-    print('\033[91m' + "No work extension" + '\033[0m')
+    print('\033[93m' + "No work extension" + '\033[0m')
     import random
 
-    def work_generate(_hash):
+    def work_generate(_hash, threshold=None):
         hashb = bytearray.fromhex(_hash)
         b2bb = bytearray.fromhex('0000000000000000')
-        work_thresholdb = bytearray.fromhex(work_threshold)
-        while b2bb < work_thresholdb:
+        threshold = threshold if threshold else work_threshold
+        thresholdb = bytearray.fromhex(threshold)
+        while b2bb < thresholdb:
             workb = bytearray((random.getrandbits(8) for i in range(8)))
             for r in range(0, 256):
                 workb[7] = (workb[7] + r) % 256
@@ -135,10 +138,10 @@ except ModuleNotFoundError:
                 h.update(hashb)
                 b2bb = bytearray(h.digest())
                 b2bb.reverse()
-                if b2bb >= work_thresholdb: break
+                if b2bb >= thresholdb: break
 
         workb.reverse()
-        assert work_validate(workb.hex(), _hash)
+        assert work_validate(workb.hex(), _hash, threshold)
         return workb.hex()
 
 
