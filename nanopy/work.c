@@ -7,7 +7,7 @@
 #include <OpenCL/opencl.h>
 #else
 #include <omp.h>
-#include "blake2b/blake2.h"
+#include "blake2.h"
 #endif
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
