@@ -129,7 +129,7 @@ except:
 setup(name="nanopy",
       version='19.0.0',
       packages=['nanopy'],
-      url='https://github.com/nanopie/nanopy',
+      url='https://github.com/npy0/nanopy',
       license='MIT',
       python_requires='>=3.6',
       ext_modules=[
