@@ -73,11 +73,9 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   cl_platform_id cpPlatform;
 
   err = clGetPlatformIDs(1, &cpPlatform, &num);
-  assert(err == CL_SUCCESS);
-  if (num == 0) {
-    PyErr_SetString(PyExc_RuntimeError, "No GPUs found");
-    return NULL;
-  }
+  if (err || !num)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clGetPlatformIDs", err);
 
   size_t length = strlen(opencl_program);
   cl_mem d_nonce, d_work, d_h32, d_difficulty;
@@ -88,106 +86,165 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   cl_kernel kernel;
 
   err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clGetDeviceIDs", err);
 
   context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateContext", err);
 
 #ifndef __APPLE__
   queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(
+        PyExc_RuntimeError,
+        "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
 #else
   queue = clCreateCommandQueue(context, device_id, 0, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateCommandQueue", err);
 #endif
 
   program = clCreateProgramWithSource(
       context, 1, (const char **)&opencl_program, &length, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateProgramWithSource", err);
 
   err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clBuildProgram", err);
 
   d_nonce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
                            &nonce, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
 
   d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
                           &work, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
 
   d_h32 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 32,
                          h32, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
 
   d_difficulty = clCreateBuffer(
       context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8, &difficulty, &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
 
   kernel = clCreateKernel(program, "nano_work", &err);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateKernel", err);
 
   err = clSetKernelArg(kernel, 0, sizeof(d_nonce), &d_nonce);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
 
   err = clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
 
   err = clSetKernelArg(kernel, 2, sizeof(d_h32), &d_h32);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
 
   err = clSetKernelArg(kernel, 3, sizeof(d_difficulty), &d_difficulty);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
 
   err = clEnqueueWriteBuffer(queue, d_h32, CL_FALSE, 0, 32, h32, 0, NULL, NULL);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
   err = clEnqueueWriteBuffer(queue, d_difficulty, CL_FALSE, 0, 8, &difficulty,
                              0, NULL, NULL);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
   while (!work) {
     nonce = xorshift1024star(&n);
 
     err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0, NULL,
                                NULL);
-    assert(err == CL_SUCCESS);
+    if (err)
+      return PyErr_Format(PyExc_RuntimeError,
+                          "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
     err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
                                  NULL, NULL);
-    assert(err == CL_SUCCESS);
+    if (err)
+      return PyErr_Format(PyExc_RuntimeError,
+                          "OpenCL:%d: Failed to clEnqueueNDRangeKernel", err);
 
     err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &work, 0, NULL,
                               NULL);
-    assert(err == CL_SUCCESS);
+    if (err)
+      return PyErr_Format(PyExc_RuntimeError,
+                          "OpenCL:%d: Failed to clEnqueueReadBuffer", err);
 
     err = clFinish(queue);
-    assert(err == CL_SUCCESS);
+    if (err)
+      return PyErr_Format(PyExc_RuntimeError, "OpenCL:%d: Failed to clFinish",
+                          err);
   }
 
   err = clReleaseMemObject(d_nonce);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseMemObject", err);
 
   err = clReleaseMemObject(d_work);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseMemObject", err);
 
   err = clReleaseMemObject(d_h32);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseMemObject", err);
 
   err = clReleaseMemObject(d_difficulty);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseMemObject", err);
 
   err = clReleaseKernel(kernel);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseKernel", err);
 
   err = clReleaseProgram(program);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseProgram", err);
 
   err = clReleaseCommandQueue(queue);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseCommandQueue", err);
 
   err = clReleaseContext(context);
-  assert(err == CL_SUCCESS);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clReleaseContext", err);
 #else
   while (!work) {
     nonce = xorshift1024star(&n);
