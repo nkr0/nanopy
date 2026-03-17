@@ -150,7 +150,7 @@ if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
 env = os.environ
 try:
     env["CC"] = os.getenv("CC") or find_gcc(
-        *(10, 5), dirs=os.getenv("PATH").split(os.pathsep)
+        *(15, 5), dirs=os.getenv("PATH").split(os.pathsep)
     )
 except:
     pass
