@@ -296,7 +296,7 @@ if args.network == 'beta':
     available_supply = 340272367920938463463374607431768151531
 elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
-    nanopy.work_threshold = 'fffffe0000000000'
+    nanopy.work_difficulty = 'fffffe0000000000'
     rpc.url = 'http://localhost:7072'
     mrai_name = 'BANANO'
     available_supply = 3402723679209384634633746074317681515310

@@ -1,7 +1,7 @@
 import hashlib, base64, decimal, hmac, mnemonic, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
-work_threshold = 'ffffffc000000000'
+work_difficulty = 'ffffffc000000000'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 decimal.getcontext().prec = 40
@@ -94,11 +94,11 @@ def mnemonic_key(words, index=0, passphrase='', language='english'):
     return key_expand(sk.hex())
 
 
-def work_validate(work, _hash, threshold=None):
+def work_validate(work, _hash, difficulty=None):
     workb = bytearray.fromhex(work)
     hashb = bytearray.fromhex(_hash)
-    threshold = threshold if threshold else work_threshold
-    thresholdb = bytearray.fromhex(threshold)
+    difficulty = difficulty if difficulty else work_difficulty
+    difficultyb = bytearray.fromhex(difficulty)
 
     workb.reverse()
 
@@ -109,30 +109,30 @@ def work_validate(work, _hash, threshold=None):
     final = bytearray(h.digest())
     final.reverse()
 
-    if final > thresholdb: return True
+    if final > difficultyb: return True
     return False
 
 
 try:
     import nanopy.work
 
-    def work_generate(_hash, threshold=None):
-        threshold = threshold if threshold else work_threshold
+    def work_generate(_hash, difficulty=None):
+        difficulty = difficulty if difficulty else work_difficulty
         work = format(
-            nanopy.work.generate(bytes.fromhex(_hash), int(threshold, 16)),
+            nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)),
             '016x')
-        assert work_validate(work, _hash, threshold)
+        assert work_validate(work, _hash, difficulty)
         return work
 except ModuleNotFoundError:
     print('\033[93m' + 'No work extension' + '\033[0m')
     import random
 
-    def work_generate(_hash, threshold=None):
+    def work_generate(_hash, difficulty=None):
         hashb = bytearray.fromhex(_hash)
         b2bb = bytearray.fromhex('0000000000000000')
-        threshold = threshold if threshold else work_threshold
-        thresholdb = bytearray.fromhex(threshold)
-        while b2bb < thresholdb:
+        difficulty = difficulty if difficulty else work_difficulty
+        difficultyb = bytearray.fromhex(difficulty)
+        while b2bb < difficultyb:
             workb = bytearray((random.getrandbits(8) for i in range(8)))
             for r in range(0, 256):
                 workb[7] = (workb[7] + r) % 256
@@ -141,10 +141,10 @@ except ModuleNotFoundError:
                 h.update(hashb)
                 b2bb = bytearray(h.digest())
                 b2bb.reverse()
-                if b2bb >= thresholdb: break
+                if b2bb >= difficultyb: break
 
         workb.reverse()
-        assert work_validate(workb.hex(), _hash, threshold)
+        assert work_validate(workb.hex(), _hash, difficulty)
         return workb.hex()
 
 
