@@ -45,8 +45,8 @@ The wallet has a sub-command, `nanopy-wallet open FILE`, to unlock previously en
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 
 ## Support
-Contact me on nano's [forum](https://forum.nano.org/u/npy) (`npy`) or discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
+Contact me on nano's [forum](https://forum.nano.org/u/npy) (`npy`) or discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
 ```
 clang-format --style google -i nanopy/*.c
-yapf --style google -i -r nanopy nanopy-wallet setup.py travis.py docs/conf.py
+black nanopy nanopy-wallet setup.py travis.py docs/conf.py
 ```
