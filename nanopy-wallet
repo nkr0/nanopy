@@ -51,7 +51,7 @@ def get_no_value_options(section):
     return options
 
 
-def pretty_bal(label, colour, amount):
+def println(label, colour, amount):
     print(label + " :", colour + "{:>40}".format(amount) + bcolors.end, std_unit)
 
 
@@ -95,7 +95,7 @@ def generate_block(sk, pk, account):
             nb["previous"] = info["frontier"]
             nb["balance"] = info["balance"]
             nb["representative"] = info["representative"]
-            pretty_bal("Bal", bcolors.ok1, npy.from_raw(nb["balance"]))
+            println("Bal", bcolors.ok1, npy.from_raw(nb["balance"]))
             print("Rep :", nb["representative"])
 
             if online:
@@ -162,14 +162,14 @@ def generate_block(sk, pk, account):
             else:
                 args.send = None
                 nb["balance"] = "0"
-                pretty_bal("Bal", bcolors.ok1, npy.from_raw(nb["balance"]))
+                println("Bal", bcolors.ok1, npy.from_raw(nb["balance"]))
                 nb["representative"] = input("Rep : ")
 
         if args.send:
             nb["link"] = npy.account_key(args.send)
             print("\nTo  :", npy.account_get(nb["link"]))
             if args.empty:
-                pretty_bal("Amt", bcolors.warn2, npy.from_raw(nb["balance"]))
+                println("Amt", bcolors.warn2, npy.from_raw(nb["balance"]))
                 nb["balance"] = "0"
             else:
                 while True:
@@ -182,7 +182,7 @@ def generate_block(sk, pk, account):
                         "Amount must be less than or equal to balance.",
                         bcolors.end,
                     )
-            pretty_bal("Bal", bcolors.warn1, npy.from_raw(nb["balance"]))
+            println("Bal", bcolors.warn1, npy.from_raw(nb["balance"]))
 
         elif rb:
             nb["link"] = rb[0]
@@ -194,8 +194,8 @@ def generate_block(sk, pk, account):
             else:
                 amount = config[state][rb[0]]
                 nb["balance"] = str(int(nb["balance"]) + int(amount))
-            pretty_bal("Amt", bcolors.ok3, npy.from_raw(amount))
-            pretty_bal("Bal", bcolors.ok3, npy.from_raw(nb["balance"]))
+            println("Amt", bcolors.ok3, npy.from_raw(amount))
+            println("Bal", bcolors.ok3, npy.from_raw(nb["balance"]))
 
         if args.send or args.rep or rb:
             args.send = None
@@ -369,6 +369,11 @@ if online:
         online = True
 
 if online:
+    iploc = RPC(
+        url="http://ipinfo.io/json",
+        tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
+    )._get()
+    print(bcolors.warn1, iploc["city"], iploc["country"], bcolors.end)
     rpc = RPC(
         url=config["DEFAULT"].get("rpc", fallback=rpc_url),
         tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
@@ -433,7 +438,7 @@ if accounts and online:
     for account in accounts:
         print("Acc :", account)
         try:
-            pretty_bal(
+            println(
                 "Bal", bcolors.ok1, npy.from_raw(info["balances"][account]["balance"])
             )
             if int(info["balances"][account]["pending"]):
