@@ -1,45 +1,38 @@
 from setuptools import setup, Extension
-
-
-def try_build():
-    setup(
-        name="nanopy",
-        scripts=['__init__.py', 'ed25519_blake2b.py', 'rpc.py'],
-        ext_modules=[
-            Extension(
-                'work',
-                sources=['work.c'],
-                extra_compile_args=eca,
-                extra_link_args=ela,
-                libraries=libs,
-                define_macros=macros)
-        ])
-
+import sys
 
 eca = []
 ela = []
-try:
-    print('\033[92m' + "Trying to build in GPU mode." + '\033[0m')
+libs = []
+macros = []
+
+if '--enable-gpu' in sys.argv:
+    sys.argv.remove('--enable-gpu')
     libs = ['OpenCL']
-    try:
-        macros = [('HAVE_CL_CL_H', '1')]
-        try_build()
-    except:
+    macros = [('HAVE_CL_CL_H', '1')]
+    if sys.platform == 'darwin':
         macros = [('HAVE_OPENCL_OPENCL_H', '1')]
         ela = ['-framework', 'OpenCL']
-        try_build()
-    print('\033[92m' + "Success!!! Built with GPU work computation." +
-          '\033[0m')
-except:
-    print('\033[91m' + "Failed to build in GPU mode." + '\033[0m')
-    print('\033[92m' + "Trying to build in CPU mode." + '\033[0m')
-    try:
-        libs = ['b2']
-        eca = ['-fopenmp']
-        ela = []
-        macros = []
-        try_build()
-        print('\033[92m' + "Success!!! Built with CPU work computation." +
-              '\033[0m')
-    except:
-        print('\033[91m' + "Build failed." + '\033[0m')
+else:
+    libs = ['b2']
+    eca = ['-fopenmp']
+
+setup(
+    name="nanopy",
+    version='0.0.1',
+    description='Python implementation of NANO-related functions.',
+    url='https://github.com/nano128/nanopy',
+    author='128',
+    scripts=['__init__.py', 'ed25519_blake2b.py', 'rpc.py'],
+    license='MIT',
+    python_requires='>=3.0',
+    install_requires=['requests'],
+    ext_modules=[
+        Extension(
+            'work',
+            sources=['work.c'],
+            extra_compile_args=eca,
+            extra_link_args=ela,
+            libraries=libs,
+            define_macros=macros)
+    ])

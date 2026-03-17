@@ -518,17 +518,17 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
+    err =
+        clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL, NULL);
+    if (err != CL_SUCCESS) {
+      printf("clEnqueueWriteBuffer failed with error code %d\n", err);
+      goto FAIL;
+    }
+
     while (workb == 0) {
       r_str = xorshift1024star();
 
       err = clEnqueueWriteBuffer(queue, d_rand, CL_FALSE, 0, 8, &r_str, 0, NULL,
-                                 NULL);
-      if (err != CL_SUCCESS) {
-        printf("clEnqueueWriteBuffer failed with error code %d\n", err);
-        goto FAIL;
-      }
-
-      err = clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL,
                                  NULL);
       if (err != CL_SUCCESS) {
         printf("clEnqueueWriteBuffer failed with error code %d\n", err);
