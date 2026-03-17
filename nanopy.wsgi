@@ -96,6 +96,8 @@ Unchecked      : {3}
 Representative : {4}
 Voting weight  : {5}
 Available RPC  : {6}
+
+
 Donate         : {7}
 GitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi
 ''').format(
@@ -104,7 +106,7 @@ GitHub         : https://github.com/nano128/nanopy/blob/master/nanopy.wsgi
                   (float(root_info['count']) + float(root_info['unchecked']))),
         root_info['count'], root_info['unchecked'], representative, '%.2f' %
         (int(root_info['weight']) * 100. / int(root_info['available_supply'])),
-        ', '.join(rpc_enabled) + '\n\n', donate)
+        ', '.join(rpc_enabled), donate)
 
     return response.encode('utf-8')
 
@@ -117,15 +119,12 @@ def application(environ, start_response):
         if environ['SCRIPT_NAME'][5:] in ['nano', 'xrb', 'main', 'live']:
             rpc = 'http://localhost:7076'
             representative = representative_nano
-
         elif environ['SCRIPT_NAME'][5:] == 'beta':
             rpc = 'http://localhost:55000'
             representative = representative_beta
-
         elif environ['SCRIPT_NAME'][5:] == 'banano':
             rpc = 'http://localhost:7072'
             representative = representative_banano
-
         else:
             raise ValueError
 
@@ -136,7 +135,6 @@ def application(environ, start_response):
                 for key in query_raw:
                     query[key] = str(query_raw.get(key)[0])
                 request_body = json.dumps(query).encode('utf-8')
-
         elif environ['REQUEST_METHOD'] == 'POST':
             try:
                 request_body_size = int(environ.get('CONTENT_LENGTH', 0))
@@ -151,7 +149,6 @@ def application(environ, start_response):
             response = get_response(rpc, request_body)
 
         status = '200 OK'
-
     except:
         pass
 
