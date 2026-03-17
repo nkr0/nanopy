@@ -664,6 +664,14 @@ def unchecked_keys(key, count=1):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
+def unopened(account=None, count=0):
+    data = {}
+    data['action'] = 'unopened'
+    if account: data['account'] = account
+    if count: data['count'] = count
+    return json.loads(session.post(url, data=json.dumps(data)).text)
+
+
 def uptime():
     data = {}
     data['action'] = 'uptime'
