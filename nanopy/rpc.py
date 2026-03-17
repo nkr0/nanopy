@@ -47,6 +47,10 @@ class RPC:
         self.__url = url
         self.__headers = headers
 
+    def _get(self):
+        if self.__mode == "requests":
+            return self.session.get(self.__url, headers=self.__headers).json()
+
     def _post(self, data):
         if self.__mode == "requests":
             return self.session.post(
