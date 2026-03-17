@@ -285,9 +285,10 @@ class RPC:
         if announcements: data['announcements'] = announcements
         return self._post(data)
 
-    def confirmation_history(self):
+    def confirmation_history(self, _hash=None):
         data = {}
         data['action'] = 'confirmation_history'
+        if _hash: data['hash'] = _hash
         return self._post(data)
 
     def confirmation_info(self,
