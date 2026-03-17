@@ -445,7 +445,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-#if CL_TARGET_OPENCL_VERSION >= 200
+#ifndef __APPLE__
     queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateCommandQueueWithProperties failed with error code %d\n",
