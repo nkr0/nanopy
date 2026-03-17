@@ -92,8 +92,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
     """
 
     e_args = {
-        'name':
-        'nanopy.ed25519_blake2b',
+        'name': 'nanopy.ed25519_blake2b',
         'sources': [
             'nanopy/blake2b/blake2b.c', 'nanopy/ed25519-donna/ed25519.c',
             'nanopy/ed25519_blake2b.c'
