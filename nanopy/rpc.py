@@ -24,14 +24,16 @@ def accounts_pending(accounts, count=1):
 
 
 def accounts_balances(accounts):
-    # ~ data={}
-    # ~ data['action']='accounts_balances'
-    # ~ data['accounts']=accounts
-    # ~ return json.loads(session.post(url, data = json.dumps(data)).text)
-    ##### temporary solution until api is available ###
-    info = {}
-    for account in accounts:
-        info[account] = account_info(account)
+    data = {}
+    data['action'] = 'accounts_balances'
+    data['accounts'] = accounts
+    info = json.loads(session.post(url, data=json.dumps(data)).text)
+    try:
+        del (info['error'])
+        for account in accounts:
+            info[account] = account_info(account)
+    except:
+        pass
     return info
 
 
