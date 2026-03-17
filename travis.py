@@ -1,12 +1,19 @@
+import os
 import nanopy as npy
 from nanopy.rpc import RPC
-import nanopy.work
 
-# print(npy.work_generate(_hash, multiplier=1/8))
+# work computation
+
 assert "fffffe0000000000" == npy.from_multiplier(1 / 8)
 assert "fffffff800000000" == npy.from_multiplier(8)
 assert 0.125 == npy.to_multiplier("fffffe0000000000")
 assert 8.0 == npy.to_multiplier("fffffff800000000")
+
+h=os.urandom(32).hex()
+w=npy.work_generate(h, multiplier=1/8)
+print(w)
+print(npy.work_validate(w, h))
+assert npy.work_validate(w, h, multiplier=1/8)
 
 # https://docs.nano.org/integration-guides/key-management/
 
