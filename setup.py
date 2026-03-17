@@ -69,9 +69,7 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
 
 env = os.environ
 env['CC'] = env.get('CC', None) or find_gcc(
-    *(5, 9),
-    dirs=env.get('PATH').split(os.path.pathsep)
-)
+    *(5, 9), dirs=env.get('PATH').split(os.path.pathsep))
 
 setup(
     name="nanopy",
@@ -82,14 +80,10 @@ setup(
     author='128',
     license='MIT',
     python_requires='>=3.6',
-    install_requires=['requests'],
+    install_requires=['requests', 'mnemonic'],
     ext_modules=[
-        Extension(
-            **get_ext_kwargs(
-                use_gpu=True if env.get('USE_GPU') == '1' else False,
-                link_omp=True if env.get('LINK_OMP') == '1' else False,
-                platform=sys.platform
-            )
-        )
-    ]
-)
+        Extension(**get_ext_kwargs(
+            use_gpu=True if env.get('USE_GPU') == '1' else False,
+            link_omp=True if env.get('LINK_OMP') == '1' else False,
+            platform=sys.platform))
+    ])
