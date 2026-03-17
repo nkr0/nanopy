@@ -87,9 +87,8 @@ def generate_block(sk, pk, account):
             nb['previous'] = info['frontier']
             nb['balance'] = info['balance']
             nb['representative'] = info['representative']
-            print("\nBal:\t", bcolors.ok1,
-                  int(nb["balance"]) / 10**30, bcolors.end, "NANO\t",
-                  nb["balance"], "RAW")
+            print("\nBal:\t", bcolors.ok1, mrai_from_raw(nb["balance"]),
+                  bcolors.end, "NANO")
             print("Rep:\t", nb["representative"])
 
             if online:
@@ -133,33 +132,28 @@ def generate_block(sk, pk, account):
             else:
                 args.send_to = None
                 nb['balance'] = '0'
-                print("Bal:\t", bcolors.ok1,
-                      int(nb["balance"]) / 10**30, bcolors.end, "NANO\t",
-                      nb["balance"], "RAW")
+                print("\nBal:\t", bcolors.ok1, mrai_from_raw(nb["balance"]),
+                      bcolors.end, "NANO")
                 nb['representative'] = input("Rep: \t ")
 
         if args.send_to:
             nb['link'] = account_key(args.send_to)
             print("\nTo :\t", account_get(nb['link']))
             if args.empty_to:
-                print("Amt:\t", bcolors.warn2,
-                      int(nb["balance"]) / 10**30, bcolors.end, "NANO\t",
-                      nb["balance"], "RAW")
+                print("Amt:\t", bcolors.warn2, mrai_from_raw(nb["balance"]),
+                      bcolors.end, "NANO")
                 nb['balance'] = '0'
             else:
                 while True:
-                    amount = format(
-                        float(input("Amount to send: ")) * 10**6,
-                        '.0f') + "000000000000000000000000"
-                    if int(amount) <= int(nb['balance']):
-                        nb['balance'] = str(int(nb['balance']) - int(amount))
+                    amount = mrai_to_raw(input("Amount to send: "))
+                    if amount <= D(nb['balance']):
+                        nb['balance'] = str(D(nb['balance']) - amount)
                         break
                     print(bcolors.warn2,
                           "Amount must be less than or equal to balance.",
                           bcolors.end)
-            print("\nBal:\t", bcolors.warn1,
-                  int(nb["balance"]) / 10**30, bcolors.end, "NANO\t",
-                  nb["balance"], "RAW")
+            print("\nBal:\t", bcolors.warn1, mrai_from_raw(nb["balance"]),
+                  bcolors.end, "NANO")
 
         elif rb:
             nb['link'] = rb[0]
@@ -170,9 +164,8 @@ def generate_block(sk, pk, account):
             else:
                 nb['balance'] = str(
                     int(nb['balance']) + int(config[state][rb[0]]))
-            print("\nBal:\t", bcolors.ok3,
-                  int(nb["balance"]) / 10**30, bcolors.end, "NANO\t",
-                  nb["balance"], "RAW")
+            print("\nBal:\t", bcolors.ok3, mrai_from_raw(nb["balance"]),
+                  bcolors.end, "NANO")
 
         if (args.send_to or args.change_rep_to or rb):
             args.send_to = None
@@ -408,8 +401,7 @@ if accounts and online:
         print("\nAcc:\t", account)
         try:
             print("Bal:\t", bcolors.ok1,
-                  int(info[account]["balance"]) / 10**30, bcolors.end, "NANO\t",
-                  info[account]["balance"], "RAW")
+                  mrai_from_raw(info[account]["balance"]), bcolors.end, "NANO")
             if int(info[account]["pending"]):
                 print(bcolors.ok3, "Pending block(s)", bcolors.end)
         except:
