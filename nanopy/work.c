@@ -12,8 +12,6 @@
 #include <omp.h>
 #endif
 
-#define WORK_SIZE 1024 * 1024  // default value from nano
-
 static uint64_t s[16];
 static int p;
 
@@ -35,17 +33,16 @@ void swapLong(uint64_t *X) {
 }
 
 static PyObject *generate(PyObject *self, PyObject *args) {
-  int i = 0;
+  int i, j;
   uint8_t *str;
   uint64_t workb = 0, r_str = 0;
+  const size_t work_size = 1024 * 1024;  // default value from nano
 
   if (!PyArg_ParseTuple(args, "y#", &str, &i)) return NULL;
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
-    for (int j = 0; j < 4; j++) ((uint16_t *)&s[i])[j] = rand();
-
-  i = 0;
+    for (j = 0; j < 4; j++) ((uint16_t *)&s[i])[j] = rand();
 
 #if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
   cl_platform_id cpPlatform;
@@ -55,7 +52,6 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   if (num > 0) {
     char *opencl_program;
     size_t length;
-    const size_t work_size = WORK_SIZE;
     cl_mem d_rand, d_work, d_str;
     cl_device_id device_id;
     cl_program program;
@@ -91,7 +87,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
     clSetKernelArg(kernel, 2, sizeof(d_str), &d_str);
 
-    while (i == 0) {
+    while (workb == 0) {
       r_str = xorshift1024star();
 
       clEnqueueWriteBuffer(queue, d_rand, CL_FALSE, 0, 8, &r_str, 0, NULL,
@@ -103,10 +99,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
 
       clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &workb, 0, NULL, NULL);
 
-      clFinish(queue);
-
-      if (workb != 0) i = 1;
-    }
+      clFinish(queue);    }
 
     free(opencl_program);
     clReleaseMemObject(d_rand);
@@ -118,13 +111,13 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     clReleaseContext(context);
   }
 #else
-  while (i == 0) {
+  while (workb == 0) {
     r_str = xorshift1024star();
 
 #pragma omp parallel
 #pragma omp for
-    for (int j = 0; j < WORK_SIZE; j++) {
-      uint64_t r_str_l = r_str + j, b2b_b = 0;
+    for (i = 0; i < work_size; i++) {
+      uint64_t r_str_l = r_str + i, b2b_b = 0;
       blake2b_state b2b;
 
       blake2b_init(&b2b, 8);
@@ -137,7 +130,6 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       if (b2b_b >= 0xffffffc000000000ul) {
 #pragma omp atomic write
         workb = r_str_l;
-        i = 1;
 #pragma omp cancel for
       }
 #pragma omp cancellation point for
