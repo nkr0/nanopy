@@ -2,7 +2,8 @@ language: python
 cache: pip
 env: OMP_NUM_THREADS=4
 install:
-  - pip install -U requests mnemonic
   - python setup.py build_ext --inplace
-script: python travis.py
+script:
+  - python travis.py
+  - python setup.py build_sphinx
 
