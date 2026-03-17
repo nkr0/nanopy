@@ -3,8 +3,11 @@ nanopy
 ######
 """
 
-import os, hashlib, base64, decimal, hmac, nanopy.work
-import nanopy.ed25519_blake2b as ed25519_blake2b
+try:
+    import os, hashlib, base64, decimal, hmac, nanopy.work
+    import nanopy.ed25519_blake2b as ed25519_blake2b
+except ModuleNotFoundError:
+    pass
 
 account_prefix = "nano_"
 work_difficulty = "ffffffc000000000"
