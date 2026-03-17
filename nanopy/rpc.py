@@ -339,8 +339,6 @@ class RPC:
         data["action"] = "bootstrap"
         data["address"] = address
         data["port"] = port
-        if bypass_frontier_confirmation:
-            data["bypass_frontier_confirmation"] = True
         if _id:
             data["id"] = _id
         return self._post(data)
