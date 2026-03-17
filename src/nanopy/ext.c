@@ -48,7 +48,7 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
     return NULL;
   assert(p0 == 32);
   bool res = is_valid(work, h32, difficulty);
-  return Py_BuildValue("p", res);
+  return Py_BuildValue("i", res);
 }
 
 static PyObject *work_generate(PyObject *self, PyObject *args) {
@@ -256,7 +256,7 @@ static PyObject *verify_signature(PyObject *self, PyObject *args) {
   assert(p0 == 64);
   assert(p1 == 32);
   bool res = ed25519_sign_open(m, p2, pk, sig) == 0;
-  return Py_BuildValue("p", res);
+  return Py_BuildValue("i", res);
 }
 
 static PyMethodDef m_methods[] = {
