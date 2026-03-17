@@ -17,7 +17,9 @@ WSGIScriptAlias /url /path/to/nanopy.wsgi
 </Directory>
 ```
   * `sudo systemctl restart apache2`
-  * Node API will be served at `http://localhost/url` and RPC commands can be submitted as POST requests.
+  * Node API will be served at `http://localhost/url` and RPC methods can be submitted as POST requests.
+  * By default the tool looks for node RPC at `http://localhost:7076`. You can change this by adjusting the variable, `url` in `nanopy.wsgi`.
+  * It is not safe to make all the RPC methods available. Hence, by default only a minimal set of RPC methods are made available. You can adjust the list `rpc_enabled` in `nanopy.wsgi` to change the list of methods that are made available. For e.g., if you want to provide work computation services, you can set `rpc_enabled = minimal + work`. To provide some nano specific tools, `rpc_enabled += tools`
 
 ## Wallet
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
