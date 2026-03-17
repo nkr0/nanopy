@@ -418,6 +418,6 @@ def block_create(
     nb["representative"] = representative
     nb["balance"] = balance
     nb["link"] = link
-    nb["work"] = work if work else work_generate(block_hash(nb, difficulty))
+    nb["work"] = work if work else work_generate(block_hash(nb), difficulty)
     nb["signature"] = sign(key, block=nb)
     return nb
