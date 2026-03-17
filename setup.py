@@ -27,12 +27,13 @@ def find_gcc(*min_max, dirs):
     return None
 
 
-def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
+def get_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):
     """
     builds extension kwargs depending on environment
 
     :param use_gpu: use OpenCL GPU work generation
     :param link_omp: Link with the OMP library (OSX)
+    :param use_vc: use Visual C compiler (Windows)
     :param platform: OS platform
 
     :return: extension kwargs
@@ -60,8 +61,17 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
             e_args['define_macros'] = [('HAVE_CL_CL_H', '1')]
             e_args['libraries'] = ['OpenCL']
         else:
-            e_args['extra_compile_args'] = ['-fopenmp']
-            e_args['extra_link_args'] = ['-fopenmp']
+            if use_vc:
+                e_args['define_macros'] = [('USE_VISUAL_C', '1')]
+                e_args['extra_compile_args'] = [
+                    '/openmp', '/arch:SSE2', '/arch:AVX', '/arch:AVX2'
+                ]
+                e_args['extra_link_args'] = [
+                    '/openmp', '/arch:SSE2', '/arch:AVX', '/arch:AVX2'
+                ]
+            else:
+                e_args['extra_compile_args'] = ['-fopenmp']
+                e_args['extra_link_args'] = ['-fopenmp']
     else:
         raise OSError('Unsupported OS platform')
 
@@ -86,5 +96,6 @@ setup(
         Extension(**get_ext_kwargs(
             use_gpu=True if env.get('USE_GPU') == '1' else False,
             link_omp=True if env.get('LINK_OMP') == '1' else False,
+            use_vc=True if env.get('USE_VC') == '1' else False,
             platform=sys.platform))
     ])
