@@ -29,7 +29,7 @@ def config_arch():
     global BLAKE2B_DIR
     global ED25519_IMPL
     m = platform.machine()
-    BLAKE2B_DIR = os.path.abspath("nanopy/blake2b") + "/"
+    BLAKE2B_DIR = "nanopy/blake2b/"
     ED25519_IMPL = "ED25519_64BIT"
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
         BLAKE2B_DIR += "sse"
@@ -155,7 +155,7 @@ config_arch()
 
 setup(
     name="nanopy",
-    version="21.0.0-2",
+    version="21.0.0-3",
     packages=["nanopy"],
     url="https://github.com/npy0/nanopy",
     license="MIT",
