@@ -145,9 +145,9 @@ def generate_block(sk, pk, account):
                 nb['balance'] = '0'
             else:
                 while True:
-                    amount = mrai_to_raw(input("Amount to send: "))
-                    if amount <= D(nb['balance']):
-                        nb['balance'] = str(D(nb['balance']) - amount)
+                    amount = int(mrai_to_raw(input("Amount to send: ")))
+                    if amount <= int(nb['balance']):
+                        nb['balance'] = str(int(nb['balance']) - amount)
                         break
                     print(bcolors.warn2,
                           "Amount must be less than or equal to balance.",
