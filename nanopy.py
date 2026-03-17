@@ -1,9 +1,11 @@
-import sys, random, json, ctypes, requests, ed25519_blake2b, hashlib
+import sys, os, random, json, ctypes, requests, ed25519_blake2b, hashlib
 from bitstring import BitArray
 
 rpc = requests.session()
 rpc.proxies = {}
 url=''
+
+def nano_block(): return dict([('type', 'state'), ('account', ''), ('previous', '0000000000000000000000000000000000000000000000000000000000000000'), ('balance', ''), ('representative', ''), ('link', '0000000000000000000000000000000000000000000000000000000000000000'), ('work', ''), ('signature', '')])
 
 def nano_account(address):
 	# Given a string containing an NANO address, confirm validity and provide resulting hex address
@@ -64,7 +66,7 @@ def account_nano(account):
 
 	return 'xrb_'+encode_account+encode_check							# build final address string
 
-def seed_account(seed, index):
+def seed_keys(seed, index):
 	# Given an account seed and index #, provide the account private and public keys
 	h = hashlib.blake2b(digest_size=32)
 
@@ -77,6 +79,11 @@ def seed_account(seed, index):
 	account_key = h.digest()
 	return account_key, ed25519_blake2b.publickey(account_key)
 
+def seed_nano(seed, index):
+	# Given an account seed and index #, provide the public address
+	_, pk = seed_keys(seed, index)
+	return account_nano(pk.hex())
+	
 def pow_threshold(check):
 	if check > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00': return True
 	return False
@@ -96,28 +103,23 @@ def pow_validate(pow, hash):
 
 def pow_generate(hash):
 	try:
-		libpow=ctypes.CDLL('./nano_pow.so')
-		libpow.pow_generate.restype = ctypes.c_char_p
-		return libpow.pow_generate(ctypes.c_char_p(hash.encode("utf-8"))).decode("utf-8")
+		lib=ctypes.CDLL(os.path.dirname(os.path.abspath(__file__))+"/libnanopow.so")
+		lib.pow_generate.restype = ctypes.c_char_p
+		return lib.pow_generate(ctypes.c_char_p(hash.encode("utf-8"))).decode("utf-8")
 	except OSError:
 		hash_bytes = bytearray.fromhex(hash)
-		test = False
-		inc = 0
-		while not test:
-				inc += 1
-				random_bytes = bytearray((random.getrandbits(8) for i in range(8)))		# generate random array of bytes
-				for r in range(0,256):
-					random_bytes[7] =(random_bytes[7] + r) % 256						# iterate over the last byte of the random bytes
-					h = hashlib.blake2b(digest_size=8)
-					h.update(random_bytes)
-					h.update(hash_bytes)
-					final = bytearray(h.digest())
-					final.reverse()
-					test = pow_threshold(final)
-					if test: break
-
-		random_bytes.reverse()
-		return random_bytes.hex()
+		while True:
+			random_bytes = bytearray((random.getrandbits(8) for i in range(8)))		# generate random array of bytes
+			for r in range(0,256):
+				random_bytes[7] =(random_bytes[7] + r) % 256						# iterate over the last byte of the random bytes
+				h = hashlib.blake2b(digest_size=8)
+				h.update(random_bytes)
+				h.update(hash_bytes)
+				final = bytearray(h.digest())
+				final.reverse()
+				if pow_threshold(final):
+					random_bytes.reverse()
+					return random_bytes.hex()
 
 def block_hash(block):
 	bh = hashlib.blake2b(digest_size=32)
@@ -130,6 +132,8 @@ def block_hash(block):
 	bh.update(BitArray(hex=block["link"]).bytes)
 
 	return bh.digest()
+
+def sign_block(seed, index, block):	return ed25519_blake2b.signature(block_hash(block),*seed_keys(seed, index)).hex()
 
 def account_info(account):
 	data={}

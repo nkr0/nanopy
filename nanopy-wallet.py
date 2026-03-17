@@ -1,4 +1,4 @@
-import nanopy, sys, argparse, getpass, gnupg, os, random, ed25519_blake2b, json
+import nanopy, sys, argparse, getpass, gnupg, os, random, json
 
 class bcolors:
 	ok1 = '\033[95m'
@@ -11,11 +11,8 @@ class bcolors:
 	underline = '\033[4m'
 
 def generate_block(seed):
-	sk, pk = nanopy.seed_account(seed, args.index) # secret/private key, public key
-
-	nb={}
-	nb['type']="state"
-	nb['account']=nanopy.account_nano(pk.hex())
+	nb=nanopy.nano_block()
+	nb['account']=nanopy.seed_nano(seed, args.index)
 	print("Acc:\t", nb['account'])
 
 	while True:
@@ -31,20 +28,14 @@ def generate_block(seed):
 			try: # nag users to change representative
 				if int(nanopy.account_info(nb['representative'])['weight'])*100/133248289196499221154116917710445381553>1.0 and (not args.change_rep_to):
 					print(bcolors.warn1, "\nYour representative has too much voting weight.", bcolors.end)
-					if ((input("Change rep?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')=='y'):
-						args.change_rep_to=input("Rep: \t ")
-			except KeyError:
-				pass
+					if ((input("Change rep?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')=='y'): args.change_rep_to=input("Rep: \t ")
+			except KeyError: pass
 
-			if args.change_rep_to:
-				nb['representative']=args.change_rep_to
-				nb['link'] = "0000000000000000000000000000000000000000000000000000000000000000"
+			if args.change_rep_to: nb['representative']=args.change_rep_to
 
 			if (not args.send_to) and (not args.change_rep_to):
-				if not rb:
-					break
-				if ((input("\nReceive pending blocks?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')!='y'):
-					break
+				if not rb: break
+				if ((input("\nReceive pending blocks?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')!='y'): break
 			
 		except KeyError:
 			if not rb:
@@ -52,7 +43,6 @@ def generate_block(seed):
 				break
 			else:
 				args.send_to=None
-				nb['previous']="0000000000000000000000000000000000000000000000000000000000000000"
 				nb['balance']='0'
 				print("Bal:\t", bcolors.ok1, int(nb["balance"])/10**30, bcolors.end, "NANO\t", nb["balance"], "RAW")
 				nb['representative']=input("Rep: \t ")
@@ -82,33 +72,28 @@ def generate_block(seed):
 			args.change_rep_to=None
 
 			work_hash=nb['previous']
-			if(nb['previous']=="0000000000000000000000000000000000000000000000000000000000000000"):
-				work_hash=nanopy.nano_account(nb['account'])
+			if(nb['previous']=="0000000000000000000000000000000000000000000000000000000000000000"): work_hash=nanopy.nano_account(nb['account'])
 
 			if(args.remote):
-				try:
-					nb['work']=nanopy.work_generate(work_hash)['work']
+				try: nb['work']=nanopy.work_generate(work_hash)['work']
 				except KeyError:
 					print(bcolors.warn1, "Node rejected work request, switching to local PoW.", bcolors.end)
 					args.remote=False
 
-			if not args.remote:
-				nb['work']=nanopy.pow_generate(work_hash)
+			while True:
+				if not args.remote: nb['work']=nanopy.pow_generate(work_hash)
+				if nanopy.pow_validate(nb['work'], work_hash): break
 
-			bh=nanopy.block_hash(nb)
-			nb['signature'] = ed25519_blake2b.signature(bh,sk,pk).hex()
+			nb['signature'] = nanopy.sign_block(seed, args.index, nb)
 
 			print("\n"+json.dumps(nb))
 
 			if ((input("\nBroadcast block?(y/"+bcolors.bold+"n"+bcolors.end+"): ") or 'n')=='y'):
 				ack={'demo':'broadcasting is blocked.'}
-				if not args.demo:
-					ack=nanopy.process(json.dumps(nb))
+				if not args.demo: ack=nanopy.process(json.dumps(nb))
 
-				try:
-					print(bcolors.ok3, ack['hash'], bcolors.end)
-				except KeyError:
-					print(bcolors.warn2, ack, bcolors.end)
+				try: print(bcolors.ok3, ack['hash'], bcolors.end)
+				except KeyError: print(bcolors.warn2, ack, bcolors.end)
 
 if __name__ == '__main__':
 
@@ -133,17 +118,15 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	
-	if args.demo:
-		print(bcolors.warn1, "Running in demo mode.", bcolors.end)
+	if args.demo: print(bcolors.warn1, "Running in demo mode.", bcolors.end)
 	
-	if args.empty_to:
-		args.send_to=args.empty_to
+	if args.empty_to: args.send_to=args.empty_to
 
 	if args.tor:
 		nanopy.rpc.proxies['http'] = 'socks5h://localhost:9050'
 		nanopy.rpc.proxies['https'] = 'socks5h://localhost:9050'
 
-	with open("api.dat", "rb") as f:
+	with open(os.path.dirname(os.path.abspath(nanopy.__file__))+"/api.dat", "rb") as f:
 		urls = [line.rstrip(b'\n').decode() for line in f]
 	nanopy.url=random.choice(urls)
 	
@@ -156,16 +139,13 @@ if __name__ == '__main__':
 		if pwd == getpass.getpass(prompt="Enter password again: "):
 
 			seed=os.urandom(32).hex()
-			sk, pk = nanopy.seed_account(seed, 0)
 
-			print("Index 0 account:\t", nanopy.account_nano(pk.hex()))
-
-			with open(nanopy.account_nano(pk.hex())+".asc", "w") as f:
+			with open(nanopy.seed_nano(seed, 0)+".asc", "w") as f:
 				asc = gpg.encrypt(seed, symmetric='AES256', passphrase=pwd, recipients=None, extra_args=['--s2k-digest-algo', 'SHA512'])
+				print(f.name[:-4])
 				print(str(asc))
 				f.write(str(asc))
-		else:
-			print(bcolors.warn2, "Passwords do not match.", bcolors.end)
+		else: print(bcolors.warn2, "Passwords do not match.", bcolors.end)
 
 	elif args.audit_file:
 		with open(args.audit_file, "rb") as f:
@@ -181,11 +161,9 @@ if __name__ == '__main__':
 			if args.audit_seed:
 				accounts=[]
 				for i in range(args.audit_seed+1):
-					sk, pk = nanopy.seed_account(str(seed), i)
-					accounts.append(nanopy.account_nano(pk.hex()))
+					accounts.append(nanopy.seed_nano(str(seed), i))
 
-			else:
-				generate_block(str(seed))
+			else: generate_block(str(seed))
 
 		else:
 			print(bcolors.warn2, seed.status, bcolors.end)
@@ -197,8 +175,6 @@ if __name__ == '__main__':
 			print("\nAcc:\t", account)
 			try:
 				print("Bal:\t", bcolors.ok1, int(info[account]["balance"])/10**30, bcolors.end, "NANO\t", info[account]["balance"], "RAW")
-				if int(info[account]["pending"]):
-					print(bcolors.ok3, "Pending block(s)", bcolors.end)
-			except KeyError:
-				print(bcolors.warn2, info[account], bcolors.end)
+				if int(info[account]["pending"]): print(bcolors.ok3, "Pending block(s)", bcolors.end)
+			except KeyError: print(bcolors.warn2, info[account], bcolors.end)
 
