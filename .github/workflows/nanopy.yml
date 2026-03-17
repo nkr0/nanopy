@@ -1,0 +1,47 @@
+name: nanopy
+on: [push]
+env:
+  OMP_NUM_THREADS: 2
+jobs:
+  common:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - run: pip install -Ur requirements.txt
+      - if: runner.os != 'Windows'
+        run: python setup.py build_ext -i
+      - if: runner.os == 'Windows'
+        run: python setup.py build_ext -i
+        env:
+          USE_VC: 1
+      - run: python ghtest.py
+      - if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install ocl-icd-opencl-dev intel-opencl-icd clinfo
+          rm -rf build/
+          python setup.py build_ext -i
+          clinfo
+        env:
+          USE_GPU: 1
+  aarch64:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+      - uses: uraimo/run-on-arch-action@v2.1.1
+        with:
+          arch: aarch64
+          distro: ubuntu20.04
+          githubToken: ${{ github.token }}
+          install: |
+            apt-get update -q -y
+            apt-get install -q -y g++ python3-dev python3-pip
+          run: |
+            pip3 install -Ur requirements.txt
+            python3 setup.py build_ext -i
+            python3 ghtest.py
+

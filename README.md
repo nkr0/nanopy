@@ -5,7 +5,7 @@
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
-[![Build Status](https://travis-ci.com/npy0/nanopy.svg?branch=master)](https://travis-ci.com/npy0/nanopy) [![docs](https://readthedocs.org/projects/nanopy/badge/)](http://nanopy.rtfd.io) [![PyPI](https://img.shields.io/pypi/v/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Implementation](https://img.shields.io/pypi/implementation/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Downloads](https://img.shields.io/pypi/dm/nanopy)](https://pypistats.org/packages/nanopy) [![PyPI - License](https://img.shields.io/pypi/l/nanopy)](https://opensource.org/licenses/MIT)
+[![PyPI](https://img.shields.io/pypi/v/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Implementation](https://img.shields.io/pypi/implementation/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Downloads](https://img.shields.io/pypi/dm/nanopy)](https://pypistats.org/packages/nanopy) [![PyPI - License](https://img.shields.io/pypi/l/nanopy)](https://opensource.org/licenses/MIT)
 
 ## Usage
 * Functions in the core library are written in the same template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://docs.nano.org/commands/rpc-protocol/#work_generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
