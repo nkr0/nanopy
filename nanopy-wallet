@@ -55,9 +55,10 @@ def pretty_bal(label, colour, amount):
 
 def gpg_encrypt(secret, filename):
     cipher, _, _ = gpg_ctx.encrypt(secret.encode(), sign=False)
+    print(filename)
     if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
     else:
-        print(filename, '\n', cipher.decode())
+        print(cipher.decode())
         with open(filename, 'wb') as f:
             f.write(cipher)
 
