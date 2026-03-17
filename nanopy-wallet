@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-import sys, argparse, getpass, gnupg, os, random, json, configparser
+import argparse, getpass, gnupg, os, json, configparser
 from nanopy import *
 
 
@@ -13,6 +13,13 @@ class bcolors:
     end = '\033[0m'
     bold = '\033[1m'
     underline = '\033[4m'
+
+
+def accounts_balances_looper(accounts):
+    info = {}
+    for account in accounts:
+        info[account] = rpc.account_info(account)
+    return info
 
 
 def get_no_value_options(section):
@@ -48,9 +55,9 @@ def get_no_value_options(section):
     return options
 
 
-def generate_block(seed):
+def generate_block(sk, pk):
     nb = nano_block()
-    nb['account'] = seed_nano(seed, args.index)
+    nb['account'] = account_nano(pk)
     print("Acc:\t", nb['account'])
 
     info = {'error': 'Account not found'}
@@ -91,13 +98,15 @@ def generate_block(seed):
                             bcolors.warn1,
                             "\nYour representative has too much voting weight.",
                             bcolors.end)
-                        if ((input("Change rep?(" + bcolors.bold + "y" +
-                                   bcolors.end + "/n): ") or 'y') == 'y'):
+                        if (input("Change rep?(" + bcolors.bold + "y" +
+                                  bcolors.end + "/n): ") or 'y') == 'y':
                             args.change_rep_to = input("Rep: \t ")
                 except:
                     pass
 
-            if args.change_rep_to: nb['representative'] = args.change_rep_to
+            if args.change_rep_to:
+                nano_account(args.change_rep_to)
+                nb['representative'] = args.change_rep_to
 
             if (not args.send_to) and (not args.change_rep_to):
                 if state_found and online:
@@ -109,11 +118,11 @@ def generate_block(seed):
                             "/.config/nanopy-wallet.conf", 'w') as f:
                         config.write(f)
                 if not rb: break
-                if ((input("\nReceive pending blocks?(" + bcolors.bold + "y" +
-                           bcolors.end + "/n): ") or 'y') != 'y'):
+                if (input("\nReceive pending blocks?(" + bcolors.bold + "y" +
+                          bcolors.end + "/n): ") or 'y') != 'y':
                     break
 
-        except:
+        except KeyError:
             if not rb:
                 print(bcolors.warn2, info, bcolors.end)
                 break
@@ -171,7 +180,7 @@ def generate_block(seed):
                ):
                 work_hash = nano_account(nb['account'])
 
-            if (args.remote):
+            if args.remote:
                 try:
                     nb['work'] = rpc.work_generate(work_hash)['work']
                 except:
@@ -181,11 +190,9 @@ def generate_block(seed):
                         bcolors.end)
                     args.remote = False
 
-            while True:
-                if not args.remote: nb['work'] = pow_generate(work_hash)
-                if pow_validate(nb['work'], work_hash): break
+            if not args.remote: nb['work'] = pow_generate(work_hash)
 
-            nb['signature'] = sign_block(seed, args.index, nb)
+            nb['signature'] = sign_block(sk, pk, nb)
 
             print("\n" + json.dumps(nb))
 
@@ -193,7 +200,7 @@ def generate_block(seed):
                 query = "\nBroadcast block?(y/" + bcolors.bold + "n" + bcolors.end + "): "
             else:
                 query = "\nUpdate state?(y/" + bcolors.bold + "n" + bcolors.end + "): "
-            if ((input(query) or 'n') == 'y'):
+            if (input(query) or 'n') == 'y':
                 if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
                 else:
                     if online:
@@ -202,8 +209,9 @@ def generate_block(seed):
                             print(bcolors.ok3, ack['hash'], bcolors.end)
                         except:
                             print(bcolors.warn2, ack, bcolors.end)
+                            state_found = False
                     if state_found:
-                        config[state]['frontier'] = block_hash(nb).hex()
+                        config[state]['frontier'] = block_hash(nb)
                         config[state]['balance'] = nb['balance']
                         config[state]['representative'] = nb['representative']
                         if rb:
@@ -317,8 +325,6 @@ accounts = []
 
 if args.new:
 
-    accounts.append('')
-
     pwd = getpass.getpass()
 
     if pwd == getpass.getpass(prompt="Enter password again: "):
@@ -352,12 +358,10 @@ elif unlock:
                 accounts.append(seed_nano(str(seed)[:64], i))
 
         else:
-            generate_block(str(seed))
-            sys.exit()
+            generate_block(*seed_keys(str(seed)[:64], args.index))
 
     else:
         print(bcolors.warn2, seed.status, bcolors.end)
-        sys.exit()
 
 elif args.broadcast and online:
     ack = rpc.process(
@@ -366,13 +370,16 @@ elif args.broadcast and online:
         print(bcolors.ok3, ack['hash'], bcolors.end)
     except:
         print(bcolors.warn2, ack, bcolors.end)
-    sys.exit()
 
 else:
     accounts = get_no_value_options('Accounts')
 
-if accounts[0] and online:
+if accounts and online:
     info = rpc.accounts_balances(accounts)
+    try:
+        info[accounts[0]]
+    except KeyError:
+        info = accounts_balances_looper(accounts)
     for account in accounts:
         print("\nAcc:\t", account)
         try:
