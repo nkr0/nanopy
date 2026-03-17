@@ -1,6 +1,11 @@
-import hashlib, nanopy.ed25519_blake2b, nanopy.work
+import hashlib, decimal, nanopy.ed25519_blake2b, nanopy.work
 
 nano_prefix = 'nano_'
+
+decimal.getcontext().traps[decimal.Inexact] = 1
+# ~ decimal.getcontext().traps[decimal.Rounded] = 1
+decimal.getcontext().prec = 40
+D = decimal.Decimal
 
 
 def account_key(account):
@@ -105,6 +110,42 @@ def work_generate(_hash):
     work = format(nanopy.work.generate(bytes.fromhex(_hash)), '016x')
     assert work_validate(work, _hash)
     return work
+
+
+def mrai_from_raw(amount):
+    assert type(amount) is str
+    mrai = D(amount) * D(D(10)**-30)
+    return mrai.quantize(D(D(10)**-30))
+
+
+def mrai_to_raw(amount):
+    assert type(amount) is str
+    raw = D(amount) * D(D(10)**30)
+    return raw.quantize(D(1))
+
+
+def krai_from_raw(amount):
+    assert type(amount) is str
+    krai = D(amount) * D(D(10)**-27)
+    return krai.quantize(D(D(10)**-27))
+
+
+def krai_to_raw(amount):
+    assert type(amount) is str
+    raw = D(amount) * D(D(10)**27)
+    return raw.quantize(D(1))
+
+
+def rai_from_raw(amount):
+    assert type(amount) is str
+    rai = D(amount) * D(D(10)**-24)
+    return rai.quantize(D(D(10)**-24))
+
+
+def rai_to_raw(amount):
+    assert type(amount) is str
+    raw = D(amount) * D(D(10)**24)
+    return raw.quantize(D(1))
 
 
 def base_block():
