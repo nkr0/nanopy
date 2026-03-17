@@ -170,7 +170,8 @@ class RPC:
                          threshold=None,
                          source=False,
                          include_active=False,
-                         sorting=False):
+                         sorting=False,
+                         include_only_confirmed=False):
         data = {}
         data['action'] = 'accounts_pending'
         data['accounts'] = accounts
@@ -179,6 +180,7 @@ class RPC:
         if source: data['source'] = True
         if include_active: data['include_active'] = True
         if sorting: data['sorting'] = True
+        if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
     def available_supply(self):
@@ -283,6 +285,11 @@ class RPC:
         data = {}
         data['action'] = 'confirmation_active'
         if announcements: data['announcements'] = announcements
+        return self._post(data)
+
+    def confirmation_height_currently_processing(self):
+        data = {}
+        data['action'] = 'confirmation_height_currently_processing'
         return self._post(data)
 
     def confirmation_history(self, _hash=None):
@@ -622,7 +629,8 @@ class RPC:
                 threshold=0,
                 source=False,
                 include_active=False,
-                sorting=False):
+                sorting=False,
+                include_only_confirmed=False):
         data = {}
         data['action'] = 'pending'
         data['account'] = account
@@ -631,6 +639,7 @@ class RPC:
         if source: data['source'] = True
         if include_active: data['include_active'] = True
         if sorting: data['sorting'] = True
+        if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
     def pending_exists(self, _hash):
