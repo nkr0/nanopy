@@ -1,8 +1,10 @@
 import os, hashlib, base64, decimal, hmac
 try:
     import nanopy.ed25519_blake2b as ed25519_blake2b
+    ed25519_blake2b_c = True
 except ModuleNotFoundError:
     import nanopy.ed25519_blake2b_py as ed25519_blake2b
+    ed25519_blake2b_c = False
 
 account_prefix = 'nano_'
 work_difficulty = 'ffffffc000000000'
@@ -187,6 +189,11 @@ def block_hash(block):
 
 
 def sign_block(sk, pk, block):
-    return ed25519_blake2b.signature(
-        bytes.fromhex(block_hash(block)), os.urandom(32), bytes.fromhex(sk),
-        bytes.fromhex(pk)).hex()
+    if ed25519_blake2b_c:
+        return ed25519_blake2b.signature(
+            bytes.fromhex(block_hash(block)), os.urandom(32), bytes.fromhex(sk),
+            bytes.fromhex(pk)).hex()
+    else:
+        return ed25519_blake2b.signature(
+            bytes.fromhex(block_hash(block)), bytes.fromhex(sk),
+            bytes.fromhex(pk)).hex()
