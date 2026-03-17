@@ -9,19 +9,19 @@ Install the library by running `python setup.py build && python setup.py install
 
 ## WSGI node API
 * `nanopy.wsgi` is a WSGI-Python script that routes requests from a public port to the node RPC. It has no Python dependencies and will run on pure Python.
-* There are several methods to get a WSGI framework. Below are the instructions to setup an apache2-mod_wsgi combination.
-  * When using Apache2, mod_wsgi is required. `sudo apt-get install libapache2-mod-wsgi-py3`
-  * Add the directives below into apache conf file. `/etc/apache2/sites-available/000-default.conf`. Modify the path and url as necessary.
+* By default the tool looks for node RPC at `http://localhost:7076`. You can change this by adjusting the variable, `rpc` in `nanopy.wsgi`.
+* It is not safe to make all the RPC methods available. Hence, by default only a `minimal` set of RPC methods are made available. You can adjust the list `rpc_enabled` in `nanopy.wsgi` to change the list of methods that are made available. For e.g., if you want to provide work computation services, you can set `rpc_enabled = minimal + work`. To provide some nano specific tools, `rpc_enabled += tools`.
+
+### Apache2 - mod_wsgi framework
+* `sudo apt-get install libapache2-mod-wsgi-py3`
+* Add the directives below into apache conf file, `/etc/apache2/sites-available/000-default.conf`. Modify the path and url as necessary. Node API will be served at `http://localhost/url` and RPC methods can be submitted as GET/POST requests.
 ```
 WSGIScriptAlias /url /path/to/nanopy.wsgi
 <Directory /path/to>
     Require all granted
 </Directory>
 ```
-  * `sudo systemctl restart apache2`
-  * Node API will be served at `http://localhost/url` and RPC methods can be submitted as GET/POST requests.
-  * By default the tool looks for node RPC at `http://localhost:7076`. You can change this by adjusting the variable, `rpc` in `nanopy.wsgi`.
-  * It is not safe to make all the RPC methods available. Hence, by default only a minimal set of RPC methods are made available. You can adjust the list `rpc_enabled` in `nanopy.wsgi` to change the list of methods that are made available. For e.g., if you want to provide work computation services, you can set `rpc_enabled = minimal + work`. To provide some nano specific tools, `rpc_enabled += tools`
+* `sudo a2enmod wsgi && sudo systemctl restart apache2`
 
 ## Wallet
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
