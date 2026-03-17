@@ -1,4 +1,5 @@
 *.asc
+*.7z
 *.so
 *.egg-info
 *.bkp
