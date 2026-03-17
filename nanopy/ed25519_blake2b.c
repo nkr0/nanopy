@@ -1,6 +1,5 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
-
 #include <blake2.h>
 #include <ed25519-hash-custom.h>
 #include <ed25519.h>
