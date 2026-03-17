@@ -44,15 +44,10 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 * `--demo`. Run in demo mode. Never broadcast blocks.
 
-## Pull requests
-When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
+## Support
+Find me on discord in NANO's channel. My handle is `npy#2928`. You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
 ```
 clang-format --style google -i nanopy/*.c
 yapf --style google -i -r nanopy nanopy-wallet setup.py
 ```
-
-## Contact
-Find me on discord in NANO's channel. My handle is `npy#2928`.
-
-## Donations
-`nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy`
+You can also support by sending nano to [nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy](nano:nano_3ooycog5ejbce9x7nmm5aueui18d1kpnd74gc4s67nid114c5bp4g9nowusy).
