@@ -2,12 +2,14 @@
 Python implementation of NANO-related functions.
 
 ## C library for work generation
-  * For CPU blake2 libraries are required. `sudo apt-get install libb2-dev`
-  * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
+* For CPU blake2 libraries are required. `sudo apt-get install libb2-dev`
+* For GPU, appropriate OpenCL ICD and headers are required. `sudo apt-get install ocl-icd-opencl-dev nvidia-opencl-icd/amd-opencl-icd`
 
 Install the library by running `python setup.py build && python setup.py install`.
 
-## WSGI node API.
+## WSGI node API
+* `nanopy.wsgi` is a WSGI-Python script that routes requests from a public port to the node RPC. It has no Python dependencies and will run on pure Python.
+* There are several methods to get a WSGI framework. Below are the instructions to setup an apache2-mod_wsgi combination.
   * When using Apache2, mod_wsgi is required. `sudo apt-get install libapache2-mod-wsgi-py3`
   * Add the directives below into apache conf file. `/etc/apache2/sites-available/000-default.conf`. Modify the path and url as necessary.
 ```
@@ -43,7 +45,6 @@ Although not part of the package, the light wallet included in the repository is
 The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previously encrypted seeds. `open` has the following options.
 * `-i` or `--index`. Index of the account unlocked from the seed. (Default=0)
 * `-s` or `--send-to`. Supply destination address to create a send block.
-  * Send amount is rounded off to 6 decimal places.
 * `--empty-to`. Empty out funds to the specified send address.
 * `--unlock`. Unlock wallet.
 * `-c` or `--change-rep-to`. Supply representative address to change representative.
