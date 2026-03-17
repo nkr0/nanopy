@@ -6,7 +6,7 @@ def nano_account(address):
 	if (len(address) == 64 and (address[:4] == 'xrb_')) or (len(address) == 65 and (address[:5] == 'nano_')):
 		account_map = "13456789abcdefghijkmnopqrstuwxyz"
 		account_lookup = {}
-		for x in range(32): account_lookup[account_map[x]] = bin(x)[2:].zfill(5) # "{0:0>5b}".format(i)
+		for x in range(32): account_lookup[account_map[x]] = format(x,'05b')
 
 		acrop_key = address[-60:-8]
 		acrop_check = address[-8:]
@@ -28,19 +28,19 @@ def nano_account(address):
 def account_nano(account):
 	account_map = "13456789abcdefghijkmnopqrstuwxyz"
 	account_lookup = {}
-	for x in range(32): account_lookup[bin(x)[2:].zfill(5)] = account_map[x] # account_lookup["{0:0>5b}".format(i)]
+	for x in range(32): account_lookup[format(x,'05b')] = account_map[x]
 
 	h = hashlib.blake2b(digest_size=5)
 	h.update(bytes.fromhex(account))
 	checksum = bytearray(h.digest())
 
 	checksum.reverse()
-	checksum=bin(int.from_bytes(checksum, byteorder='big'))[2:].zfill(40)
+	checksum=format(int.from_bytes(checksum, byteorder='big'),'040b')
 
 	encode_check = ''
 	for x in range(8): encode_check += account_lookup[checksum[x*5:x*5+5]]
 
-	account = bin(int(account, 16))[2:].zfill(260)
+	account = format(int(account, 16),'0260b')
 
 	encode_account = ''
 	for x in range(52): encode_account += account_lookup[account[x*5:x*5+5]]
