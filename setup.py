@@ -1,26 +1,23 @@
-import os, sys, platform
+import os, shutil, sys, platform
 from setuptools import setup, Extension
 
 
-def find_gcc(*max_min, dirs):
+def find_gcc(*max_min):
     """
-    Looks in `dirs` for gcc-{max_min}, starting with max.
+    Looks in PATH for gcc or gcc-{max_min}, starting with max.
 
-    If no gcc-{version} is found, `None` is returned.
+    If no gcc or gcc-{version} is found, `None` is returned.
 
     :param max_min: tuple of max and min gcc versions
-    :param dirs: list of directories to look in
     :return: gcc name or None
     """
 
+    if shutil.which("gcc"):
+        return "gcc"
     for version in range(*max_min, -1):
         f_name = "gcc-{0}".format(version)
-
-        for _dir in dirs:
-            full_path = os.path.join(_dir, f_name)
-            if os.path.exists(full_path) and os.access(full_path, os.X_OK):
-                return f_name
-
+        if shutil.which(f_name):
+            return f_name
     return None
 
 
@@ -146,9 +143,7 @@ if sys.platform not in ["linux", "win32", "cygwin", "darwin"]:
 
 env = os.environ
 try:
-    env["CC"] = os.getenv("CC") or find_gcc(
-        *(19, 5), dirs=os.getenv("PATH").split(os.pathsep)
-    )
+    env["CC"] = os.getenv("CC") or find_gcc(*(19, 5))
 except:
     pass
 
