@@ -1,7 +1,4 @@
-#from wsgiref.simple_server import make_server
 import json, urllib.request, urllib.parse
-
-rpc = 'http://localhost:7076'
 
 all = [
     'account_balance', 'account_block_count', 'account_info', 'account_create',
@@ -58,6 +55,15 @@ def application(environ, start_response):
     response = b''
     request_body = b''
     try:
+        if environ['SCRIPT_NAME'][5:] in ['nano', 'xrb', 'main', 'live']:
+            rpc = 'http://localhost:7076'
+        elif environ['SCRIPT_NAME'][5:] == 'beta':
+            rpc = 'http://localhost:55000'
+        elif environ['SCRIPT_NAME'][5:] == 'banano':
+            rpc = 'http://localhost:7072'
+        else:
+            raise ValueError
+
         if (environ['REQUEST_METHOD'] == 'GET'):
             query_raw = urllib.parse.parse_qs(environ['QUERY_STRING'])
             query = {}
@@ -65,7 +71,11 @@ def application(environ, start_response):
                 query[key] = str(query_raw.get(key)[0])
             request_body = json.dumps(query).encode('utf-8')
         elif (environ['REQUEST_METHOD'] == 'POST'):
-            request_body = environ['wsgi.input'].read()
+            try:
+                request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+            except (ValueError):
+                request_body_size = 0
+            request_body = environ['wsgi.input'].read(request_body_size)
 
         if json.loads(request_body)['action'] in rpc_enabled:
             req = urllib.request.Request(rpc, request_body)
@@ -75,11 +85,7 @@ def application(environ, start_response):
     except:
         pass
 
-    response_headers = [('Content-type', 'text/plain'), ('Content-Length',
-                                                         str(len(response)))]
+    response_headers = [('Content-type', 'text/plain'),
+                        ('Content-Length', str(len(response)))]
     start_response(status, response_headers)
     return [response]
-
-
-#httpd = make_server('localhost', 8051, application)
-#httpd.serve_forever()
