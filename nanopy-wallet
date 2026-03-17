@@ -1,18 +1,16 @@
 #!/usr/bin/env python3
 
 import argparse
-import base64
 import configparser
 import getpass
-import json
-import nanopy as npy
 import os
-import pykeepass  # type: ignore
-from nanopy.rpc import RPC
 from typing import Callable
+import pykeepass  # type: ignore
+import nanopy as npy
+from nanopy.rpc import RPC
 
 
-class bcolours:
+class BColours:
     _bold = "\033[1m"
     _end = "\033[0m"
     _ok = "\033[32m"
@@ -36,78 +34,71 @@ class bcolours:
         print(label + " : " + msg)
 
 
-def generate_block(sk: str, pk: str, acc: str) -> None:
-    bc.status("Acc", acc)
-    rbs = rpc.receivable(acc)["blocks"]
+def broadcast(block: str) -> None:
+    ack = rpc.process(block)
+    assert "hash" in ack
+    bc.ok(ack["hash"])
 
+
+def check_status(accounts: list[str]) -> None:
+    if accounts:
+        info = rpc.accounts_balances(accounts)
+        for account in accounts:
+            accinfo = info["balances"][account]
+            bc.status("Acc", account)
+            bc.amt("Bal", n.from_raw(int(accinfo["balance"])), bc.ok)
+            if accinfo["receivable"] != "0":
+                bc.amt("Rec", n.from_raw(int(accinfo["receivable"])), bc.ok)
+            print()
+
+
+def generate_block(acc: "npy.Account") -> None:
+    info = rpc.account_info(acc.acc, representative=True)
+    if "frontier" in info:
+        acc.frontier = info["frontier"]
+        acc.raw_bal = int(info["balance"])
+        acc.rep = npy.Account(n, acc=info["representative"])
+    else:  # pragma: no cover
+        args.send = None
+        if not args.rep:
+            args.rep = input("Rep : ")
+    args.rep = npy.Account(n, acc=args.rep) if args.rep else None
+
+    rbs = rpc.receivable(acc.acc)["blocks"]
     while True:
-        info = {}
-        info = rpc.account_info(acc, representative=True)
-        link = npy.account_key(args.send) if args.send else rbs.pop() if rbs else ""
-        prev = ""
-        bal = "0"
-
-        if "frontier" in info:
-            prev = info["frontier"]
-            bal = info["balance"]
-            rep = info["representative"]
-            bc.amt("Bal", npy.from_raw(bal), bc.ok)
-            bc.status("Rep", rep)
-
-            if (not args.send) and (not args.rep):
-                if not link:
-                    break
-                if input("\nReceive blocks?(" + bc.boldstr("y") + "/n): ") == "n":
-                    break
-
-        else:  # pragma: no cover
-            args.send = ""
-            rep = args.rep if args.rep else input("Rep : ")
-
-        if args.rep:
-            rep = args.rep
-
-        assert npy.validate_account_number(rep)
+        rb = "" if args.send else rbs.pop() if rbs else ""
+        bc.status("Acc", acc.acc)
+        bc.amt("Bal", acc.bal(), bc.ok)
+        bc.status("Rep", acc.rep.acc)
 
         if args.send:
-            bc.status("To ", npy.account_get(link))
-            if args.empty:
-                bc.amt("Amt", npy.from_raw(bal), bc.warn)
-                bal = "0"
-            else:
-                samt = int(npy.to_raw(input("Amt : ")))
-                assert samt <= int(bal)
-                bal = str(int(bal) - samt)
-            bc.amt("Bal", npy.from_raw(bal), bc.warn)
+            args.send = npy.Account(n, acc=args.send)
+            bc.status("To ", args.send.acc)
+            raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
+            bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
+            nb = acc.send(args.send, raw_amt, args.rep)
+            nb.work_generate(acc.network.send_difficulty)
+            args.send = None
+        elif rb and input("\nReceive blocks?(" + bc.boldstr("y") + "/n): ") != "n":
+            rbi = rpc.block_info(rb)
+            bc.status("From", rbi["block_account"])
+            raw_amt = int(rbi["amount"])
+            bc.amt("Amt", n.from_raw(raw_amt), bc.ok)
+            nb = acc.receive(rb, raw_amt, args.rep)
+            nb.work_generate(acc.network.receive_difficulty)
+        elif args.rep:
+            nb = acc.change_rep(args.rep)
+            nb.work_generate(acc.network.send_difficulty)
+        else:
+            break
 
-        elif link:
-            rb = rpc.block_info(link)
-            bc.status("From", rb["block_account"])
-            ramt = rb["amount"]
-            bal = str(int(bal) + int(ramt))
-            bc.amt("Amt", npy.from_raw(ramt), bc.ok)
-            bc.amt("Bal", npy.from_raw(bal), bc.ok)
-
-        if args.send or args.rep or link:
-            current_difficulty = ""
-            if args.network == "nano":
-                current_difficulty = (
-                    "fffffff800000000" if args.send else "fffffe0000000000"
-                )
-            args.send = args.rep = ""
-            nb = npy.block_create(
-                sk, prev, rep, bal, link, difficulty=current_difficulty
-            )
-
-            print("\n" + json.dumps(nb))
-
-            if input("\nBroadcast block?(y/" + bc.boldstr("n") + "): ") == "y":
-                ack = rpc.process(json.dumps(nb))
-                assert "hash" in ack
-                bc.ok(ack["hash"])
+        args.rep = None
+        print("\n" + nb.json())
+        if input("\nBroadcast block?(y/" + bc.boldstr("n") + "): ") == "y":
+            broadcast(nb.json())
 
 
-bc = bcolours()
+bc = BColours()
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-a",
@@ -144,14 +135,15 @@ openG.add_argument("-s", "--send", metavar="ADDRESS", help="Send to")
 
 args = parser.parse_args()
 
+n = npy.Network()
 if args.network == "banano":
-    npy.ACCOUNT_PREFIX = "ban_"
-    npy.DIFFICULTY = "fffffe0000000000"
-    npy.EXPONENT = 29
+    n.prefix = "ban_"
+    n.send_difficulty = "fffffe0000000000"
+    n.exp = 29
     rpc_url = "http://localhost:7072"
     std_unit = "BAN"
 elif args.network == "beta":
-    npy.ACCOUNT_PREFIX = "xrb_"
+    n.prefix = "xrb_"
     rpc_url = "http://localhost:55000"
     std_unit = "β"
 else:
@@ -165,11 +157,9 @@ config.read(config_file)
 
 tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
 
-iploc = RPC(url="https://ipinfo.io/json", tor=tor)._get()
+iploc = RPC(url="https://ipinfo.io/json", tor=tor).get()
 bc.warn(iploc["city"] + " " + iploc["country"])
 rpc = RPC(url=str(config[args.network].get("rpc", fallback=rpc_url)), tor=tor)
-
-accounts = []
 
 if args.sub:
     os.chmod(args.f, 0o600)
@@ -177,49 +167,38 @@ if args.sub:
     group = kp.find_groups(name=args.group, first=True) if args.group else kp.root_group
 
     if args.new:  # pragma: no cover
-        seedb = os.urandom(32)
-        account0 = npy.deterministic_key(seedb.hex(), 0)[2]
-        bc.status(args.k, account0)
-        kp.add_entry(group, args.k, account0, base64.b85encode(seedb).decode())
+        seed = os.urandom(32).hex()
+        acc0 = npy.Account(n, sk=npy.deterministic_key(seed, 0)).acc
+        bc.status(args.k, acc0)
+        kp.add_entry(group, args.k, acc0.split("_")[1], seed)
         kp.save()
 
     else:
         entry = kp.find_entries(title=args.k, group=group, recursive=False, first=True)
-        seed = base64.b85decode(entry.password).hex()
-        assert entry.username == npy.deterministic_key(seed, 0)[2]
-
+        seed = entry.password
+        acc0 = npy.Account(n, sk=npy.deterministic_key(seed, 0)).acc
+        assert n.prefix + entry.username == acc0
         if args.audit:
-            accounts = [
-                npy.deterministic_key(seed, i)[2] for i in range(args.index + 1)
-            ]
+            check_status(
+                [
+                    npy.Account(n, sk=npy.deterministic_key(seed, i)).acc
+                    for i in range(args.index + 1)
+                ]
+            )
         else:
-            generate_block(*npy.deterministic_key(seed, args.index))
+            generate_block(npy.Account(n, sk=npy.deterministic_key(seed, args.index)))
 
 elif args.broadcast:
-    ack = rpc.process(input("Enter JSON block to broadcast: "))
-    assert "hash" in ack
-    bc.ok(ack["hash"])
+    broadcast(input("Enter JSON block to broadcast: "))
 
 elif args.audit:
-    accounts = [a.strip() for a in args.audit if a.startswith(npy.ACCOUNT_PREFIX)]
+    check_status([a.strip() for a in args.audit if a.startswith(n.prefix)])
 
 else:
-    accounts = [
-        a for a in config.options(args.network) if a.startswith(npy.ACCOUNT_PREFIX)
-    ]
-
-if accounts:
-    info = rpc.accounts_balances(accounts)
-    for account in accounts:
-        accinfo = info["balances"][account]
-        bc.status("Acc", account)
-        bc.amt("Bal", npy.from_raw(accinfo["balance"]), bc.ok)
-        if accinfo["receivable"] != "0":
-            bc.amt("Rec", npy.from_raw(accinfo["receivable"]), bc.ok)
-        print()
+    check_status([a for a in config.options(args.network) if a.startswith(n.prefix)])
 
 rpc.disconnect()
 
-ticker = RPC(url="https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur")._get()
+ticker = RPC(url="https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur").get()
 print(ticker["result"]["NANOUSD"]["c"][0], "$")
 print(ticker["result"]["NANOEUR"]["c"][0], "€")
