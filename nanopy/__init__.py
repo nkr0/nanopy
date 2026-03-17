@@ -1,4 +1,4 @@
-import sys, os, random, ctypes, hashlib, nanopy.ed25519_blake2b
+import sys, os, random, hashlib, nanopy.ed25519_blake2b, nanopy.work
 
 def nano_block(): return dict([('type', 'state'), ('account', ''), ('previous', '0000000000000000000000000000000000000000000000000000000000000000'), ('balance', ''), ('representative', ''), ('link', '0000000000000000000000000000000000000000000000000000000000000000'), ('work', ''), ('signature', '')])
 
@@ -76,25 +76,9 @@ def pow_validate(pow, hash):
 	return pow_threshold(final)
 
 def pow_generate(hash):
-	try:
-		lib=ctypes.CDLL(os.path.dirname(os.path.abspath(__file__))+"/libnanopow.so")
-		lib.pow_generate.restype = ctypes.c_char_p
-		return lib.pow_generate(ctypes.c_char_p(hash.encode("utf-8"))).decode("utf-8")
-	except OSError:
-		print("Unable to find libnanopow.so. Computing work in Python.")
-		hash_bytes = bytearray.fromhex(hash)
-		while True:
-			random_bytes = bytearray((random.getrandbits(8) for i in range(8)))
-			for r in range(256):
-				random_bytes[7] =(random_bytes[7] + r) % 256
-				h = hashlib.blake2b(digest_size=8)
-				h.update(random_bytes)
-				h.update(hash_bytes)
-				final = bytearray(h.digest())
-				final.reverse()
-				if pow_threshold(final):
-					random_bytes.reverse()
-					return random_bytes.hex()
+	pow=format(nanopy.work.generate(bytes.fromhex(hash)),'016x')
+	if(pow_validate(pow, hash)): return pow
+	return False
 
 def block_hash(block):
 	bh = hashlib.blake2b(digest_size=32)
