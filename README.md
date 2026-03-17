@@ -15,34 +15,33 @@ Install by running `pip install nanopy`.
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
 
 ## Wallet
-Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
+Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
 
 ### Wallet options
 * The wallet looks for default configuration in `$HOME/.config/nanopy/<network>.conf`.
   * `<network>` is one of nano, banano, or beta. nano is the default.
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
-* `--new`. Generate a new seed and derive index 0 account from it.
+* `-n`, `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
   * Generated seeds are stored in a GnuPG AES256 encrypted file.
-  * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512.
-  * Wallets can also be made by encrypting a file that has a seed using the command, `gpg -ca --s2k-digest-algo SHA512 FILE`
-  * Options used by the encryption can be verified by inspecting the header in the gpg file. `gpg --list-packets --verbose FILE.asc`. `cipher 9` is AES256. `s2k 3` is iterated and salted key derivation mode. `hash 10` corresponds to SHA512. `count` is the number of iterations (max 65011712).
-  * To get the seed, `gpg -d FILE.asc`
-* `--audit-file`. Check state of all accounts in a file.
-* `--change-password`. Change password of the encrypted wallet.')
-* `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
+  * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512. Adjust options by editing `gpg.conf`.
+  * Wallets can also be made by encrypting a file that has a seed using the command, `gpg -c FILE`.
+  * Options used by the encryption can be verified by inspecting the header in the gpg file. `gpg -v --list-packets FILE`. `cipher 9` is AES256. `s2k 3` is iterated and salted key derivation mode. `hash 10` corresponds to SHA512. `count` is the number of iterations (max 65011712).
+  * To get the seed, `gpg -d FILE`
+* `-a`, `--audit-file`. Check state of all accounts in a file.
+* `-b`, `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
 * `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
-* `-t` or `--tor`. Communicate with RPC node via the tor network.
-* `--demo`. Run in demo mode.
+* `-t`, `--tor`. Communicate with RPC node via the tor network.
+* `-d`, `--demo`. Run in demo mode.
 
-The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previously encrypted seeds. `open` has the following options.
-* `-i` or `--index`. Index of the account unlocked from the seed. (Default=0)
-* `-s` or `--send-to`. Supply destination address to create a send block.
-* `--empty-to`. Empty out funds to the specified send address.
-* `--unlock`. Unlock wallet.
-* `-c` or `--change-rep-to`. Supply representative address to change representative.
+The wallet has a sub-command, `nanopy-wallet open FILE`, to unlock previously encrypted seeds. `open` has the following options.
+* `-i`, `--index`. Index of the account unlocked from the seed. (Default=0)
+* `-s`, `--send`. Supply destination address to create a send block.
+* `-e`, `--empty`. Empty out funds to the specified send address.
+* `-r`, `--rep`. Supply representative address to change representative.
   * Change representative tag can be combined with send and receive blocks.
-* `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
+* `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
+* `-p`, `--password`. Change password of the encrypted wallet.')
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 
 ## Support
