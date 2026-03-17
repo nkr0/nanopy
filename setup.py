@@ -20,13 +20,14 @@ else:
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e_args = {
-    "name": "nanopy.ext",
-    "sources": ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC],
-    "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
     "define_macros": [],
     "extra_compile_args": [],
     "extra_link_args": [],
+    "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
     "libraries": [],
+    "name": "nanopy.ext",
+    "sources": ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC],
+    "undef_macros": [],
 }
 
 if k == "Windows":
@@ -35,7 +36,7 @@ else:
     if os.environ.get("DBG"):
         e_args["extra_compile_args"] += ["-g", "-O0"]
         e_args["extra_link_args"] += ["-g", "-O0"]
-        e_args["define_macros"] += [("DEBUG", None)]
+        e_args["undef_macros"] += ["NDEBUG"]
     else:
         e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
         e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
@@ -44,11 +45,10 @@ if ED25519_IMPL:
     e_args["define_macros"] += [(ED25519_IMPL, None)]
 
 if os.environ.get("USE_OCL"):
+    e_args["define_macros"] += [("USE_OCL", None)]
     if k == "Darwin":
-        e_args["define_macros"] += [("HAVE_OPENCL_OPENCL_H", None)]
         e_args["extra_link_args"] += ["-framework", "OpenCL"]
     else:
-        e_args["define_macros"] += [("HAVE_CL_CL_H", None)]
         e_args["libraries"] += ["OpenCL"]
 elif k == "Windows":
     e_args["extra_compile_args"] += ["/openmp"]

@@ -6,12 +6,13 @@
 #include <stdbool.h>
 #include <time.h>
 
-#ifdef HAVE_CL_CL_H
+#ifdef USE_OCL
 #include "opencl_program.h"
-#include <CL/cl.h>
-#elif HAVE_OPENCL_OPENCL_H
-#include "opencl_program.h"
+#ifdef __APPLE__
 #include <OpenCL/opencl.h>
+#else
+#include <CL/cl.h>
+#endif
 #else
 #include <omp.h>
 #endif
@@ -72,7 +73,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   for (i = 0; i < 16; i++)
     n.s[i] = (uint64_t)rand() << 32 | rand();
 
-#if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
+#ifdef USE_OCL
   int err;
   cl_uint num;
   cl_platform_id cpPlatform;
@@ -81,7 +82,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   if (err || !num)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
-#if !defined(NDEBUG) || defined(DEBUG) || defined(OCLDEBUG)
+#ifndef NDEBUG
   char cl_platform_name[128];
   clGetPlatformInfo(cpPlatform, CL_PLATFORM_NAME, sizeof(cl_platform_name),
                     cl_platform_name, NULL);
@@ -104,7 +105,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetDeviceIDs", err);
-#if !defined(NDEBUG) || defined(DEBUG) || defined(OCLDEBUG)
+#ifndef NDEBUG
   char cl_device_name[128];
   clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(cl_device_name),
                   cl_device_name, NULL);
