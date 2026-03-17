@@ -7,7 +7,7 @@
 #include <OpenCL/opencl.h>
 #else
 #include <omp.h>
-#include "b2b/blake2.h"
+#include "blake2b/blake2.h"
 #endif
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
@@ -341,20 +341,13 @@ uint64_t xorshift1024star(void) {  // nano-node/nano/node/xorshift.hpp
   return s1 * (uint64_t)1181783497276652981;
 }
 
-void swapLong(uint64_t *X) {
-  uint64_t x = *X;
-  x = (x & 0x00000000FFFFFFFF) << 32 | (x & 0xFFFFFFFF00000000) >> 32;
-  x = (x & 0x0000FFFF0000FFFF) << 16 | (x & 0xFFFF0000FFFF0000) >> 16;
-  x = (x & 0x00FF00FF00FF00FF) << 8 | (x & 0xFF00FF00FF00FF00) >> 8;
-}
-
 static PyObject *generate(PyObject *self, PyObject *args) {
   int i, j;
-  uint8_t *str;
-  uint64_t difficulty = 0, workb = 0, r_str = 0;
+  uint8_t *h32;
+  uint64_t difficulty = 0, work = 0, nonce = 0;
   const size_t work_size = 1024 * 1024;  // default value from nano
 
-  if (!PyArg_ParseTuple(args, "y#K", &str, &i, &difficulty)) return NULL;
+  if (!PyArg_ParseTuple(args, "y#K", &h32, &i, &difficulty)) return NULL;
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
@@ -374,7 +367,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     goto FAIL;
   } else {
     size_t length = strlen(opencl_program);
-    cl_mem d_rand, d_work, d_str, d_difficulty;
+    cl_mem d_nonce, d_work, d_h32, d_difficulty;
     cl_device_id device_id;
     cl_context context;
     cl_command_queue queue;
@@ -421,22 +414,22 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    d_rand = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            8, &r_str, &err);
+    d_nonce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                             8, &nonce, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateBuffer failed with error code %d\n", err);
       goto FAIL;
     }
 
     d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                            8, &workb, &err);
+                            8, &work, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateBuffer failed with error code %d\n", err);
       goto FAIL;
     }
 
-    d_str = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
-                           32, str, &err);
+    d_h32 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR,
+                           32, h32, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateBuffer failed with error code %d\n", err);
       goto FAIL;
@@ -456,7 +449,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    err = clSetKernelArg(kernel, 0, sizeof(d_rand), &d_rand);
+    err = clSetKernelArg(kernel, 0, sizeof(d_nonce), &d_nonce);
     if (err != CL_SUCCESS) {
       printf("clSetKernelArg failed with error code %d\n", err);
       goto FAIL;
@@ -468,7 +461,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    err = clSetKernelArg(kernel, 2, sizeof(d_str), &d_str);
+    err = clSetKernelArg(kernel, 2, sizeof(d_h32), &d_h32);
     if (err != CL_SUCCESS) {
       printf("clSetKernelArg failed with error code %d\n", err);
       goto FAIL;
@@ -481,7 +474,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     }
 
     err =
-        clEnqueueWriteBuffer(queue, d_str, CL_FALSE, 0, 32, str, 0, NULL, NULL);
+        clEnqueueWriteBuffer(queue, d_h32, CL_FALSE, 0, 32, h32, 0, NULL, NULL);
     if (err != CL_SUCCESS) {
       printf("clEnqueueWriteBuffer failed with error code %d\n", err);
       goto FAIL;
@@ -494,11 +487,11 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    while (workb == 0) {
-      r_str = xorshift1024star();
+    while (work == 0) {
+      nonce = xorshift1024star();
 
-      err = clEnqueueWriteBuffer(queue, d_rand, CL_FALSE, 0, 8, &r_str, 0, NULL,
-                                 NULL);
+      err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0,
+                                 NULL, NULL);
       if (err != CL_SUCCESS) {
         printf("clEnqueueWriteBuffer failed with error code %d\n", err);
         goto FAIL;
@@ -511,7 +504,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
         goto FAIL;
       }
 
-      err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &workb, 0, NULL,
+      err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &work, 0, NULL,
                                 NULL);
       if (err != CL_SUCCESS) {
         printf("clEnqueueReadBuffer failed with error code %d\n", err);
@@ -525,7 +518,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       }
     }
 
-    err = clReleaseMemObject(d_rand);
+    err = clReleaseMemObject(d_nonce);
     if (err != CL_SUCCESS) {
       printf("clReleaseMemObject failed with error code %d\n", err);
       goto FAIL;
@@ -535,7 +528,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       printf("clReleaseMemObject failed with error code %d\n", err);
       goto FAIL;
     }
-    err = clReleaseMemObject(d_str);
+    err = clReleaseMemObject(d_h32);
     if (err != CL_SUCCESS) {
       printf("clReleaseMemObject failed with error code %d\n", err);
       goto FAIL;
@@ -568,35 +561,33 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   }
 FAIL:
 #else
-  while (workb == 0) {
-    r_str = xorshift1024star();
+  while (work == 0) {
+    nonce = xorshift1024star();
 
 #pragma omp parallel
 #pragma omp for
     for (i = 0; i < work_size; i++) {
 #ifdef USE_VISUAL_C
-      if (workb == 0) {
+      if (work == 0) {
 #endif
-        uint64_t r_str_l = r_str + i, b2b_b = 0;
+        uint64_t nonce_l = nonce + i, b2b_h = 0;
         blake2b_state b2b;
 
         blake2b_init(&b2b, 8);
-        blake2b_update(&b2b, (uint8_t *)&r_str_l, 8);
-        blake2b_update(&b2b, str, 32);
-        blake2b_final(&b2b, (uint8_t *)&b2b_b, 8);
-
-        swapLong(&b2b_b);
+        blake2b_update(&b2b, &nonce_l, 8);
+        blake2b_update(&b2b, h32, 32);
+        blake2b_final(&b2b, &b2b_h, 8);
 
 #ifdef USE_VISUAL_C
-        if (b2b_b >= difficulty) {
+        if (b2b_h >= difficulty) {
 #pragma omp critical
-          workb = r_str_l;
+          work = nonce_l;
         }
       }
 #else
-      if (b2b_b >= difficulty) {
+      if (b2b_h >= difficulty) {
 #pragma omp atomic write
-        workb = r_str_l;
+        work = nonce_l;
 #pragma omp cancel for
       }
 #pragma omp cancellation point for
@@ -604,15 +595,14 @@ FAIL:
     }
   }
 #endif
-  swapLong(&workb);
-  return Py_BuildValue("K", workb);
+  return Py_BuildValue("K", work);
 }
 
-static PyMethodDef generate_method[] = {
-    {"generate", generate, METH_VARARGS, NULL}, {NULL, NULL, 0, NULL}};
+static PyMethodDef m_methods[] = {{"generate", generate, METH_VARARGS, NULL},
+                                  {NULL, NULL, 0, NULL}};
 
 static struct PyModuleDef work_module = {PyModuleDef_HEAD_INIT, "work", NULL,
-                                         -1, generate_method};
+                                         -1, m_methods};
 
 PyMODINIT_FUNC PyInit_work(void) {
   PyObject *m = PyModule_Create(&work_module);

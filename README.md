@@ -59,6 +59,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 ## Pull requests
   * When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
   * `clang-format --style google -i nanopy/work.c`
+  * `clang-format --style google -i nanopy/ed25519_blake2b.c`
   * `yapf --style google -i -r nanopy`
   * `yapf --style google -i nanopy-wallet`
   * `yapf --style google -i setup.py`

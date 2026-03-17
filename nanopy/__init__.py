@@ -1,4 +1,8 @@
-import hashlib, base64, decimal, hmac, nanopy.ed25519_blake2b
+import hashlib, base64, decimal, hmac
+try:
+    import nanopy.ed25519_blake2b as ed25519_blake2b
+except ModuleNotFoundError:
+    import nanopy.ed25519_blake2b_py as ed25519_blake2b
 
 account_prefix = 'nano_'
 work_difficulty = 'ffffffc000000000'
@@ -25,10 +29,8 @@ def account_key(account):
     key = base64.b32decode(account)
     checksum = key[:-6:-1]
     key = key[3:-5]
-    h = hashlib.blake2b(digest_size=5)
-    h.update(key)
 
-    assert h.digest() == checksum
+    assert hashlib.blake2b(key, digest_size=5).digest() == checksum
 
     return key.hex()
 
@@ -37,9 +39,7 @@ def account_get(key):
     assert len(key) == 64
 
     key = bytes.fromhex(key)
-    h = hashlib.blake2b(digest_size=5)
-    h.update(key)
-    checksum = h.digest()
+    checksum = hashlib.blake2b(key, digest_size=5).digest()
     key = b'\x00\x00\x00' + key + checksum[::-1]
     account = base64.b32encode(key)
     account = account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
@@ -57,18 +57,15 @@ def validate_account_number(account):
 
 def key_expand(key):
     sk = bytes.fromhex(key)
-    pk = nanopy.ed25519_blake2b.publickey(sk).hex()
+    pk = ed25519_blake2b.publickey(sk).hex()
     return key, pk, account_get(pk)
 
 
 def deterministic_key(seed, index=0):
-    h = hashlib.blake2b(digest_size=32)
-
-    h.update(bytes.fromhex(seed))
-    h.update(index.to_bytes(4, byteorder='big'))
-
-    sk = h.digest()
-    return key_expand(sk.hex())
+    return key_expand(
+        hashlib.blake2b(
+            bytes.fromhex(seed) + index.to_bytes(4, byteorder='big'),
+            digest_size=32).hexdigest())
 
 
 try:
@@ -96,21 +93,15 @@ except ModuleNotFoundError:
 
 
 def work_validate(work, _hash, difficulty=None):
-    workb = bytearray.fromhex(work)
-    hashb = bytearray.fromhex(_hash)
+    work = bytearray.fromhex(work)
+    _hash = bytearray.fromhex(_hash)
     difficulty = difficulty if difficulty else work_difficulty
-    difficultyb = bytearray.fromhex(difficulty)
+    difficulty = bytearray.fromhex(difficulty)
 
-    workb.reverse()
-
-    h = hashlib.blake2b(digest_size=8)
-    h.update(workb)
-    h.update(hashb)
-
-    final = bytearray(h.digest())
-    final.reverse()
-
-    if final > difficultyb: return True
+    work.reverse()
+    b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
+    b2b_h.reverse()
+    if b2b_h >= difficulty: return True
     return False
 
 
@@ -129,24 +120,20 @@ except ModuleNotFoundError:
     import random
 
     def work_generate(_hash, difficulty=None):
-        hashb = bytearray.fromhex(_hash)
-        b2bb = bytearray.fromhex('0000000000000000')
+        _hash = bytearray.fromhex(_hash)
+        b2b_h = bytearray.fromhex('0' * 16)
         difficulty = difficulty if difficulty else work_difficulty
-        difficultyb = bytearray.fromhex(difficulty)
-        while b2bb < difficultyb:
-            workb = bytearray((random.getrandbits(8) for i in range(8)))
+        difficulty = bytearray.fromhex(difficulty)
+        while b2b_h < difficulty:
+            work = bytearray((random.getrandbits(8) for i in range(8)))
             for r in range(0, 256):
-                workb[7] = (workb[7] + r) % 256
-                h = hashlib.blake2b(digest_size=8)
-                h.update(workb)
-                h.update(hashb)
-                b2bb = bytearray(h.digest())
-                b2bb.reverse()
-                if b2bb >= difficultyb: break
-
-        workb.reverse()
-        assert work_validate(workb.hex(), _hash, difficulty)
-        return workb.hex()
+                work[7] = (work[7] + r) % 256
+                b2b_h = bytearray(
+                    hashlib.blake2b(work + _hash, digest_size=8).digest())
+                b2b_h.reverse()
+                if b2b_h >= difficulty: break
+        work.reverse()
+        return work.hex()
 
 
 def mrai_from_raw(amount):
@@ -186,32 +173,20 @@ def rai_to_raw(amount):
 
 
 def base_block():
-    return dict(
-        [('type', 'state'), ('account', ''),
-         ('previous',
-          '0000000000000000000000000000000000000000000000000000000000000000'),
-         ('balance', ''), ('representative', ''),
-         ('link',
-          '0000000000000000000000000000000000000000000000000000000000000000'),
-         ('work', ''), ('signature', '')])
+    return dict([('type', 'state'), ('account', ''), ('previous', '0' * 64),
+                 ('balance', ''), ('representative', ''), ('link', '0' * 64),
+                 ('work', ''), ('signature', '')])
 
 
 def block_hash(block):
-    bh = hashlib.blake2b(digest_size=32)
-
-    bh.update(
-        bytes.fromhex(
-            '0000000000000000000000000000000000000000000000000000000000000006'))
-    bh.update(bytes.fromhex(account_key(block['account'])))
-    bh.update(bytes.fromhex(block['previous']))
-    bh.update(bytes.fromhex(account_key(block['representative'])))
-    bh.update(bytes.fromhex(format(int(block['balance']), '032x')))
-    bh.update(bytes.fromhex(block['link']))
-
-    return bh.hexdigest()
+    return hashlib.blake2b(
+        bytes.fromhex('0' * 63 + '6' + account_key(block['account']) +
+                      block['previous'] + account_key(block['representative']) +
+                      format(int(block['balance']), '032x') + block['link']),
+        digest_size=32).hexdigest()
 
 
 def sign_block(sk, pk, block):
-    return nanopy.ed25519_blake2b.signature(
+    return ed25519_blake2b.signature(
         bytes.fromhex(block_hash(block)), bytes.fromhex(sk),
         bytes.fromhex(pk)).hex()
