@@ -2,7 +2,54 @@ import json, urllib.request
 
 url = 'http://localhost:7076'
 
-rpc_enabled = ['block_count', 'account_balance']
+all = [
+    'account_balance', 'account_block_count', 'account_info', 'account_create',
+    'account_get', 'account_history', 'account_list', 'account_move',
+    'account_key', 'account_remove', 'account_representative',
+    'account_representative_set', 'account_weight', 'accounts_balances',
+    'accounts_create', 'accounts_frontiers', 'accounts_pending',
+    'available_supply', 'block', 'blocks', 'blocks_info', 'block_account',
+    'block_confirm', 'block_count', 'block_count_type', 'bootstrap',
+    'bootstrap_any', 'chain', 'confirmation_history', 'delegators',
+    'delegators_count', 'deterministic_key', 'frontiers', 'frontier_count',
+    'mrai_from_raw', 'mrai_to_raw', 'krai_from_raw', 'krai_to_raw',
+    'rai_from_raw', 'rai_to_raw', 'keepalive', 'key_create', 'key_expand',
+    'ledger', 'block_create', 'payment_begin', 'payment_init', 'payment_end',
+    'payment_wait', 'process', 'receive', 'receive_minimum',
+    'receive_minimum_set', 'representatives', 'representatives_online',
+    'wallet_representative', 'wallet_representative_set', 'republish',
+    'search_pending', 'search_pending_all', 'send', 'stats', 'stop',
+    'validate_account_number', 'successors', 'version', 'peers', 'pending',
+    'pending_exists', 'unchecked', 'unchecked_clear', 'unchecked_get',
+    'unchecked_keys', 'wallet_add', 'wallet_add_watch', 'wallet_balances',
+    'wallet_change_seed', 'wallet_contains', 'wallet_create', 'wallet_destroy',
+    'wallet_export', 'wallet_frontiers', 'wallet_info', 'wallet_ledger',
+    'wallet_pending', 'wallet_republish', 'wallet_work_get', 'password_change',
+    'password_enter', 'password_valid', 'wallet_lock', 'wallet_locked',
+    'work_cancel', 'work_generate', 'work_get', 'work_set', 'work_peer_add',
+    'work_peers', 'work_peers_clear', 'work_validate'
+]
+
+minimal = [
+    'account_balance', 'account_block_count', 'account_info', 'account_history',
+    'account_representative', 'account_weight', 'accounts_balances',
+    'accounts_frontiers', 'accounts_pending', 'block', 'blocks', 'blocks_info',
+    'block_account', 'block_confirm', 'block_count', 'block_count_type',
+    'chain', 'confirmation_history', 'delegators', 'delegators_count',
+    'frontiers', 'frontier_count', 'process', 'representatives',
+    'representatives_online', 'successors', 'version', 'pending',
+    'pending_exists', 'unchecked'
+]
+
+tools = [
+    'account_get', 'account_key', 'available_supply', 'mrai_from_raw',
+    'mrai_to_raw', 'krai_from_raw', 'krai_to_raw', 'rai_from_raw', 'rai_to_raw',
+    'validate_account_number'
+]
+
+work = ['work_cancel', 'work_generate', 'work_validate']
+
+rpc_enabled = minimal
 
 
 def application(environ, start_response):
@@ -14,18 +61,18 @@ def application(environ, start_response):
     request_body = environ['wsgi.input'].read(request_body_size)
 
     try:
-        if not json.loads(request_body)['action'] in rpc_enabled:
+        if json.loads(request_body)['action'] in rpc_enabled:
+            req = urllib.request.Request(url, request_body)
+            with urllib.request.urlopen(req) as response_raw:
+                response = response_raw.read()
+
+            response_headers = [('Content-type', 'text/plain'),
+                                ('Content-Length', str(len(response)))]
+
+            status = '200 OK'
+            start_response(status, response_headers)
+            return [response]
+        else:
             status = '400 Bad Request'
-
-        req = urllib.request.Request(url, request_body)
-        with urllib.request.urlopen(req) as response_raw:
-            response = response_raw.read()
-
-        response_headers = [('Content-type', 'text/plain'),
-                            ('Content-Length', str(len(response)))]
-
-        status = '200 OK'
-        start_response(status, response_headers)
-        return [response]
     except:
         status = '400 Bad Request'
