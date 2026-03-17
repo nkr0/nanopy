@@ -13,11 +13,11 @@ def account_info(account):
 	data['pending']='true'
 	return json.loads(session.post(url, data = json.dumps(data)).text)
 
-def accounts_pending(accounts):
+def accounts_pending(accounts, count=1):
 	data={}
 	data['action']='accounts_pending'
 	data['accounts']=accounts
-	data['count']=1
+	data['count']=count
 	return json.loads(session.post(url, data = json.dumps(data)).text)
 
 def accounts_balances(accounts):
