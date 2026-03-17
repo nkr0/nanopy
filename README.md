@@ -19,6 +19,7 @@ Although not part of the package, the light wallet included in the repository is
 
 ### Wallet options
 * The wallet looks for default configuration in `$HOME/.config/nanopy/<network>.conf`.
+  * `<network>` is one of nano, banano, or beta. nano is the default.
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
@@ -29,7 +30,7 @@ Although not part of the package, the light wallet included in the repository is
   * To get the seed, `gpg -d FILE.asc`
 * `--audit-file`. Check state of all accounts in a file.
 * `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
-* `--network`. Choose the network to interact with. main, beta, banano. The default network is main.
+* `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
 
 The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previously encrypted seeds. `open` has the following options.
@@ -46,12 +47,8 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 ## Pull requests
 When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
 ```
-clang-format --style google -i nanopy/work.c
-clang-format --style google -i nanopy/ed25519_blake2b.c
-yapf --style google -i -r nanopy
-yapf --style google -i nanopy-wallet
-yapf --style google -i setup.py
-yapf --style google -i nanopy.wsgi
+clang-format --style google -i nanopy/*.c
+yapf --style google -i -r nanopy nanopy-wallet setup.py
 ```
 
 ## Contact
