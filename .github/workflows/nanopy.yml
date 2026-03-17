@@ -1,0 +1,40 @@
+name: nanopy
+on: [push]
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-latest, macos-13, windows-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.x'
+      - run: pip install -Ur requirements.txt
+      - run: |
+          sudo apt update
+          sudo apt install clang libomp-dev
+          python setup.py build_ext -i -f
+          python ghtest.py
+          CC=clang python setup.py build_ext -i -f
+          python ghtest.py
+        if: runner.os == 'Linux'
+      - run: |
+          brew install gcc llvm libomp
+          CC=gcc-14 python setup.py build_ext -i -f
+          python ghtest.py
+          CC=$(brew --prefix llvm)/bin/clang python setup.py build_ext -i -f
+          python ghtest.py
+        if: runner.os == 'macOS'
+        continue-on-error: true
+      - run: |
+          python setup.py build_ext -i -f
+          python ghtest.py
+        if: runner.os == 'Windows'
+      - run: |
+          sudo apt install ocl-icd-opencl-dev intel-opencl-icd clinfo
+          USE_GPU=1 python setup.py build_ext -i -f
+          clinfo
+          python ghtest-gpu.py
+        if: matrix.os == 'ubuntu-latest'

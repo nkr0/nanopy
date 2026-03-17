@@ -62,6 +62,7 @@ assert 8.0 == npy.to_multiplier("fffffff800000000")
 
 h = os.urandom(32).hex()
 w = npy.work_generate(h, multiplier=1 / 8)
+print(w)
 assert npy.work_validate(w, h, multiplier=1 / 8)
 assert not npy.work_validate(w, "0" * 64, multiplier=1 / 8)
 assert work_validate(w, h, multiplier=1 / 8)
