@@ -1,0 +1,3 @@
+requests
+mnemonic
+sphinx>=3
