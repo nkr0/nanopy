@@ -1,7 +1,8 @@
-import hashlib, decimal, nanopy.ed25519_blake2b, nanopy.work
+import hashlib, decimal, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
 mrai_name = 'NANO'
+work_limit = b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 decimal.getcontext().prec = 40
@@ -102,14 +103,38 @@ def work_validate(work, _hash):
     final = bytearray(h.digest())
     final.reverse()
 
-    if final > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00': return True
+    if final > work_limit: return True
     return False
 
 
-def work_generate(_hash):
-    work = format(nanopy.work.generate(bytes.fromhex(_hash)), '016x')
-    assert work_validate(work, _hash)
-    return work
+try:
+    import nanopy.work
+
+    def work_generate(_hash):
+        work = format(nanopy.work.generate(bytes.fromhex(_hash)), '016x')
+        assert work_validate(work, _hash)
+        return work
+except ModuleNotFoundError:
+    print('\033[91m' + "No work extension" + '\033[0m')
+    import random
+
+    def work_generate(_hash):
+        hashb = bytearray.fromhex(_hash)
+        b2bb = bytearray.fromhex('0000000000000000')
+        while b2bb < work_limit:
+            workb = bytearray((random.getrandbits(8) for i in range(8)))
+            for r in range(0, 256):
+                workb[7] = (workb[7] + r) % 256
+                h = hashlib.blake2b(digest_size=8)
+                h.update(workb)
+                h.update(hashb)
+                b2bb = bytearray(h.digest())
+                b2bb.reverse()
+                if b2bb >= work_limit: break
+
+        workb.reverse()
+        assert work_validate(workb.hex(), _hash)
+        return workb.hex()
 
 
 def mrai_from_raw(amount):
