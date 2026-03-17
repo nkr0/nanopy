@@ -129,7 +129,7 @@ except:
 
 setup(
     name="nanopy",
-    version='18.0.0',
+    version='19.0.0',
     packages=['nanopy'],
     description='Python implementation of NANO-related functions.',
     url='https://github.com/nano128/nanopy',

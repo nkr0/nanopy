@@ -18,17 +18,12 @@ ENCODING = b'13456789abcdefghijkmnopqrstuwxyz'
 
 
 def account_key(account):
-    if account_prefix in ['nano_', 'xrb_']:  # stupid inconsistent main network.
-        assert (len(account) == 64 and
-                account[:4] == 'xrb_') or (len(account) == 65 and
-                                           (account[:5] == 'nano_'))
-    else:
-        assert len(account) == len(account_prefix) + 60 and account[:len(
-            account_prefix)] == account_prefix
+    assert len(account) >= 60
 
     account = b'1111' + account[-60:].encode()
     account = account.translate(bytes.maketrans(ENCODING, RFC_3548))
     key = base64.b32decode(account)
+
     checksum = key[:-6:-1]
     key = key[3:-5]
 
@@ -53,7 +48,7 @@ def validate_account_number(account):
     try:
         account_key(account)
         return True
-    except AssertionError:
+    except:
         return False
 
 
