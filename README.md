@@ -45,7 +45,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
 * `--demo`. Run in demo mode. Never broadcast blocks.
 
 ## Support
-Find me on discord in NANO's channel. My handle is `npy#2928`. You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
+Contact me on [reddit](https://www.reddit.com/user/nanopy_). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `yapf` (for Python) or `clang-format` (for C).
 ```
 clang-format --style google -i nanopy/*.c
 yapf --style google -i -r nanopy nanopy-wallet setup.py
