@@ -4,14 +4,26 @@ nanopy.rpc
 A wrapper to make RPC requests to a node.
 """
 
-from abc import ABC, abstractmethod  # pragma: no cover
-from typing import Any  # pragma: no cover
-import json  # pragma: no cover
-import requests  # pragma: no cover
-import websocket  # pragma: no cover
+from abc import ABC, abstractmethod
+from typing import Any
+import json
+
+try:
+    import requests
+
+    ENABLE_HTTP = True
+except ModuleNotFoundError:
+    ENABLE_HTTP = False
+
+try:
+    import websocket
+
+    ENABLE_WS = True
+except ModuleNotFoundError:
+    ENABLE_WS = False
 
 
-class RPC(ABC):  # pragma: no cover
+class RPC(ABC):
     "RPC base class"
 
     @abstractmethod
@@ -1260,13 +1272,15 @@ class RPC(ABC):  # pragma: no cover
         return self.request(data)
 
 
-class HTTP(RPC):  # pragma: no cover
+class HTTP(RPC):
     """HTTP RPC class
 
     :arg url: URL of the nano node
     """
 
     def __init__(self, url: str = "http://localhost:7076"):
+        if not ENABLE_HTTP:
+            raise ModuleNotFoundError("This class requires 'requests'.")
         self.url = url
         self.api = requests.session()
 
@@ -1281,17 +1295,20 @@ class HTTP(RPC):  # pragma: no cover
         return r.json()
 
 
-class WS(RPC):  # pragma: no cover
+class WS(RPC):
     """WS RPC class
 
     :arg url: URL of the nano node
     """
 
     def __init__(self, url: str = "ws://localhost:7078"):
+        if not ENABLE_WS:
+            raise ModuleNotFoundError("This class requires 'websocket-client'.")
         self.api = websocket.create_connection(url)
 
     def __del__(self) -> None:
-        self.api.close()
+        if ENABLE_WS:
+            self.api.close()
 
     def request(self, data: dict[str, Any]) -> Any:
         """Overridden from base class

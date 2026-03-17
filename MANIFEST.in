@@ -1,1 +1,2 @@
-recursive-include nanopy *
+graft src
+prune tests
