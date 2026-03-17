@@ -36,10 +36,9 @@ rpc.process(sb.json)
 ## Wallet
 Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
 
-### Wallet options
-* The wallet looks for default configuration in `~/.config/nanopy.conf`.
-  * Default mode of operation is to check state of all accounts in `~/.config/nanopy.conf`.
+* Configuration is in `~/.config/nanopy.conf`
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
+* Checks state of accounts in `~/.config/nanopy.conf` by default.
 * Open a wallet, `nanopy-wallet open FILE KEY`, and use seeds from *kdbx files. `FILE` is the *.kdbx database and `KEY` is a seed in it. See `nanopy-wallet open -h` for options.
 
 ## Support
