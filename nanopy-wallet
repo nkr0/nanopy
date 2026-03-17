@@ -106,8 +106,8 @@ def generate_block(sk, pk, acc):
     while True:
         if online:
             info = rpc.account_info(acc, representative=True)
-            rb = rpc.accounts_pending([acc])["blocks"]
-            rb = rb[acc] if rb else None
+            rb = rpc.accounts_receivable([acc])
+            rb = rb["blocks"][acc] if "blocks" in rb else None
         elif state:
             if "frontier" in config[state]:
                 info["frontier"] = config[state]["frontier"]
@@ -134,7 +134,7 @@ def generate_block(sk, pk, acc):
                         config.write(f)
                 if not rb:
                     break
-                if input("\nReceive pending?(" + bc.boldstr("y") + "/n): ") == "n":
+                if input("\nReceive blocks?(" + bc.boldstr("y") + "/n): ") == "n":
                     break
 
         else:  # open a new acc
@@ -327,8 +327,8 @@ if accounts and online:
             accinfo = info["balances"][account]
             bc.status("Acc", account)
             bc.amt("Bal", npy.from_raw(accinfo["balance"]), bc.ok1)
-            if int(accinfo["pending"]):
-                bc.ok3("Pending block(s)")
+            if int(accinfo["receivable"]):
+                bc.ok3("Receivable block(s)")
             print("")
     else:
         bc.warn2(info)
