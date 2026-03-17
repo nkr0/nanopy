@@ -2,5 +2,5 @@ nanopy
 ======
 .. toctree::
 
-   npy
+   nanopy
    rpc
