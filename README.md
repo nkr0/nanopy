@@ -1,7 +1,22 @@
 # nanopy
-* Install by running `pip install nanopy`.
-  * Install `mnemonic` to generate mnemonic wallets.
-  * Install `requests` or `websocket-client` to use http or websocket RPC, respectively.
+*nanopy* includes *C* extensions for work generation and signing, and therefore needs a compiler to install.
+
+```sh
+sudo apt install gcc python3-dev
+pip install nanopy
+```
+
+When needed, use the environment variables `CC`, `LDSHARED`, `CFLAGS`, and `LDFLAGS` to tweak build options. See [*setuptools* documentation](https://setuptools.pypa.io/) for further info.
+
+GPU support can be enabled with ``USE_GPU=1`` and appropriate *OpenCL ICD* headers.
+
+```sh
+sudo apt install gcc python3-dev ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd
+USE_GPU=1 pip install nanopy
+```
+
+* Install `mnemonic` to generate mnemonic wallets.
+* Install `requests` or `websocket-client` to use *http* or *websocket* *RPC*, respectively.
 
 ## Usage
 ```py

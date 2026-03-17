@@ -7,6 +7,7 @@ name = "nanopy"
 description = "Python implementation of NANO currency related functions"
 readme = "README.md"
 version = "28.0.1-8"
+requires-python = ">=3.9"
 
 [project.optional-dependencies]
 cibasic = ["mnemonic", "pytest"]
