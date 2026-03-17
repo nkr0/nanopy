@@ -1,4 +1,6 @@
-import os, platform, setuptools, shutil
+import os
+import platform
+import setuptools
 
 k, _, _, _, m, _ = platform.uname()
 print(m, k)

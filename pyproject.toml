@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanopy"
-version = "27.0.6"
+version = "27.0.7"
 license = "MIT"
 
 [project.optional-dependencies]
@@ -16,9 +16,6 @@ tor = ["pysocks", "python-socks"]
 [project.urls]
 Repository = "https://github.com/npy0/nanopy"
 
-[tool.coverage.report]
-fail_under = 100
-
 [tool.mypy]
 files = "nanopy, nanopy-wallet, tests"
 strict = true
@@ -27,7 +24,7 @@ strict = true
 disable = ["c-extension-no-member", "too-many-arguments", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
 
 [tool.pytest.ini_options]
-addopts = "--cov nanopy"
+addopts = "--cov nanopy --cov-fail-under=100"
 
 [tool.setuptools]
 packages = ["nanopy"]
