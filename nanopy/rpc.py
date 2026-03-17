@@ -27,14 +27,7 @@ def accounts_balances(accounts):
     data = {}
     data['action'] = 'accounts_balances'
     data['accounts'] = accounts
-    info = json.loads(session.post(url, data=json.dumps(data)).text)
-    try:
-        del (info['error'])
-        for account in accounts:
-            info[account] = account_info(account)
-    except:
-        pass
-    return info
+    return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
 def available_supply():
