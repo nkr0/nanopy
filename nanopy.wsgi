@@ -65,12 +65,7 @@ def application(environ, start_response):
                 query[key] = str(query_raw.get(key)[0])
             request_body = json.dumps(query).encode('utf-8')
         elif (environ['REQUEST_METHOD'] == 'POST'):
-            try:
-                request_body_size = int(environ.get('CONTENT_LENGTH', 0))
-            except (ValueError):
-                request_body_size = 0
-
-            request_body = environ['wsgi.input'].read(request_body_size)
+            request_body = environ['wsgi.input'].read()
 
         if json.loads(request_body)['action'] in rpc_enabled:
             req = urllib.request.Request(rpc, request_body)
