@@ -344,7 +344,11 @@ uint64_t xorshift1024star(void) { // nano-node/nano/node/xorshift.hpp
 }
 
 static PyObject *generate(PyObject *self, PyObject *args) {
+#ifdef USE_VISUAL_C
+  int i, j;
+#else
   size_t i, j;
+#endif
   uint8_t *h32;
   uint64_t difficulty = 0, work = 0, nonce = 0;
   const size_t work_size = 1024 * 1024; // default value from nano
