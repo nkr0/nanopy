@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 name = "nanopy"
 description = "Python implementation of NANO currency related functions"
 readme = "README.md"
-version = "28.0.1-9"
+version = "28.0.1-10"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
