@@ -262,11 +262,13 @@ class RPC:
         if json_block: data['json_block'] = True
         return self._post(data)
 
-    def bootstrap(self, address, port):
+    def bootstrap(self, address, port, bypass_frontier_confirmation=False):
         data = {}
         data['action'] = 'bootstrap'
         data['address'] = address
         data['port'] = port
+        if bypass_frontier_confirmation:
+            data['bypass_frontier_confirmation'] = True
         return self._post(data)
 
     def bootstrap_lazy(self, hash_, force=False):
