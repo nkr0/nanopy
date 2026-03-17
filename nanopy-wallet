@@ -116,9 +116,7 @@ def generate_block(sk, pk, account):
                     config[state]['frontier'] = info['frontier']
                     config[state]['balance'] = info['balance']
                     config[state]['representative'] = info['representative']
-                    with open(
-                            os.path.expanduser('~') + "/.config/nanopy-confs/" +
-                            args.network + ".conf", 'w') as f:
+                    with open(config_file, 'w') as f:
                         config.write(f)
                 if not rb: break
                 if (input("\nReceive pending blocks?(" + bcolors.bold + "y" +
@@ -179,7 +177,7 @@ def generate_block(sk, pk, account):
                ):
                 work_hash = account_key(nb['account'])
 
-            if args.remote:
+            if rpc.work_url:
                 try:
                     nb['work'] = rpc.work_generate(work_hash)['work']
                 except:
@@ -187,9 +185,9 @@ def generate_block(sk, pk, account):
                         bcolors.warn1,
                         "Node rejected work request, switching to local PoW.",
                         bcolors.end)
-                    args.remote = False
+                    rpc.work_url = ''
 
-            if not args.remote: nb['work'] = work_generate(work_hash)
+            if not rpc.work_url: nb['work'] = work_generate(work_hash)
 
             nb['signature'] = sign_block(sk, pk, nb)
 
@@ -218,16 +216,10 @@ def generate_block(sk, pk, account):
                                 config.remove_option(state, rb[0])
                             except:
                                 pass
-                        with open(
-                                os.path.expanduser('~') +
-                                "/.config/nanopy-confs/" + args.network +
-                                ".conf", 'w') as f:
+                        with open(config_file, 'w') as f:
                             config.write(f)
-                        print(
-                            bcolors.ok3,
-                            'saved new state to ' + os.path.expanduser('~') +
-                            "/.config/nanopy-confs/" + args.network + ".conf",
-                            bcolors.end)
+                        print(bcolors.ok3, 'saved new state to', config_file,
+                              bcolors.end)
 
 
 parser = argparse.ArgumentParser()
@@ -254,6 +246,8 @@ parser_open.add_argument(
     '--demo',
     action='store_true',
     help='Run in demo mode. Never broadcast blocks.')
+parser_open.add_argument(
+    '--offline', action='store_true', help='Run in offline mode.')
 
 open_group = parser_open.add_mutually_exclusive_group()
 open_group.add_argument(
@@ -264,12 +258,6 @@ open_group.add_argument(
     '--audit',
     action='store_true',
     help='Check state of all accounts from index 0 to INDEX.')
-
-offline_group = parser_open.add_mutually_exclusive_group()
-offline_group.add_argument(
-    '--offline', action='store_true', help='Run in offline mode.')
-offline_group.add_argument(
-    '--remote', action='store_true', help='Compute work on the node.')
 
 parser.add_argument(
     '--new',
@@ -305,9 +293,11 @@ elif args.network == 'banano':
 else:
     lh = 'http://localhost:7076'
 
+config_file = os.path.expanduser(
+    '~') + "/.config/nanopy-confs/" + args.network + ".conf"
+
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(
-    os.path.expanduser('~') + "/.config/nanopy-confs/" + args.network + ".conf")
+config.read(config_file)
 
 states = config.sections()
 try:
@@ -329,6 +319,8 @@ if online:
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
 else:
     print(bcolors.warn1, "Running in offline mode.", bcolors.end)
+
+rpc.work_url = config['DEFAULT'].get('work_rpc')
 
 try:
     unlock = (args.f != None)
