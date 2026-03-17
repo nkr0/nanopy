@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse, gpg, os, json, configparser, requests
-from nanopy import *
+import nanopy as npy
 from nanopy.rpc import RPC
 
 
@@ -16,7 +16,10 @@ class bcolors:
 
 
 def get_no_value_options(section):
-    options = config.options(section)
+    try:
+        options = config.options(section)
+    except:
+        return None
     try:
         options.remove('tor')
     except:
@@ -64,7 +67,7 @@ def gpg_encrypt(secret, filename):
 
 
 def generate_block(sk, pk, account):
-    nb = state_block()
+    nb = npy.state_block()
     nb['account'] = account
     print('Acc :', nb['account'])
 
@@ -92,7 +95,7 @@ def generate_block(sk, pk, account):
             nb['previous'] = info['frontier']
             nb['balance'] = info['balance']
             nb['representative'] = info['representative']
-            pretty_bal('Bal', bcolors.ok1, from_raw(nb['balance']))
+            pretty_bal('Bal', bcolors.ok1, npy.from_raw(nb['balance']))
             print('Rep :', nb['representative'])
 
             if online:
@@ -112,7 +115,7 @@ def generate_block(sk, pk, account):
                     pass
 
             if args.rep:
-                assert validate_account_number(args.rep)
+                assert npy.validate_account_number(args.rep)
                 nb['representative'] = args.rep
 
             if (not args.send) and (not args.rep):
@@ -134,25 +137,25 @@ def generate_block(sk, pk, account):
             else:
                 args.send = None
                 nb['balance'] = '0'
-                pretty_bal('Bal', bcolors.ok1, from_raw(nb['balance']))
+                pretty_bal('Bal', bcolors.ok1, npy.from_raw(nb['balance']))
                 nb['representative'] = input('Rep : ')
 
         if args.send:
-            nb['link'] = account_key(args.send)
-            print('\nTo  :', account_get(nb['link']))
+            nb['link'] = npy.account_key(args.send)
+            print('\nTo  :', npy.account_get(nb['link']))
             if args.empty:
-                pretty_bal('Amt', bcolors.warn2, from_raw(nb['balance']))
+                pretty_bal('Amt', bcolors.warn2, npy.from_raw(nb['balance']))
                 nb['balance'] = '0'
             else:
                 while True:
-                    amount = int(to_raw(input('Amt : ')))
+                    amount = int(npy.to_raw(input('Amt : ')))
                     if amount <= int(nb['balance']):
                         nb['balance'] = str(int(nb['balance']) - amount)
                         break
                     print(bcolors.warn2,
                           'Amount must be less than or equal to balance.',
                           bcolors.end)
-            pretty_bal('Bal', bcolors.warn1, from_raw(nb['balance']))
+            pretty_bal('Bal', bcolors.warn1, npy.from_raw(nb['balance']))
 
         elif rb:
             nb['link'] = rb[0]
@@ -164,18 +167,18 @@ def generate_block(sk, pk, account):
             else:
                 amount = config[state][rb[0]]
                 nb['balance'] = str(int(nb['balance']) + int(amount))
-            pretty_bal('Amt', bcolors.ok3, from_raw(amount))
-            pretty_bal('Bal', bcolors.ok3, from_raw(nb['balance']))
+            pretty_bal('Amt', bcolors.ok3, npy.from_raw(amount))
+            pretty_bal('Bal', bcolors.ok3, npy.from_raw(nb['balance']))
 
         if (args.send or args.rep or rb):
             args.send = None
             args.rep = None
 
             work_hash = nb['previous'] if (
-                nb['previous'] != '0' * 64) else account_key(nb['account'])
+                nb['previous'] != '0' * 64) else npy.account_key(nb['account'])
 
-            nb['work'] = work_generate(work_hash)
-            nb['signature'] = sign(sk, block=nb, pk=pk)
+            nb['work'] = npy.work_generate(work_hash)
+            nb['signature'] = npy.sign(sk, block=nb, pk=pk)
 
             print('\n' + json.dumps(nb))
 
@@ -192,7 +195,7 @@ def generate_block(sk, pk, account):
                             print(bcolors.warn2, ack, bcolors.end)
                             state_found = False
                     if state_found:
-                        config[state]['frontier'] = block_hash(nb)
+                        config[state]['frontier'] = npy.block_hash(nb)
                         config[state]['balance'] = nb['balance']
                         config[state]['representative'] = nb['representative']
                         if rb:
@@ -274,19 +277,20 @@ parser.add_argument('-d',
                     '--demo',
                     action='store_true',
                     help='Run in demo mode.')
+parser.add_argument('--reset', action='store_true', help='Reset configuration.')
 
 args = parser.parse_args()
 
 if args.network == 'beta':
-    nanopy.account_prefix = 'xrb_'
+    npy.account_prefix = 'xrb_'
     rpc_url = 'http://localhost:55000'
-    std_unit = '\u03B2'
+    std_unit = 'β'
     available_supply = 340272367920938463463374607431768151531
 elif args.network in ['banano', 'ban']:
     args.network = 'banano'
-    nanopy.account_prefix = 'ban_'
-    nanopy.work_difficulty = 'fffffe0000000000'
-    nanopy.standard_exponent = 29
+    npy.account_prefix = 'ban_'
+    npy.work_difficulty = 'fffffe0000000000'
+    npy.standard_exponent = 29
     rpc_url = 'http://localhost:7072'
     std_unit = 'BAN'
     available_supply = 340280899595938463463374589668199818054
@@ -298,8 +302,9 @@ else:
 
 home_npy = os.path.expanduser('~') + '/.config/nanopy/'
 os.makedirs(home_npy, mode=0o700, exist_ok=True)
+os.chmod(home_npy, 0o700)
 
-if not os.path.exists(home_npy + 'gpg.conf'):
+if not os.path.exists(home_npy + 'gpg.conf') or args.reset:
     with open(home_npy + 'gpg.conf', 'w') as f:
         f.write("""no-symkey-cache
 s2k-mode 3
@@ -345,7 +350,7 @@ accounts = []
 
 if args.new:
     seed = os.urandom(32).hex()
-    _, _, account0 = deterministic_key(seed, 0)
+    _, _, account0 = npy.deterministic_key(seed, 0)
     gpg_encrypt(seed, account0 + '.asc')
 
 elif args.audit_file:
@@ -357,7 +362,7 @@ elif unlock:
 
     if args.audit:
         for i in range(args.index + 1):
-            _, _, account_i = deterministic_key(seed, i)
+            _, _, account_i = npy.deterministic_key(seed, i)
             accounts.append(account_i)
 
     elif args.password:
@@ -366,7 +371,7 @@ elif unlock:
             gpg_encrypt(seed, args.f.name)
 
     else:
-        generate_block(*deterministic_key(seed, args.index))
+        generate_block(*npy.deterministic_key(seed, args.index))
 
 elif args.broadcast and online:
     bb = json.dumps(json.loads(input('Enter JSON block to broadcast: ')))
@@ -387,7 +392,7 @@ if accounts and online:
         print('Acc :', account)
         try:
             pretty_bal('Bal', bcolors.ok1,
-                       from_raw(info['balances'][account]['balance']))
+                       npy.from_raw(info['balances'][account]['balance']))
             if int(info['balances'][account]['pending']):
                 print(bcolors.ok3, 'Pending block(s)', bcolors.end)
             print('')
