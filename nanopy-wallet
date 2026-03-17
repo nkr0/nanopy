@@ -198,6 +198,12 @@ def generate_block(sk, pk, account):
             println("Bal", bcolors.ok3, npy.from_raw(nb["balance"]))
 
         if args.send or args.rep or rb:
+            current_difficulty = None
+            if args.network == "nano":
+                current_difficulty = "fffffff800000000"  # 8x
+                if rb:
+                    current_difficulty = "fffffe0000000000"  # 1/8x
+
             args.send = None
             args.rep = None
 
@@ -207,7 +213,7 @@ def generate_block(sk, pk, account):
                 else npy.account_key(nb["account"])
             )
 
-            nb["work"] = npy.work_generate(work_hash)
+            nb["work"] = npy.work_generate(work_hash, difficulty=current_difficulty)
             nb["signature"] = npy.sign(sk, block=nb, pk=pk)
 
             print("\n" + json.dumps(nb))
@@ -373,7 +379,10 @@ if online:
         url="http://ipinfo.io/json",
         tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
     )._get()
-    print(bcolors.warn1, iploc["city"], iploc["country"], bcolors.end)
+    try:
+        print(bcolors.warn1, iploc["city"], iploc["country"], bcolors.end)
+    except:
+        print(iploc)
     rpc = RPC(
         url=config["DEFAULT"].get("rpc", fallback=rpc_url),
         tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
@@ -450,12 +459,17 @@ if accounts and online:
 if online:
     rpc.disconnect()
 
-rpc = RPC(url="https://api.kraken.com/0/public/Ticker")
-print(
-    rpc._post({"pair": "nanoxbt"})["result"]["NANOXBT"]["c"][0],
-    "₿\t",
-    rpc._post({"pair": "nanousd"})["result"]["NANOUSD"]["c"][0],
-    "$\t",
-    rpc._post({"pair": "nanoeur"})["result"]["NANOEUR"]["c"][0],
-    "€",
-)
+ticker = RPC(
+    url="https://api.kraken.com/0/public/Ticker?pair=nanoxbt,nanousd,nanoeur"
+)._get()
+try:
+    print(
+        ticker["result"]["NANOXBT"]["c"][0],
+        "₿\t",
+        ticker["result"]["NANOUSD"]["c"][0],
+        "$\t",
+        ticker["result"]["NANOEUR"]["c"][0],
+        "€",
+    )
+except:
+    print(ticker)
