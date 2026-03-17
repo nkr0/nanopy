@@ -57,7 +57,7 @@ def get_work_ext_kwargs(use_gpu, use_vc):
         "name": "nanopy.work",
         "sources": ["nanopy/work.c", BLAKE2B_SRC],
         "include_dirs": [BLAKE2B_DIR],
-        "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
+        "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-s"],
         "libraries": [],
         "define_macros": [],
@@ -78,17 +78,12 @@ def get_work_ext_kwargs(use_gpu, use_vc):
         e_args["extra_link_args"].append("-fopenmp")
         if use_vc:
             e_args["extra_compile_args"] = [
-                "/openmp",
+                "/openmp:llvm",
                 "/arch:SSE2",
                 "/arch:AVX",
                 "/arch:AVX2",
             ]
-            e_args["extra_link_args"] = [
-                "/openmp",
-                "/arch:SSE2",
-                "/arch:AVX",
-                "/arch:AVX2",
-            ]
+            e_args["extra_link_args"] = []
 
     return e_args
 
@@ -106,7 +101,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc):
         "name": "nanopy.ed25519_blake2b",
         "sources": ["nanopy/ed25519_blake2b.c", BLAKE2B_SRC, ED25519_SRC],
         "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
-        "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
+        "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-s"],
         "define_macros": [],
     }
@@ -120,11 +115,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc):
             "/arch:AVX",
             "/arch:AVX2",
         ]
-        e_args["extra_link_args"] = [
-            "/arch:SSE2",
-            "/arch:AVX",
-            "/arch:AVX2",
-        ]
+        e_args["extra_link_args"] = []
 
     return e_args
 

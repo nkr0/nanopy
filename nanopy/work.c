@@ -37,9 +37,9 @@ bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
   return b2b_h >= difficulty;
 }
 
-static PyObject *validate(PyObject * /*self*/, PyObject *args) {
+static PyObject *validate(PyObject *self, PyObject *args) {
   uint8_t *h32;
-  uint64_t difficulty = 0, work = 0;
+  uint64_t difficulty, work;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
@@ -49,9 +49,9 @@ static PyObject *validate(PyObject * /*self*/, PyObject *args) {
   return Py_BuildValue("i", is_valid(work, h32, difficulty));
 }
 
-static PyObject *generate(PyObject * /*self*/, PyObject *args) {
+static PyObject *generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
-  uint64_t difficulty, work, nonce, work_size = 1024 * 1024;
+  uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
@@ -187,8 +187,9 @@ static PyObject *generate(PyObject * /*self*/, PyObject *args) {
 #else
   while (work == 0) {
     nonce = xorshift1024star();
+    uint64_t i;
 #pragma omp parallel for
-    for (uint64_t i = 0; i < work_size; i++) {
+    for (i = 0; i < work_size; i++) {
       if (work == 0 && is_valid(nonce + i, h32, difficulty)) {
 #pragma omp critical
         work = nonce + i;
