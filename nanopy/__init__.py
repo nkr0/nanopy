@@ -2,6 +2,7 @@ import hashlib, decimal, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
 mrai_name = 'NANO'
+available_supply = 133248289196499221154116917710445381553
 work_limit = b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00'
 
 decimal.getcontext().traps[decimal.Inexact] = 1

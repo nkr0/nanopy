@@ -107,7 +107,7 @@ def generate_block(sk, pk, account):
                 try:  # nag users to change representative
                     if int(
                             rpc.account_info(nb['representative'])['weight']
-                    ) * 100 / available_supply > 1.0 and not args.change_rep_to:
+                    ) * 100 / nanopy.available_supply > 1.0 and not args.change_rep_to:
                         print(
                             bcolors.warn1,
                             '\nYour representative has too much voting weight.',
@@ -296,16 +296,13 @@ args = parser.parse_args()
 if args.network == 'beta':
     nanopy.account_prefix = 'xrb_'
     nanopy.mrai_name = '\u03B2NANO'
+    nanopy.available_supply = 340272367920938463463374607431768151531
     rpc.url = 'http://localhost:55000'
-    available_supply = 340272367920938463463374607431768151531
 elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
     nanopy.mrai_name = 'BANANO'
+    nanopy.available_supply = 3402723679209384634633746074317681515310
     rpc.url = 'http://localhost:7072'
-    available_supply = 3402723679209384634633746074317681515310
-else:
-    rpc.url = 'http://localhost:7076'
-    available_supply = 133248289196499221154116917710445381553
 
 config_file = os.path.expanduser(
     '~') + '/.config/nanopy-confs/' + args.network + '.conf'
