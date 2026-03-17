@@ -53,7 +53,8 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
 
 static PyObject *work_generate(PyObject *self, PyObject *args) {
   uint8_t *h32;
-  uint64_t i, difficulty, work = 0, nonce, work_size = 1024 * 1024;
+  int i;
+  uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0;
 
   if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
