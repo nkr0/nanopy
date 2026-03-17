@@ -16,9 +16,9 @@ import sys
 import random
 import base64
 import binascii
-from pyblake2 import blake2b
+from hashlib import blake2b
 from bitstring import BitArray
-from pure25519 import ed25519_oop as ed25519
+import ed25519_blake2b
 from timeit import Timer
 
 # set global translation maps for base32
@@ -80,9 +80,6 @@ def account_xrb_bytes(account):
     encode_account = encode_account.translate(bytes.maketrans(RFC_3548,ENCODING))[4:]   # simply translate the result from RFC3548 to Nano's encoding, snip off the leading useless bytes
     return b'xrb_'+encode_account                                                       # add prefix and return
 
-def private_public(private):
-	return ed25519.SigningKey(private).get_verifying_key().to_bytes()
-	
 def seed_account(seed, index):
 	# Given an account seed and index #, provide the account private and public keys
 	h = blake2b(digest_size=32)
@@ -93,8 +90,8 @@ def seed_account(seed, index):
 	h.update(seed_data.bytes)
 	h.update(seed_index.bytes)
 	
-	account_key = BitArray(h.digest())
-	return account_key.bytes, private_public(account_key.bytes)
+	account_key = h.digest()
+	return account_key, ed25519_blake2b.publickey(account_key)
 
 def pow_threshold(check):
 	if check > b'\xFF\xFF\xFF\xC0\x00\x00\x00\x00': return True
@@ -178,7 +175,7 @@ def test():
 
 	print("Hash      ",bh.hexdigest())																				
 
-	sig = ed25519.SigningKey(priv_key+pub_key).sign(bh.digest())														# work is not included in signature
+	sig = ed25519_blake2b.signature(bh.digest(),priv_key,pub_key)														# work is not included in signature
 	print("Signature ",sig.hex())
 
 if __name__ == '__main__':
