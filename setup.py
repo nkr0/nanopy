@@ -30,7 +30,8 @@ def config_arch():
     m = platform.machine()
     BLAKE2B_DIR = "nanopy/blake2b/"
     ED25519_DIR = "nanopy/ed25519-donna"
-    ED25519_SRC = [ED25519_DIR + "/ed25519.c"]
+    ED25519_SRC = ED25519_DIR + "/ed25519.c"
+    ED25519_IMPL = None
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
         BLAKE2B_DIR += "sse"
         ED25519_IMPL = "ED25519_SSE2"
@@ -38,7 +39,7 @@ def config_arch():
         BLAKE2B_DIR += "neon"
     else:
         BLAKE2B_DIR += "ref"
-    BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
+    BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
     print(m, sys.maxsize > 2**32, BLAKE2B_SRC, ED25519_IMPL)
 
 
@@ -75,8 +76,8 @@ def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=No
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
             e_args["libraries"] = ["OpenCL"]
     else:
-        e_args["sources"].extend(BLAKE2B_SRC)
-        e_args["include_dirs"] = [BLAKE2B_DIR]
+        e_args["sources"].append(BLAKE2B_SRC)
+        e_args["include_dirs"].append(BLAKE2B_DIR)
         e_args["extra_compile_args"].append("-fopenmp")
         e_args["extra_link_args"].append("-fopenmp")
         if platform == "darwin":
@@ -113,7 +114,7 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
 
     e_args = {
         "name": "nanopy.ed25519_blake2b",
-        "sources": BLAKE2B_SRC + ED25519_SRC + ["nanopy/ed25519_blake2b.c"],
+        "sources": ["nanopy/ed25519_blake2b.c", BLAKE2B_SRC, ED25519_SRC],
         "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
         "extra_compile_args": ["-O3", "-march=native", "-Wall", "-Wextra"],
         "extra_link_args": ["-s"],
@@ -147,9 +148,6 @@ try:
 except:
     pass
 
-BLAKE2B_SRC = []
-BLAKE2B_DIR = ""
-ED25519_IMPL = ""
 config_arch()
 
 setup(
