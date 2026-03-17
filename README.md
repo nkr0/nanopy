@@ -24,8 +24,8 @@ Although not part of the package, the light wallet included in the repository ca
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
   * Generated seeds are stored in a GnuPG AES256 encrypted file.
-  * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512. Adjust options by editing `gpg.conf`.
-  * Wallets can also be made by encrypting a file that has a seed using the command, `gpg -c FILE`.
+  * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512. Adjust options by editing `$HOME/.config/nanopy/gpg.conf`.
+  * Wallets can also be made by encrypting a file that has a seed using the command, `gpg -ca FILE`.
   * Options used by the encryption can be verified by inspecting the header in the gpg file. `gpg -v --list-packets FILE`. `cipher 9` is AES256. `s2k 3` is iterated and salted key derivation mode. `hash 10` corresponds to SHA512. `count` is the number of iterations (max 65011712).
   * To get the seed, `gpg -d FILE`
 * `-a`, `--audit-file`. Check state of all accounts in a file.

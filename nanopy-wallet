@@ -296,9 +296,21 @@ else:
     std_unit = '₦'
     available_supply = 133248061999106578273467128948453216035
 
-config_file = os.path.expanduser(
-    '~') + '/.config/nanopy/' + args.network + '.conf'
+home_npy = os.path.expanduser('~') + '/.config/nanopy/'
+os.makedirs(home_npy, mode=0o700, exist_ok=True)
 
+if not os.path.exists(home_npy + 'gpg.conf'):
+    with open(home_npy + 'gpg.conf', 'w') as f:
+        f.write("""no-symkey-cache
+s2k-mode 3
+s2k-count 65011712
+s2k-digest-algo SHA512
+s2k-cipher-algo AES256""")
+os.chmod(home_npy + 'gpg.conf', 0o600)
+gpg_ctx = gpg.Context(armor=True, home_dir=home_npy)
+
+config_file = home_npy + args.network + '.conf'
+os.chmod(config_file, 0o600)
 config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
@@ -328,9 +340,6 @@ try:
     if args.empty: args.send = args.empty
 except:
     unlock = False
-
-gpg_ctx = gpg.Context(armor=True,
-                      home_dir=os.path.dirname(os.path.realpath(__file__)))
 
 accounts = []
 
