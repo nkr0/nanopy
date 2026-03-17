@@ -108,7 +108,7 @@ def generate_block(sk, pk, account):
                         )
                         * 100
                         / available_supply
-                        > 0.2
+                        > 2
                         and not args.rep
                     ):
                         print(
