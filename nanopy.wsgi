@@ -1,6 +1,7 @@
-import json, urllib.request
+#from wsgiref.simple_server import make_server
+import json, urllib.request, urllib.parse
 
-url = 'http://localhost:7076'
+rpc = 'http://localhost:7076'
 
 all = [
     'account_balance', 'account_block_count', 'account_info', 'account_create',
@@ -53,26 +54,37 @@ rpc_enabled = minimal
 
 
 def application(environ, start_response):
+    status = '400 Bad Request'
+    response = b''
+    request_body = b''
     try:
-        request_body_size = int(environ.get('CONTENT_LENGTH', 0))
-    except (ValueError):
-        request_body_size = 0
+        if (environ['REQUEST_METHOD'] == 'GET'):
+            query_raw = urllib.parse.parse_qs(environ['QUERY_STRING'])
+            query = {}
+            for key in query_raw:
+                query[key] = str(query_raw.get(key)[0])
+            request_body = json.dumps(query).encode('utf-8')
+        elif (environ['REQUEST_METHOD'] == 'POST'):
+            try:
+                request_body_size = int(environ.get('CONTENT_LENGTH', 0))
+            except (ValueError):
+                request_body_size = 0
 
-    request_body = environ['wsgi.input'].read(request_body_size)
+            request_body = environ['wsgi.input'].read(request_body_size)
 
-    try:
         if json.loads(request_body)['action'] in rpc_enabled:
-            req = urllib.request.Request(url, request_body)
+            req = urllib.request.Request(rpc, request_body)
             with urllib.request.urlopen(req) as response_raw:
                 response = response_raw.read()
-
-            response_headers = [('Content-type', 'text/plain'),
-                                ('Content-Length', str(len(response)))]
-
             status = '200 OK'
-            start_response(status, response_headers)
-            return [response]
-        else:
-            status = '400 Bad Request'
     except:
-        status = '400 Bad Request'
+        pass
+
+    response_headers = [('Content-type', 'text/plain'), ('Content-Length',
+                                                         str(len(response)))]
+    start_response(status, response_headers)
+    return [response]
+
+
+#httpd = make_server('localhost', 8051, application)
+#httpd.serve_forever()
