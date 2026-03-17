@@ -380,3 +380,9 @@ if accounts and online:
             print(bcolors.warn2, info, bcolors.end, '\n')
 
 if online: rpc.disconnect()
+
+rpc = RPC(url='https://api.kraken.com/0/public/Ticker')
+print(
+    rpc._post({'pair': 'nanoxbt'})['result']['NANOXBT']['c'][0], '₿\t',
+    rpc._post({'pair': 'nanousd'})['result']['NANOUSD']['c'][0], '$\t',
+    rpc._post({'pair': 'nanoeur'})['result']['NANOEUR']['c'][0], '€')

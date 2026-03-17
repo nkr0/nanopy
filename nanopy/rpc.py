@@ -278,9 +278,10 @@ class RPC:
         if force: data['force'] = True
         return self._post(data)
 
-    def bootstrap_any(self):
+    def bootstrap_any(self, force=False):
         data = {}
         data['action'] = 'bootstrap_any'
+        if force: data['force'] = True
         return self._post(data)
 
     def bootstrap_status(self):
