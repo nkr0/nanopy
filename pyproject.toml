@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanopy"
-version = "28.0"
+version = "28.0.1"
 license = "MIT"
 
 [project.optional-dependencies]
