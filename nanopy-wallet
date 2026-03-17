@@ -55,7 +55,7 @@ def get_no_value_options(section):
 
 def formatted_balance_printer(label, colour, amount):
     print(label + ' :', colour + '{:>40}'.format(amount) + bcolors.end,
-          nanopy.mrai_name)
+          mrai_name)
 
 
 def generate_block(sk, pk, account):
@@ -104,7 +104,7 @@ def generate_block(sk, pk, account):
                 try:  # nag users to change representative
                     if int(
                             rpc.account_info(nb['representative'])['weight']
-                    ) * 100 / nanopy.available_supply > 1.0 and not args.change_rep_to:
+                    ) * 100 / available_supply > 1.0 and not args.change_rep_to:
                         print(
                             bcolors.warn1,
                             '\nYour representative has too much voting weight.',
@@ -290,17 +290,19 @@ parser.add_argument(
 
 args = parser.parse_args()
 
+mrai_name = 'NANO'
+available_supply = 133248289196499221154116917710445381553
 if args.network == 'beta':
     nanopy.account_prefix = 'xrb_'
-    nanopy.mrai_name = '\u03B2NANO'
-    nanopy.available_supply = 340272367920938463463374607431768151531
     rpc.url = 'http://localhost:55000'
+    mrai_name = '\u03B2NANO'
+    available_supply = 340272367920938463463374607431768151531
 elif args.network == 'banano':
     nanopy.account_prefix = 'ban_'
-    nanopy.mrai_name = 'BANANO'
-    nanopy.available_supply = 3402723679209384634633746074317681515310
     nanopy.work_threshold = 'fffffe0000000000'
     rpc.url = 'http://localhost:7072'
+    mrai_name = 'BANANO'
+    available_supply = 3402723679209384634633746074317681515310
 
 config_file = os.path.expanduser(
     '~') + '/.config/nanopy-confs/' + args.network + '.conf'

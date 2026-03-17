@@ -1,13 +1,14 @@
-import hashlib, decimal, hmac, mnemonic, nanopy.ed25519_blake2b
+import hashlib, base64, decimal, hmac, mnemonic, nanopy.ed25519_blake2b
 
 account_prefix = 'nano_'
-mrai_name = 'NANO'
-available_supply = 133248289196499221154116917710445381553
 work_threshold = 'ffffffc000000000'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 decimal.getcontext().prec = 40
 D = decimal.Decimal
+
+RFC_3548 = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
+ENCODING = b'13456789abcdefghijkmnopqrstuwxyz'
 
 
 def account_key(account):
@@ -19,52 +20,31 @@ def account_key(account):
         assert len(account) == len(account_prefix) + 60 and account[:len(
             account_prefix)] == account_prefix
 
-    account_map = "13456789abcdefghijkmnopqrstuwxyz"
-    account_lookup = {}
-    for x in range(32):
-        account_lookup[account_map[x]] = format(x, '05b')
-
-    acrop_key = account[-60:-8]
-    acrop_check = account[-8:]
-
-    number_l = ''.join(account_lookup[acrop_key[x]] for x in range(52))
-    number_l = int(number_l[4:], 2).to_bytes(32, byteorder='big')
-
-    check_l = ''.join(account_lookup[acrop_check[x]] for x in range(8))
-    check_l = bytearray(int(check_l, 2).to_bytes(5, byteorder='big'))
-    check_l.reverse()
-
+    account = b'1111' + account[-60:].encode()
+    account = account.translate(bytes.maketrans(ENCODING, RFC_3548))
+    key = base64.b32decode(account)
+    checksum = key[:-6:-1]
+    key = key[3:-5]
     h = hashlib.blake2b(digest_size=5)
-    h.update(number_l)
+    h.update(key)
 
-    assert h.digest() == check_l
+    assert h.digest() == checksum
 
-    return number_l.hex()
+    return key.hex()
 
 
 def account_get(key):
     assert len(key) == 64
-    account_map = "13456789abcdefghijkmnopqrstuwxyz"
-    account_lookup = {}
-    for x in range(32):
-        account_lookup[format(x, '05b')] = account_map[x]
 
+    key = bytes.fromhex(key)
     h = hashlib.blake2b(digest_size=5)
-    h.update(bytes.fromhex(key))
-    checksum = bytearray(h.digest())
+    h.update(key)
+    checksum = h.digest()
+    key = b'\x00\x00\x00' + key + checksum[::-1]
+    account = base64.b32encode(key)
+    account = account.translate(bytes.maketrans(RFC_3548, ENCODING))[4:]
 
-    checksum.reverse()
-    checksum = format(int.from_bytes(checksum, byteorder='big'), '040b')
-
-    encode_check = ''.join(
-        account_lookup[checksum[x * 5:x * 5 + 5]] for x in range(8))
-
-    keyb = format(int(key, 16), '0260b')
-
-    encode_account = ''.join(
-        account_lookup[keyb[x * 5:x * 5 + 5]] for x in range(52))
-
-    return account_prefix + encode_account + encode_check
+    return account_prefix + account.decode()
 
 
 def validate_account_number(account):
@@ -144,7 +124,7 @@ try:
         assert work_validate(work, _hash, threshold)
         return work
 except ModuleNotFoundError:
-    print('\033[93m' + "No work extension" + '\033[0m')
+    print('\033[93m' + 'No work extension' + '\033[0m')
     import random
 
     def work_generate(_hash, threshold=None):
@@ -220,12 +200,12 @@ def block_hash(block):
 
     bh.update(
         bytes.fromhex(
-            "0000000000000000000000000000000000000000000000000000000000000006"))
-    bh.update(bytes.fromhex(account_key(block["account"])))
-    bh.update(bytes.fromhex(block["previous"]))
-    bh.update(bytes.fromhex(account_key(block["representative"])))
-    bh.update(bytes.fromhex(format(int(block["balance"]), '032x')))
-    bh.update(bytes.fromhex(block["link"]))
+            '0000000000000000000000000000000000000000000000000000000000000006'))
+    bh.update(bytes.fromhex(account_key(block['account'])))
+    bh.update(bytes.fromhex(block['previous']))
+    bh.update(bytes.fromhex(account_key(block['representative'])))
+    bh.update(bytes.fromhex(format(int(block['balance']), '032x')))
+    bh.update(bytes.fromhex(block['link']))
 
     return bh.hexdigest()
 
