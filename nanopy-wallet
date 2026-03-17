@@ -172,7 +172,6 @@ if args.sub:
         bc.status(args.k, acci.addr)
         kp.add_entry(group, args.k, acci.addr.split("_")[1], seed)
         kp.save()
-
     else:
         entry = kp.find_entries(title=args.k, group=group, recursive=False, first=True)
         seed = entry.password
@@ -187,15 +186,11 @@ if args.sub:
         else:
             acci.sk = npy.deterministic_key(seed, args.index)
             generate_block(acci)
-
 elif args.broadcast:
     broadcast(input("Enter JSON block to broadcast: "))
-
 elif args.audit:
     check_status([a.strip() for a in args.audit if a.startswith(n.prefix)])
-
 else:
-    print(n)
     check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
 
 rpc.disconnect()
