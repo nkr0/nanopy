@@ -61,12 +61,12 @@ class RPC:
         if pending: data['pending'] = True
         return self._post(data)
 
-    def account_create(self, wallet, index=0, work=False):
+    def account_create(self, wallet, index=0, work=True):
         data = {}
         data['action'] = 'account_create'
         data['wallet'] = wallet
         if index: data['index'] = index
-        if work: data['work'] = True
+        if not work: data['work'] = False
         return self._post(data)
 
     def account_get(self, key):
@@ -150,7 +150,7 @@ class RPC:
         data['accounts'] = accounts
         return self._post(data)
 
-    def accounts_create(self, wallet, count, work=True):
+    def accounts_create(self, wallet, count=1, work=True):
         data = {}
         data['action'] = 'accounts_create'
         data['wallet'] = wallet
@@ -183,6 +183,12 @@ class RPC:
         if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
+    def active_difficulty(self, include_trend=False):
+        data = {}
+        data['action'] = 'active_difficulty'
+        if include_trend: data['include_trend'] = True
+        return self._post(data)
+
     def available_supply(self):
         data = {}
         data['action'] = 'available_supply'
@@ -206,7 +212,8 @@ class RPC:
                     pending=False,
                     source=False,
                     balance=False,
-                    json_block=False):
+                    json_block=False,
+                    include_not_found=False):
         data = {}
         data['action'] = 'blocks_info'
         data['hashes'] = hashes
@@ -214,6 +221,7 @@ class RPC:
         if source: data['source'] = True
         if balance: data['balance'] = True
         if json_block: data['json_block'] = True
+        if include_not_found: data['include_not_found'] = True
         return self._post(data)
 
     def block_account(self, _hash):
@@ -228,9 +236,10 @@ class RPC:
         data['hash'] = _hash
         return self._post(data)
 
-    def block_count(self):
+    def block_count(self, include_cemented=False):
         data = {}
         data['action'] = 'block_count'
+        if include_cemented: data['include_cemented'] = True
         return self._post(data)
 
     def block_count_type(self):
@@ -272,7 +281,7 @@ class RPC:
         data['action'] = 'bootstrap_status'
         return self._post(data)
 
-    def chain(self, block, count, offset=0, reverse=False):
+    def chain(self, block, count=1, offset=0, reverse=False):
         data = {}
         data['action'] = 'chain'
         data['block'] = block
@@ -317,6 +326,13 @@ class RPC:
         if peer_details: data['peer_details'] = True
         return self._post(data)
 
+    def database_txn_tracker(self, min_read_time, min_write_time):
+        data = {}
+        data['action'] = 'database_txn_tracker'
+        data['min_read_time'] = min_read_time
+        data['min_write_time'] = min_write_time
+        return self._post(data)
+
     def delegators(self, account):
         data = {}
         data['action'] = 'delegators'
@@ -336,7 +352,7 @@ class RPC:
         data['index'] = index
         return self._post(data)
 
-    def frontiers(self, account, count):
+    def frontiers(self, account, count=1):
         data = {}
         data['action'] = 'frontiers'
         data['account'] = account
@@ -404,12 +420,13 @@ class RPC:
 
     def ledger(self,
                account,
-               count,
+               count=1,
                representative=False,
                weight=False,
                pending=False,
                modified_since=0,
-               sorting=False):
+               sorting=False,
+               threshold=0):
         data = {}
         data['action'] = 'ledger'
         data['account'] = account
@@ -419,23 +436,32 @@ class RPC:
         if pending: data['pending'] = True
         if modified_since: data['modified_since'] = modified_since
         if sorting: data['sorting'] = True
+        if threshold: data['threshold'] = threshold
         return self._post(data)
 
     def block_create(self,
                      balance,
-                     key,
                      representative,
-                     link,
                      previous,
+                     wallet=None,
+                     account=None,
+                     key=None,
+                     source=None,
+                     destination=None,
+                     link=None,
                      work=None,
                      json_block=False):
         data = {}
         data['action'] = 'block_create'
         data['type'] = 'state'
         data['balance'] = balance
-        data['key'] = key
+        if wallet: data['wallet'] = wallet
+        if account: data['account'] = account
+        if key: data['key'] = key
+        if source: data['source'] = source
+        if destination: data['destination'] = destination
+        if link: data['link'] = link
         data['representative'] = representative
-        data['link'] = link
         data['previous'] = previous
         if work: data['work'] = work
         if json_block: data['json_block'] = True
@@ -481,7 +507,10 @@ class RPC:
     def process(self, block, force=False, subtype=None, json_block=False):
         data = {}
         data['action'] = 'process'
-        data['block'] = block
+        if type(block) == str:
+            data['block'] = block
+        else:
+            data['block'] = json.dumps(block)
         if force: data['force'] = True
         if subtype: data['subtype'] = subtype
         if json_block: data['json_block'] = True
@@ -507,10 +536,10 @@ class RPC:
         data['amount'] = amount
         return self._post(data)
 
-    def representatives(self, count=0, sorting=False):
+    def representatives(self, count=1, sorting=False):
         data = {}
         data['action'] = 'representatives'
-        if count: data['count'] = count
+        data['count'] = count
         if sorting: data['sorting'] = True
         return self._post(data)
 
@@ -537,7 +566,7 @@ class RPC:
         if update_existing_accounts: data['update_existing_accounts'] = True
         return self._post(data)
 
-    def republish(self, _hash, count=0, sources=0, destinations=0):
+    def republish(self, _hash, count=1, sources=0, destinations=0):
         data = {}
         data['action'] = 'republish'
         data['hash'] = _hash
@@ -571,12 +600,22 @@ class RPC:
         if work: data['work'] = work
         return self._post(data)
 
-    def sign(self, key='', wallet='', account='', _hash='', json_block=False):
+    def sign(self,
+             key='',
+             wallet='',
+             account='',
+             block='',
+             _hash='',
+             json_block=False):
         data = {}
         data['action'] = 'sign'
         if key: data['key'] = key
         if wallet: data['wallet'] = wallet
         if account: data['account'] = account
+        if type(block) == str:
+            data['block'] = block
+        else:
+            data['block'] = json.dumps(block)
         if _hash: data['_hash'] = _hash
         if json_block: data['json_block'] = True
         return self._post(data)
@@ -642,10 +681,15 @@ class RPC:
         if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
-    def pending_exists(self, _hash):
+    def pending_exists(self,
+                       _hash,
+                       include_active=False,
+                       include_only_confirmed=False):
         data = {}
         data['action'] = 'pending_exists'
         data['hash'] = _hash
+        if include_active: data['include_active'] = True
+        if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
     def unchecked(self, count=1):
@@ -674,11 +718,12 @@ class RPC:
         if json_block: data['json_block'] = True
         return self._post(data)
 
-    def unopened(self, account=None, count=0):
+    def unopened(self, account=None, count=1, threshold=0):
         data = {}
         data['action'] = 'unopened'
         if account: data['account'] = account
         if count: data['count'] = count
+        if threshold: data['threshold'] = threshold
         return self._post(data)
 
     def uptime(self):
@@ -686,12 +731,12 @@ class RPC:
         data['action'] = 'uptime'
         return self._post(data)
 
-    def wallet_add(self, wallet, key, work=False):
+    def wallet_add(self, wallet, key, work=True):
         data = {}
         data['action'] = 'wallet_add'
         data['wallet'] = wallet
         data['key'] = key
-        if work: data['work'] = True
+        if not work: data['work'] = False
         return self._post(data)
 
     def wallet_add_watch(self, wallet, accounts):
@@ -780,7 +825,8 @@ class RPC:
                        count=1,
                        threshold=0,
                        source=False,
-                       include_active=False):
+                       include_active=False,
+                       include_only_confirmed=False):
         data = {}
         data['action'] = 'wallet_pending'
         data['wallet'] = wallet
@@ -788,6 +834,7 @@ class RPC:
         if threshold: data['threshold'] = threshold
         if source: data['source'] = True
         if include_active: data['include_active'] = True
+        if include_only_confirmed: data['include_only_confirmed'] = True
         return self._post(data)
 
     def wallet_republish(self, wallet, count=1):
