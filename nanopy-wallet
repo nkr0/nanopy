@@ -6,6 +6,7 @@ import getpass
 import os
 from typing import Callable
 import pykeepass  # type: ignore
+import requests
 import nanopy as npy
 from nanopy.rpc import HTTP
 
@@ -191,6 +192,8 @@ elif args.audit:
 else:
     check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
 
-ticker = HTTP(url="https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur").get()
+r = requests.get("https://api.kraken.com/0/public/Ticker?pair=nanousd,nanoeur")
+r.raise_for_status()
+ticker = r.json()
 print(ticker["result"]["NANOUSD"]["c"][0], "$")
 print(ticker["result"]["NANOEUR"]["c"][0], "€")
