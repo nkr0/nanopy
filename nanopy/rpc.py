@@ -652,37 +652,6 @@ class RPC:
             data["port"] = port
         return self._post(data)
 
-    def payment_begin(self, wallet):
-        "https://docs.nano.org/commands/rpc-protocol/#payment_begin"
-        data = {}
-        data["action"] = "payment_begin"
-        data["wallet"] = wallet
-        return self._post(data)
-
-    def payment_init(self, wallet):
-        "https://docs.nano.org/commands/rpc-protocol/#payment_init"
-        data = {}
-        data["action"] = "payment_init"
-        data["wallet"] = wallet
-        return self._post(data)
-
-    def payment_end(self, account, wallet):
-        "https://docs.nano.org/commands/rpc-protocol/#payment_end"
-        data = {}
-        data["action"] = "payment_end"
-        data["account"] = account
-        data["wallet"] = wallet
-        return self._post(data)
-
-    def payment_wait(self, account, amount, timeout):
-        "https://docs.nano.org/commands/rpc-protocol/#payment_wait"
-        data = {}
-        data["action"] = "payment_wait"
-        data["account"] = account
-        data["amount"] = amount
-        data["timeout"] = timeout
-        return self._post(data)
-
     def process(
         self, block, force=False, subtype=None, json_block=False, watch_work=True
     ):
