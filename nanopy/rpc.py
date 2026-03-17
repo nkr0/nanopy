@@ -455,11 +455,12 @@ def payment_wait(account, amount, timeout):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def process(block, force=False):
+def process(block, force=False, subtype=None):
     data = {}
     data['action'] = 'process'
     data['block'] = block
     if force: data['force'] = True
+    if subtype: data['subtype'] = subtype
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -494,9 +495,10 @@ def representatives(count=0, sorting=False):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def representatives_online():
+def representatives_online(weight=False):
     data = {}
     data['action'] = 'representatives_online'
+    if weight: data['weight'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
