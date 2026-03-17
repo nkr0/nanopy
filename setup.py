@@ -142,4 +142,7 @@ setup(name="nanopy",
           Extension(**get_ed25519_blake2b_ext_kwargs(
               use_vc=True if env.get('USE_VC') == '1' else False,
               platform=sys.platform))
-      ])
+      ],
+      extras_require={
+          'full': ['requests', 'websocket-client', 'pysocks', 'mnemonic']
+      })
