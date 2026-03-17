@@ -29,14 +29,13 @@ def find_gcc(*min_max, dirs):
 
 def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
     """
-    decides compiler based on passed kwargs and builds compiler args
+    builds extension kwargs depending on environment
 
-
-    :param use_gpu: use OpenCL GPU work generation (default False)
-    :param link_omp: Link with the OMP library (OSX) (default False)
+    :param use_gpu: use OpenCL GPU work generation
+    :param link_omp: Link with the OMP library (OSX)
     :param platform: OS platform
 
-    :return: (compiler, compiler_args)
+    :return: extension kwargs
     """
 
     e_args = {
@@ -65,7 +64,6 @@ def get_ext_kwargs(use_gpu=False, link_omp=False, platform=None):
     else:
         raise OSError('Unsupported OS platform')
 
-    # return user provided gcc or greatest version found
     return e_args
 
 
