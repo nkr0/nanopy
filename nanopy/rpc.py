@@ -22,10 +22,10 @@ class RPC:
     def __init__(self, url="http://localhost:7076", headers={}, tor=False):
         if url[:7] == "http://" or url[:8] == "https://":
             self.__mode = "requests"
-            self.session = requests.session()
-            self.session.proxies = {}
+            self.API = requests.session()
+            self.API.proxies = {}
             if tor:
-                self.session.proxies["http"] = self.session.proxies[
+                self.API.proxies["http"] = self.API.proxies[
                     "https"
                 ] = "socks5h://localhost:9050"
         elif url[:5] == "ws://" or url[:6] == "wss://":
@@ -33,15 +33,15 @@ class RPC:
 
             self.__mode = "websockets"
             if tor:
-                self.session = create_connection(
+                self.API = create_connection(
                     url,
                     http_proxy_host="localhost",
                     http_proxy_port=9050,
                     proxy_type="socks5h",
                 )
             else:
-                self.session = create_connection(url)
-            self.session.settimeout(20.0)
+                self.API = create_connection(url)
+            self.API.settimeout(20.0)
         else:
             raise Exception("Unable to parse url: " + url)
         self.__url = url
@@ -49,21 +49,24 @@ class RPC:
 
     def _get(self):
         if self.__mode == "requests":
-            return self.session.get(self.__url, headers=self.__headers).json()
+            response = self.API.get(self.__url, headers=self.__headers)
+            response.raise_for_status()
+            return response.json()
 
     def _post(self, data):
         if self.__mode == "requests":
-            return self.session.post(
-                self.__url, json=data, headers=self.__headers
-            ).json()
+            response = self.API.post(self.__url, json=data, headers=self.__headers)
+            response.raise_for_status()
+            return response.json()
         elif self.__mode == "websockets":
-            self.session.send(json.dumps(data))
-            return json.loads(self.session.recv())
+            self.API.send(json.dumps(data))
+            response = self.API.recv()
+            return json.loads(response)
 
     def disconnect(self):
         "Close RPC connection. Only necessary for websocket connections."
         if self.__mode == "websockets":
-            self.session.close()
+            self.API.close()
 
     def account_balance(self, account, include_only_confirmed=True):
         "https://docs.nano.org/commands/rpc-protocol/#account_balance"
