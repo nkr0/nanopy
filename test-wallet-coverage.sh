@@ -1,21 +1,20 @@
 set -ex
 
-SRC=nano_1ye5an4ac3an51j799usynis8rtsff1u8f6er4aos3qqu45eiwkc1rk71f3u
-DST=nano_3qwge3owjz5bccn4de91iwqhcgrddhpwk4ssdnieb9fb61sdj9f3gwbb9die
-REP=nano_3kc8wwut3u8g1kwa6x4drkzu346bdbyqzsn14tmabrpeobn8igksfqkzajbb
+SRC=nano_1h38a9z1dzff6xuwu86z8g3q9pecz5uuxetdb59pjjpp4f5y3cxdadprn6w3
+DST=nano_13k3ozab7hof3jruos6trmghebncxw9shdqk7adnas5csor74csr6knsaudj
 
 coverage run nanopy-wallet
-coverage run --append nanopy-wallet open test.kdbx test1 -r $DST
+coverage run --append nanopy-wallet open test -r $DST
 echo send 0.00001
-coverage run --append nanopy-wallet open test.kdbx test1 -s $DST -r $SRC
+coverage run --append nanopy-wallet open test -s $DST -r $SRC
 echo send 0.00001
-coverage run --append nanopy-wallet open test.kdbx test1 -s $DST
-coverage run --append nanopy-wallet open test.kdbx test1 -a -i 1
+coverage run --append nanopy-wallet open test -s $DST
+coverage run --append nanopy-wallet open test -a -i 1
 echo do not receive
-coverage run --append nanopy-wallet open test.kdbx test1 -i 1
-coverage run --append nanopy-wallet open test.kdbx test1 -i 1
-coverage run --append nanopy-wallet open test.kdbx test1 -i 1 -s $SRC --empty
-coverage run --append nanopy-wallet open test.kdbx test1 -r $REP
+coverage run --append nanopy-wallet open test -i 1
+coverage run --append nanopy-wallet open test -i 1
+coverage run --append nanopy-wallet open test -i 1 -s $SRC -e
+coverage run --append nanopy-wallet open test -r $SRC
 coverage run --append nanopy-wallet -n banano
 coverage run --append nanopy-wallet -n beta
 coverage html

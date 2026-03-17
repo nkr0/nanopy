@@ -13,12 +13,6 @@ nanopy includes ``C`` extensions for work generation and signing.
 
      CC=path/to/c/compiler pip install nanopy
 
-  * Refer to ``setuptools`` documentation for other compiler and linker options. For, e.g, to link to ``libomp``,
-
-    .. code-block:: bash
-
-       LDFLAGS=-lomp pip install nanopy
-
 * For GPU, appropriate ``OpenCL ICD`` headers are required.
 
   .. code-block:: bash
