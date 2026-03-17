@@ -26,26 +26,38 @@ jobs:
     - run: pytest
     - run: USE_GPU=1 pip install -ve .
     - uses: actions/upload-pages-artifact@v4
-  other:
+  platforms:
     needs: base
     strategy:
       matrix:
         os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, windows-latest, windows-11-arm]
-        py: ['3.14.x', '3.13.x']
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
-        python-version: ${{ matrix.py }}
+        python-version: 3.x
     - if: runner.os != 'macOS'
       run: pip install -ve .[cibasic]
     - if: runner.os == 'macOS'
       run: CC=gcc-15 pip install -ve .[cibasic]
     - run: pytest
+  versions:
+    needs: base
+    strategy:
+      matrix:
+        py: ['3.14.x', '3.13.x', '3.12.x', '3.11.x', '3.10.x', '3.9.x']
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v6
+    - uses: actions/setup-python@v6
+      with:
+        python-version: ${{ matrix.py }}
+    - run: pip install -ve .[cibasic]
+    - run: pytest
   deploy:
     if: github.ref_type == 'tag'
-    needs: other
+    needs: [platforms, versions]
     permissions:
       pages: write
       id-token: write
