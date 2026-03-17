@@ -195,20 +195,13 @@ def work_validate(work, _hash, difficulty=None, multiplier=0):
     """
     assert len(work) == 16
     assert len(_hash) == 64
-    work = bytearray.fromhex(work)
-    _hash = bytes.fromhex(_hash)
     if multiplier:
         difficulty = from_multiplier(multiplier)
     else:
         difficulty = difficulty if difficulty else work_difficulty
-    difficulty = bytes.fromhex(difficulty)
-
-    work.reverse()
-    b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
-    b2b_h.reverse()
-    if b2b_h >= difficulty:
-        return True
-    return False
+    return bool(
+        nanopy.work.validate(int(work, 16), bytes.fromhex(_hash), int(difficulty, 16))
+    )
 
 
 def work_generate(_hash, difficulty=None, multiplier=0):

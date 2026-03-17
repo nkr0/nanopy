@@ -1,4 +1,4 @@
-import os, random
+import hashlib, os, random
 import nanopy as npy
 import ed25519_blake2b
 
@@ -15,12 +15,31 @@ assert not npy.verify_signature(m, sig, pk)
 # work computation
 
 
+def work_validate(work, _hash, difficulty=None, multiplier=0):
+    assert len(work) == 16
+    assert len(_hash) == 64
+    work = bytearray.fromhex(work)
+    _hash = bytes.fromhex(_hash)
+    if multiplier:
+        difficulty = npy.from_multiplier(multiplier)
+    else:
+        difficulty = difficulty if difficulty else work_difficulty
+    difficulty = bytes.fromhex(difficulty)
+
+    work.reverse()
+    b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
+    b2b_h.reverse()
+    if b2b_h >= difficulty:
+        return True
+    return False
+
+
 def work_generate(_hash, difficulty=None, multiplier=0):
     assert len(_hash) == 64
     _hash = bytes.fromhex(_hash)
     b2b_h = bytearray.fromhex("0" * 16)
     if multiplier:
-        difficulty = from_multiplier(multiplier)
+        difficulty = npy.from_multiplier(multiplier)
     else:
         difficulty = difficulty if difficulty else work_difficulty
     difficulty = bytes.fromhex(difficulty)
@@ -43,9 +62,9 @@ assert 8.0 == npy.to_multiplier("fffffff800000000")
 
 h = os.urandom(32).hex()
 w = npy.work_generate(h, multiplier=1 / 8)
-print(w)
-print(npy.work_validate(w, h))
 assert npy.work_validate(w, h, multiplier=1 / 8)
+assert not npy.work_validate(w, "0" * 64, multiplier=1 / 8)
+assert work_validate(w, h, multiplier=1 / 8)
 
 assert "0.000000000000000000000123456789" == npy.raw_to_nano("123456789")
 assert "123456789" == npy.nano_to_raw("0.000000000000000000000123456789")
