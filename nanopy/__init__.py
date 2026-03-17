@@ -81,9 +81,9 @@ def pow_threshold(check):
     return False
 
 
-def pow_validate(pow, hash):
-    pow_data = bytearray.fromhex(pow)
-    hash_data = bytearray.fromhex(hash)
+def pow_validate(PoW, previous_hash):
+    pow_data = bytearray.fromhex(PoW)
+    hash_data = bytearray.fromhex(previous_hash)
 
     pow_data.reverse()
 
@@ -97,9 +97,9 @@ def pow_validate(pow, hash):
     return pow_threshold(final)
 
 
-def pow_generate(hash):
-    pow = format(nanopy.work.generate(bytes.fromhex(hash)), '016x')
-    if (pow_validate(pow, hash)): return pow
+def pow_generate(previous_hash):
+    PoW = format(nanopy.work.generate(bytes.fromhex(previous_hash)), '016x')
+    if (pow_validate(PoW, previous_hash)): return PoW
     return False
 
 

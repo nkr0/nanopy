@@ -3,6 +3,7 @@
 import sys, argparse, getpass, gnupg, os, random, json, configparser
 from nanopy import *
 
+
 class bcolors:
     ok1 = '\033[95m'
     ok2 = '\033[94m'
