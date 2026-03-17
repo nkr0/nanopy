@@ -28,12 +28,14 @@ def config_blake2b():
     global BLAKE2B_SRC
     global BLAKE2B_DIR
     m = os.uname().machine
+    BLAKE2B_DIR = "nanopy/blake2b/"
     if m.startswith("x86") or m in ("i386", "i686", "AMD64"):
-        BLAKE2B_DIR = "nanopy/blake2b/sse"
-        BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
+        BLAKE2B_DIR += "sse"
+    elif m.startswith("arm") or m.startswith("aarch64"):
+        BLAKE2B_DIR += "neon"
     else:
-        BLAKE2B_DIR = "nanopy/blake2b/ref"
-        BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
+        BLAKE2B_DIR += "ref"
+    BLAKE2B_SRC = [BLAKE2B_DIR + "/blake2b.c"]
 
 
 def get_work_ext_kwargs(use_gpu=False, link_omp=False, use_vc=False, platform=None):

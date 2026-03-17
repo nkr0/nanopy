@@ -1,10 +1,13 @@
 language: python
+arch:
+  - amd64
+  - arm64
 cache: pip
 env: OMP_NUM_THREADS=4
 install:
   - pip install -U pip
-  - pip install -U -r requirements.txt
-  - python setup.py build_ext --inplace
+  - pip install -Ur requirements.txt
+  - python setup.py build_ext -i
 script:
   - python travis.py
   - python setup.py build_sphinx

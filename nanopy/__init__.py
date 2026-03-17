@@ -171,7 +171,7 @@ except ModuleNotFoundError:
 def from_multiplier(multiplier):
     """Get difficulty from multiplier
 
-    :param int multiplier: positive number
+    :param float multiplier: positive number
     :return: 16 hex-char difficulty
     :rtype: str
     """
@@ -198,7 +198,7 @@ def work_validate(work, _hash, difficulty=None, multiplier=0):
     :param str work: 16 hex-char work
     :param str _hash: 64 hex-char hash
     :param str difficulty: 16 hex-char difficulty
-    :param int multiplier: positive number, overrides difficulty
+    :param float multiplier: positive number, overrides difficulty
     :return: ``True``/``False``
     :rtype: bool
     """
@@ -226,7 +226,7 @@ try:
 
         :param str _hash: 64 hex-char hash
         :param str difficulty: 16 hex-char difficulty
-        :param int multiplier: positive number, overrides difficulty
+        :param float multiplier: positive number, overrides difficulty
         :return: 16 hex-char work
         :rtype: str
         """
@@ -246,6 +246,14 @@ except ModuleNotFoundError:
     import random
 
     def work_generate(_hash, difficulty=None, multiplier=0):
+        """Check whether work is valid for _hash.
+
+        :param str _hash: 64 hex-char hash
+        :param str difficulty: 16 hex-char difficulty
+        :param float multiplier: positive number, overrides difficulty
+        :return: 16 hex-char work
+        :rtype: str
+        """
         _hash = bytes.fromhex(_hash)
         b2b_h = bytearray.fromhex("0" * 16)
         if multiplier:
