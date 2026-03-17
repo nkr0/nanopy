@@ -117,7 +117,7 @@ try:
     import mnemonic
 
     def generate_mnemonic(strength=256, language='english'):
-        """Generate a BIP39 type mnemonic. Requires mnemonic package. https://pypi.org/project/mnemonic/
+        """Generate a BIP39 type mnemonic. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
         :param int strength: choose from 128, 160, 192, 224, 256
         :param str language: one of the installed word list languages
@@ -128,7 +128,7 @@ try:
         return m.generate(strength=strength)
 
     def mnemonic_key(words, index=0, passphrase='', language='english'):
-        """Derive deterministic keypair from mnemonic based on index. Requires mnemonic package. https://pypi.org/project/mnemonic/
+        """Derive deterministic keypair from mnemonic based on index. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
         :param str words: word list
         :return: (private key, public key, account number)
