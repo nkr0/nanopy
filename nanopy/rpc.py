@@ -3,18 +3,18 @@ import json, requests
 
 class RPC:
 
-    def __init__(self, url='http://localhost:7076', headers={}, use_tor=False):
+    def __init__(self, url='http://localhost:7076', headers={}, tor=False):
         if url[:7] == 'http://' or url[:8] == 'https://':
             self.__mode = 'requests'
             self.session = requests.session()
             self.session.proxies = {}
-            if use_tor:
+            if tor:
                 self.session.proxies['http'] = self.session.proxies[
                     'https'] = 'socks5h://localhost:9050'
         elif url[:5] == 'ws://' or url[:6] == 'wss://':
             from websocket import create_connection
             self.__mode = 'websockets'
-            if use_tor:
+            if tor:
                 self.session = create_connection(url,
                                                  http_proxy_host="localhost",
                                                  http_proxy_port=9050,

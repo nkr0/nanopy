@@ -100,22 +100,22 @@ def generate_block(sk, pk, account):
                     if int(
                             rpc.account_info(nb['representative'],
                                              weight=True)['weight']
-                    ) * 100 / available_supply > 0.2 and not args.change_rep_to:
+                    ) * 100 / available_supply > 0.2 and not args.rep:
                         print(
                             bcolors.warn1,
                             '\nYour representative has too much voting weight.',
                             bcolors.end)
                         if (input('Change rep?(' + bcolors.bold + 'y' +
                                   bcolors.end + '/n): ') or 'y') == 'y':
-                            args.change_rep_to = input('Rep : ')
+                            args.rep = input('Rep : ')
                 except:
                     pass
 
-            if args.change_rep_to:
-                assert validate_account_number(args.change_rep_to)
-                nb['representative'] = args.change_rep_to
+            if args.rep:
+                assert validate_account_number(args.rep)
+                nb['representative'] = args.rep
 
-            if (not args.send_to) and (not args.change_rep_to):
+            if (not args.send) and (not args.rep):
                 if state_found and online:
                     config[state]['frontier'] = info['frontier']
                     config[state]['balance'] = info['balance']
@@ -132,15 +132,15 @@ def generate_block(sk, pk, account):
                 print(bcolors.warn2, info, bcolors.end)
                 break
             else:
-                args.send_to = None
+                args.send = None
                 nb['balance'] = '0'
                 pretty_bal('Bal', bcolors.ok1, from_raw(nb['balance']))
                 nb['representative'] = input('Rep : ')
 
-        if args.send_to:
-            nb['link'] = account_key(args.send_to)
+        if args.send:
+            nb['link'] = account_key(args.send)
             print('\nTo  :', account_get(nb['link']))
-            if args.empty_to:
+            if args.empty:
                 pretty_bal('Amt', bcolors.warn2, from_raw(nb['balance']))
                 nb['balance'] = '0'
             else:
@@ -167,9 +167,9 @@ def generate_block(sk, pk, account):
             pretty_bal('Amt', bcolors.ok3, from_raw(amount))
             pretty_bal('Bal', bcolors.ok3, from_raw(nb['balance']))
 
-        if (args.send_to or args.change_rep_to or rb):
-            args.send_to = None
-            args.change_rep_to = None
+        if (args.send or args.rep or rb):
+            args.send = None
+            args.rep = None
 
             work_hash = nb['previous'] if (
                 nb['previous'] != '0' * 64) else account_key(nb['account'])
@@ -211,17 +211,17 @@ parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers()
 parser_open = subparsers.add_parser('open', help='Unlock GPG encrypted wallet')
 parser_open.add_argument('f',
-                         metavar='FILENAME',
+                         metavar='FILE',
                          type=argparse.FileType('rb'),
-                         help='Decrypt seed from FILENAME.')
+                         help='Decrypt seed from FILE.')
 parser_open.add_argument(
     '-i',
     '--index',
     default=0,
     type=int,
     help='Index of the account unlocked from the seed. (Default=0)')
-parser_open.add_argument('-c',
-                         '--change-rep-to',
+parser_open.add_argument('-r',
+                         '--rep',
                          metavar='ADDRESS',
                          help='Change representative to ADDRESS.')
 parser_open.add_argument('--offline',
@@ -230,48 +230,57 @@ parser_open.add_argument('--offline',
 
 open_group = parser_open.add_mutually_exclusive_group()
 open_group.add_argument('-s',
-                        '--send-to',
+                        '--send',
                         metavar='ADDRESS',
                         help='Send NANO to ADDRESS.')
-open_group.add_argument('--empty-to',
+open_group.add_argument('-e',
+                        '--empty',
                         metavar='ADDRESS',
                         help='Send all the funds to ADDRESS.')
+open_group.add_argument('-p',
+                        '--password',
+                        action='store_true',
+                        help='Change password of FILE.')
 open_group.add_argument(
+    '-a',
     '--audit',
     action='store_true',
     help='Check state of all accounts from index 0 to INDEX.')
-open_group.add_argument('--change-password',
-                        action='store_true',
-                        help='Change password of FILENAME.')
 
 parser.add_argument(
     '--new',
     action='store_true',
     help='Generate a new account and output the GPG encrypted seed.')
-parser.add_argument('--audit-file',
-                    metavar='FILENAME',
+parser.add_argument('-a',
+                    '--audit-file',
+                    metavar='FILE',
                     type=argparse.FileType('rb'),
-                    help='Check state of all the accounts in FILENAME.')
-parser.add_argument('--broadcast',
+                    help='Check state of all the accounts in FILE.')
+parser.add_argument('-b',
+                    '--broadcast',
                     action='store_true',
                     help='Broadcast a block in JSON format.')
-parser.add_argument(
-    '--network',
-    default='nano',
-    type=str,
-    help='Choose the network to interact with. nano, beta, banano..')
+parser.add_argument('-n',
+                    '--network',
+                    default='nano',
+                    choices=['nano', 'beta', 'banano'],
+                    type=str,
+                    help='Choose the network to interact with.')
 parser.add_argument('-t',
                     '--tor',
                     action='store_true',
                     help='Connect to the RPC node via tor.')
-parser.add_argument('--demo', action='store_true', help='Run in demo mode.')
+parser.add_argument('-d',
+                    '--demo',
+                    action='store_true',
+                    help='Run in demo mode.')
 
 args = parser.parse_args()
 
 if args.network == 'beta':
     nanopy.account_prefix = 'xrb_'
     rpc_url = 'http://localhost:55000'
-    std_unit = '\u03B2NANO'
+    std_unit = '\u03B2'
     available_supply = 340272367920938463463374607431768151531
 elif args.network in ['banano', 'ban']:
     args.network = 'banano'
@@ -284,7 +293,7 @@ elif args.network in ['banano', 'ban']:
 else:
     args.network = 'nano'
     rpc_url = 'http://localhost:7076'
-    std_unit = 'NANO'
+    std_unit = '₦'
     available_supply = 133248061999106578273467128948453216035
 
 config_file = os.path.expanduser(
@@ -308,15 +317,15 @@ if online:
 
 if online:
     rpc = RPC(url=config['DEFAULT'].get('rpc', fallback=rpc_url),
-              use_tor=(args.tor or
-                       config['DEFAULT'].getboolean('tor', fallback=args.tor)))
+              tor=(args.tor or
+                   config['DEFAULT'].getboolean('tor', fallback=args.tor)))
 else:
     print(bcolors.warn1, 'Running in offline mode.', bcolors.end)
 
 try:
     unlock = (args.f != None)
     if args.demo: print(bcolors.warn1, 'Running in demo mode.', bcolors.end)
-    if args.empty_to: args.send_to = args.empty_to
+    if args.empty: args.send = args.empty
 except:
     unlock = False
 
@@ -342,7 +351,7 @@ elif unlock:
             _, _, account_i = deterministic_key(seed, i)
             accounts.append(account_i)
 
-    elif args.change_password:
+    elif args.password:
         if (input('Change password' + '?(y/' + bcolors.bold + 'n' +
                   bcolors.end + '): ') or 'n') == 'y':
             gpg_encrypt(seed, args.f.name)
