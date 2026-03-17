@@ -7,9 +7,7 @@
 
 void ed25519_randombytes_unsafe(void *out, size_t outlen) {}
 
-void ed25519_hash_init(ed25519_hash_context *ctx) {
-  blake2b_init(ctx, 64);
-}
+void ed25519_hash_init(ed25519_hash_context *ctx) { blake2b_init(ctx, 64); }
 
 void ed25519_hash_update(ed25519_hash_context *ctx, uint8_t const *in,
                          size_t inlen) {

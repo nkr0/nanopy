@@ -113,11 +113,17 @@ def get_ed25519_blake2b_ext_kwargs(use_vc=False, platform=None):
     e_args = {
         "name": "nanopy.ed25519_blake2b",
         "sources": BLAKE2B_SRC
-        + ["nanopy/ed25519-donna/ed25519.c", "nanopy/ed25519_blake2b.c",],
+        + [
+            "nanopy/ed25519-donna/ed25519.c",
+            "nanopy/ed25519_blake2b.c",
+        ],
         "include_dirs": [BLAKE2B_DIR],
         "extra_compile_args": ["-O3", "-march=native"],
         "extra_link_args": ["-O3", "-march=native"],
-        "define_macros": [("ED25519_CUSTOMRNG", "1"), ("ED25519_CUSTOMHASH", "1"),],
+        "define_macros": [
+            ("ED25519_CUSTOMRNG", "1"),
+            ("ED25519_CUSTOMHASH", "1"),
+        ],
     }
 
     if ED25519_IMPL:
