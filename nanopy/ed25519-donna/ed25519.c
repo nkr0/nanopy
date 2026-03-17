@@ -1,3 +1,5 @@
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough"
 /*
 	Public domain by Andrew M. <liquidsun@gmail.com>
 
@@ -158,4 +160,4 @@ ED25519_FN(curved25519_scalarmult_basepoint) (curved25519_key pk, const curved25
 	curve25519_mul(yplusz, yplusz, zminusy);
 	curve25519_contract(pk, yplusz);
 }
-
+#pragma GCC diagnostic pop

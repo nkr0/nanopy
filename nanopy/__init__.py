@@ -4,15 +4,7 @@ nanopy
 """
 
 import os, hashlib, base64, decimal, hmac
-
-try:
-    import nanopy.ed25519_blake2b as ed25519_blake2b
-
-    ed25519_blake2b_c = True
-except ModuleNotFoundError:
-    import nanopy.ed25519_blake2b_py as ed25519_blake2b
-
-    ed25519_blake2b_c = False
+import nanopy.ed25519_blake2b as ed25519_blake2b
 
 account_prefix = "nano_"
 work_difficulty = "ffffffc000000000"
@@ -376,10 +368,7 @@ def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
     else:
         pk = bytes.fromhex(pk)
 
-    if ed25519_blake2b_c:
-        return ed25519_blake2b.signature(m, os.urandom(32), sk, pk).hex()
-    else:
-        return ed25519_blake2b.signature(m, sk, pk).hex()
+    return ed25519_blake2b.signature(m, os.urandom(32), sk, pk).hex()
 
 
 def verify_signature(msg, sig, pk):
