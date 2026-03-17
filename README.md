@@ -23,25 +23,21 @@ Although not part of the package, the light wallet included in the repository ca
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy/<network>.conf`.
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
-  * Generated seeds are stored in a GnuPG AES256 encrypted file.
-  * AES256 encryption key is 8 bytes salt + password stretched with 65011712 rounds of SHA512. Adjust options by editing `$HOME/.config/nanopy/gpg.conf`.
-  * Wallets can also be made by encrypting a file that has a seed using the command, `gpg -ca FILE`.
-  * Options used by the encryption can be verified by inspecting the header in the gpg file. `gpg -v --list-packets FILE`. `cipher 9` is AES256. `s2k 3` is iterated and salted key derivation mode. `hash 10` corresponds to SHA512. `count` is the number of iterations (max 65011712).
-  * To get the seed, `gpg -d FILE`
+  * Generated seeds base85 encoded and stored in a user selected *.kdbx file.
 * `-a`, `--audit-file`. Check state of all accounts in a file.
 * `-b`, `--broadcast`. Broadcast a block in JSON format. Blocks generated on an air-gapped system using `--offline` tag can be broadcast using this option.
 * `-n`, `--network`. Choose the network to interact with - nano, banano, or beta. The default network is nano.
 * `-t`, `--tor`. Communicate with RPC node via the tor network.
 * `-d`, `--demo`. Run in demo mode.
 
-The wallet has a sub-command, `nanopy-wallet open FILE`, to unlock previously encrypted seeds. `open` has the following options.
+The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *kbdx files. `FILE` is the *.kdbx database and `KEY` is the specific seed in it. `open` has the following options.
+* `-g`, `--group`. Group in which to open key from. (Default=root)
 * `-i`, `--index`. Index of the account unlocked from the seed. (Default=0)
 * `-s`, `--send`. Supply destination address to create a send block.
 * `-e`, `--empty`. Empty out funds to the specified send address.
 * `-r`, `--rep`. Supply representative address to change representative.
   * Change representative tag can be combined with send and receive blocks.
 * `-a`, `--audit`. Check state of all accounts from index 0 to the specified limit. (limit is supplied using the `-i` tag)
-* `-p`, `--password`. Change password of the encrypted wallet.')
 * `--offline`. Generate blocks in offline mode. In the offline mode, current state of the account is acquired from the default configuration in `$HOME/.config/nanopy/<network>.conf`. Refer to the sample file for more details.
 
 ## Support
