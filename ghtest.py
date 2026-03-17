@@ -1,4 +1,4 @@
-import os, timeit
+import os
 import nanopy as npy
 
 # signature
@@ -25,11 +25,8 @@ print(w)
 print(npy.work_validate(w, h))
 assert npy.work_validate(w, h, multiplier=1 / 8)
 
-# n = 20
-# print(timeit.timeit("npy.work_generate('0feb848ce9637cbc3b41e0334ecef8cf76350f689604a85bae5a2768891ac6e9', multiplier=1/8)",    setup="import nanopy as npy", number=n,)/n)
-
-assert "0.000000000000000000000123456789" == npy.from_raw("123456789")
-assert "123456789" == npy.to_raw("0.000000000000000000000123456789")
+assert "0.000000000000000000000123456789" == npy.raw_to_nano("123456789")
+assert "123456789" == npy.nano_to_raw("0.000000000000000000000123456789")
 
 # https://docs.nano.org/integration-guides/key-management/
 
