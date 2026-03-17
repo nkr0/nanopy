@@ -1,6 +1,7 @@
 import hashlib, decimal, nanopy.ed25519_blake2b, nanopy.work
 
-nano_prefix = 'nano_'
+account_prefix = 'nano_'
+mrai_name = 'NANO'
 
 decimal.getcontext().traps[decimal.Inexact] = 1
 # ~ decimal.getcontext().traps[decimal.Rounded] = 1
@@ -9,13 +10,13 @@ D = decimal.Decimal
 
 
 def account_key(account):
-    if nano_prefix in ['nano_', 'xrb_']:  # stupid inconsistent main network.
+    if account_prefix in ['nano_', 'xrb_']:  # stupid inconsistent main network.
         assert (len(account) == 64 and
                 account[:4] == 'xrb_') or (len(account) == 65 and
                                            (account[:5] == 'nano_'))
     else:
-        assert len(account) == len(nano_prefix) + 60 and account[:len(
-            nano_prefix)] == nano_prefix
+        assert len(account) == len(account_prefix) + 60 and account[:len(
+            account_prefix)] == account_prefix
 
     account_map = "13456789abcdefghijkmnopqrstuwxyz"
     account_lookup = {}
@@ -62,7 +63,7 @@ def account_get(key):
     encode_account = ''.join(
         account_lookup[keyb[x * 5:x * 5 + 5]] for x in range(52))
 
-    return nano_prefix + encode_account + encode_check
+    return account_prefix + encode_account + encode_check
 
 
 def validate_account_number(account):
