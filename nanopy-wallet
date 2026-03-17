@@ -323,12 +323,8 @@ if online:
 if online:
     rpc.url = config['DEFAULT'].get('rpc', fallback=rpc.url)
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
-        try:
-            rpc.session.proxies['http'] = 'socks5h://localhost:9050'
-            rpc.session.proxies['https'] = 'socks5h://localhost:9050'
-            print(bcolors.ok3, 'Connected via tor.', bcolors.end)
-        except:
-            print(bcolors.warn2, 'Unable to connect via tor.', bcolors.end)
+        rpc.session.proxies['http'] = 'socks5h://localhost:9050'
+        rpc.session.proxies['https'] = 'socks5h://localhost:9050'
 else:
     print(bcolors.warn1, 'Running in offline mode.', bcolors.end)
 
