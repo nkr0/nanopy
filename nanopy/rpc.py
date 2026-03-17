@@ -637,10 +637,10 @@ class RPC:
         data["action"] = "node_id_delete"
         return self._post(data)
 
-    def node_telemetry(self, raw=False, address=0, port="7075"):
-        "https://docs.nano.org/commands/rpc-protocol/#node_telemetry"
+    def telemetry(self, raw=False, address=0, port="7075"):
+        "https://docs.nano.org/commands/rpc-protocol/#telemetry"
         data = {}
-        data["action"] = "node_telemetry"
+        data["action"] = "telemetry"
         if raw:
             data["raw"] = True
         if address:
@@ -1170,6 +1170,8 @@ class RPC:
         multiplier=0,
         account=None,
         version="work_1",
+        block=None,
+        json_block=False,
     ):
         "https://docs.nano.org/commands/rpc-protocol/#work_generate"
         data = {}
@@ -1185,6 +1187,10 @@ class RPC:
             data["account"] = account
         # Currently 'work_1' is the default and only valid option.
         # if version in []: data['version'] = version
+        if block:
+            data["block"] = block
+            if json_block:
+                data["json_block"] = json_block
         return self._post(data)
 
     def work_get(self, wallet, account):
