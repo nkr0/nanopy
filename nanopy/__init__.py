@@ -17,6 +17,12 @@ RFC_3548 = b'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567'
 ENCODING = b'13456789abcdefghijkmnopqrstuwxyz'
 
 
+def state_block():
+    return dict([('type', 'state'), ('account', ''), ('previous', '0' * 64),
+                 ('representative', ''), ('balance', ''), ('link', '0' * 64),
+                 ('work', ''), ('signature', '')])
+
+
 def account_key(account):
     assert len(account) >= 60
 
@@ -53,8 +59,7 @@ def validate_account_number(account):
 
 
 def key_expand(key):
-    sk = bytes.fromhex(key)
-    pk = ed25519_blake2b.publickey(sk).hex()
+    pk = ed25519_blake2b.publickey(bytes.fromhex(key)).hex()
     return key, pk, account_get(pk)
 
 
@@ -169,12 +174,6 @@ def rai_to_raw(amount):
     return str(raw.quantize(D(1)))
 
 
-def base_block():
-    return dict([('type', 'state'), ('account', ''), ('previous', '0' * 64),
-                 ('balance', ''), ('representative', ''), ('link', '0' * 64),
-                 ('work', ''), ('signature', '')])
-
-
 def block_hash(block):
     return hashlib.blake2b(
         bytes.fromhex('0' * 63 + '6' + account_key(block['account']) +
@@ -183,12 +182,33 @@ def block_hash(block):
         digest_size=32).hexdigest()
 
 
-def sign_block(sk, pk, block):
+def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
+    sk = bytes.fromhex(key)
+
+    if msg: m = msg.encode()
+    elif _hash: m = bytes.fromhex(_hash)
+    elif block: m = bytes.fromhex(block_hash(block))
+    else: return None
+
+    if not pk:
+        if account: pk = bytes.fromhex(account_key(account))
+        elif block: pk = bytes.fromhex(account_key(block['account']))
+        else: pk = ed25519_blake2b.publickey(sk)
+    else: pk = bytes.fromhex(pk)
+
     if ed25519_blake2b_c:
-        return ed25519_blake2b.signature(
-            bytes.fromhex(block_hash(block)), os.urandom(32), bytes.fromhex(sk),
-            bytes.fromhex(pk)).hex()
+        return ed25519_blake2b.signature(m, os.urandom(32), sk, pk).hex()
     else:
-        return ed25519_blake2b.signature(
-            bytes.fromhex(block_hash(block)), bytes.fromhex(sk),
-            bytes.fromhex(pk)).hex()
+        return ed25519_blake2b.signature(m, sk, pk).hex()
+
+
+def block_create(key, previous, representative, balance, link):
+    nb = state_block()
+    nb['account'] = account_get(ed25519_blake2b.publickey(bytes.fromhex(key)).hex())
+    nb['previous'] = previous
+    nb['representative'] = representative
+    nb['balance'] = balance
+    nb['link'] = link
+    nb['work'] = work_generate(block_hash(nb))
+    nb['signature'] = sign(key,block=nb)
+    return nb
