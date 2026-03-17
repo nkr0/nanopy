@@ -24,7 +24,7 @@ def generate_block(seed):
 			nb['representative']=info['representative']
 			print("\nBal:\t", bcolors.ok1, int(nb["balance"])/10**30, bcolors.end, "NANO\t", nb["balance"], "RAW")
 			print("Rep:\t", nb["representative"])
-			
+
 			try: # nag users to change representative
 				if int(nanopy.account_info(nb['representative'])['weight'])*100/133248289196499221154116917710445381553>1.0 and (not args.change_rep_to):
 					print(bcolors.warn1, "\nYour representative has too much voting weight.", bcolors.end)
@@ -36,7 +36,7 @@ def generate_block(seed):
 			if (not args.send_to) and (not args.change_rep_to):
 				if not rb: break
 				if ((input("\nReceive pending blocks?("+bcolors.bold+"y"+bcolors.end+"/n): ") or 'y')!='y'): break
-			
+
 		except KeyError:
 			if not rb:
 				print(bcolors.warn2, info, bcolors.end)
@@ -118,26 +118,30 @@ if __name__ == '__main__':
 	parser.add_argument('--demo', action='store_true', help='Run in demo mode. Never broadcast blocks.')
 
 	args = parser.parse_args()
-	
+
 	try:
 		with open(os.path.expanduser('~')+"/.config/nanopy-wallet.conf") as conf: options=json.load(conf)
 	except FileNotFoundError: options={'accounts': [''], 'tor': False, 'rpc': ['https://getcanoe.io/rpc']}
-	
+
 	if args.demo: print(bcolors.warn1, "Running in demo mode.", bcolors.end)
-	
+
 	if args.empty_to: args.send_to=args.empty_to
-	
+
 	if (args.audit_seed or args.send_to or args.change_rep_to) : args.unlock = True
-	
+
 	if args.tor or options['tor']:
 		nanopy.rpc.proxies['http'] = 'socks5h://localhost:9050'
 		nanopy.rpc.proxies['https'] = 'socks5h://localhost:9050'
 
 	nanopy.url=random.choice(options['rpc'])
-	
+
 	gpg = gnupg.GPG()
 
+	accounts=[]
+
 	if args.new:
+
+		accounts.append('')
 
 		pwd = getpass.getpass()
 
@@ -153,20 +157,16 @@ if __name__ == '__main__':
 		else: print(bcolors.warn2, "Passwords do not match.", bcolors.end)
 
 	elif args.audit_file:
-		with open(args.audit_file, "rb") as f:
-			accounts = [line.rstrip(b'\n').decode() for line in f]
+		with open(args.audit_file, "rb") as f: accounts = [line.rstrip(b'\n').decode() for line in f]
 
 	elif args.unlock:
 
-		with open(input("GPG encrypted file name: "), "rb") as f:
-			seed=gpg.decrypt_file(f, passphrase=getpass.getpass())
+		with open(input("GPG encrypted file name: "), "rb") as f: seed=gpg.decrypt_file(f, passphrase=getpass.getpass())
 
 		if seed.ok:
 
 			if args.audit_seed:
-				accounts=[]
-				for i in range(args.audit_seed+1):
-					accounts.append(nanopy.seed_nano(str(seed), i))
+				for i in range(args.audit_seed+1): accounts.append(nanopy.seed_nano(str(seed)[:64], i))
 
 			else:
 				generate_block(str(seed))
@@ -175,9 +175,8 @@ if __name__ == '__main__':
 		else:
 			print(bcolors.warn2, seed.status, bcolors.end)
 			sys.exit()
-	
-	else:
-		accounts=options['accounts']
+
+	else: accounts=options['accounts']
 
 	if accounts[0]:
 		info=nanopy.accounts_balances(accounts)
