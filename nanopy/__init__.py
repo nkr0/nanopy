@@ -398,7 +398,9 @@ def verify_signature(msg, sig, pk):
     return bool(ed25519_blake2b.checkvalid(s, m, k))
 
 
-def block_create(key, previous, representative, balance, link):
+def block_create(
+    key, previous, representative, balance, link, work=None, difficulty=None
+):
     """Create a block
 
     :param str key: 64 hex-char private key
@@ -406,6 +408,8 @@ def block_create(key, previous, representative, balance, link):
     :param str representative: representative address
     :param str balance: balance in raw
     :param str link: 64 hex-char link
+    :param str work: 16 hex-char work
+    :param str difficulty: 16 hex-char difficulty: send/change require a minimum #fffffff800000000 and receive requires #fffffe0000000000. Default is #ffffffc000000000.
     :return: a block with work and signature
     :rtype: dict
     """
@@ -415,6 +419,6 @@ def block_create(key, previous, representative, balance, link):
     nb["representative"] = representative
     nb["balance"] = balance
     nb["link"] = link
-    nb["work"] = work_generate(block_hash(nb))
+    nb["work"] = work if work else work_generate(block_hash(nb, difficulty))
     nb["signature"] = sign(key, block=nb)
     return nb
