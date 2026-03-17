@@ -23,30 +23,33 @@ e_args = {
     "name": "nanopy.ext",
     "sources": ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC],
     "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
+    "define_macros": [],
     "extra_compile_args": [],
     "extra_link_args": [],
+    "libraries": [],
 }
 
 if k == "Windows":
-    e_args["extra_compile_args"] = ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
+    e_args["extra_compile_args"] += ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
 else:
-    e_args["extra_compile_args"] = ["-O3", "-flto", "-march=native"]
-    e_args["extra_link_args"] = ["-O3", "-flto", "-march=native", "-s"]
+    e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
+    e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
 
 if ED25519_IMPL:
-    e_args["define_macros"] = [(ED25519_IMPL, "1")]
+    e_args["define_macros"] += [(ED25519_IMPL, None)]
 
-if os.environ.get("USE_GPU") == "1":
+if os.environ.get("USE_GPU"):
     if k == "Darwin":
-        e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
-        e_args["extra_link_args"].append("-framework", "OpenCL")
+        e_args["define_macros"] += [("HAVE_OPENCL_OPENCL_H", None)]
+        e_args["extra_link_args"] += ["-framework", "OpenCL"]
     else:
-        e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
-        e_args["libraries"] = ["OpenCL"]
+        e_args["define_macros"] += [("HAVE_CL_CL_H", None)]
+        e_args["libraries"] += ["OpenCL"]
 elif k == "Windows":
-    e_args["extra_compile_args"].append("/openmp:llvm")
+    e_args["extra_compile_args"] += ["/openmp:llvm"]
 else:
-    e_args["extra_compile_args"].append("-fopenmp")
-    e_args["extra_link_args"].append("-fopenmp")
+    e_args["extra_compile_args"] += ["-fopenmp"]
+    e_args["extra_link_args"] += ["-fopenmp"]
 
+print(e_args)
 setuptools.setup(ext_modules=[setuptools.Extension(**e_args)])
