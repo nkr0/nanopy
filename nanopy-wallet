@@ -14,7 +14,7 @@ class bcolours:
     _end = "\033[0m"
     _bold = "\033[1m"
 
-    def plain(self, s, prefix="", suffix=""):
+    def _plain(self, s, prefix="", suffix=""):
         print(prefix + s + suffix)
 
     def ok1(self, s, prefix="", suffix=""):
@@ -38,10 +38,10 @@ class bcolours:
     def boldstr(self, s):
         return self._bold + s + self._end
 
-    def amt(self, label, amount, colour=plain):
+    def amt(self, label, amount, colour=_plain):
         colour("{:>40}".format(amount), label + " : ", " " + std_unit)
 
-    def status(self, label, msg, colour=plain):
+    def status(self, label, msg, colour=_plain):
         colour(self, msg, label + " : ")
 
 
@@ -84,45 +84,38 @@ def get_no_value_options(section):
     return options
 
 
-def nag_rep(nb):
+def nag_rep(rep):
     try:
-        w = int(rpc.account_info(nb["representative"], weight=True)["weight"])
+        w = int(rpc.account_info(rep, weight=True)["weight"])
         if w * 100 / available_supply > 2 and not args.rep:
             bc.warn1("\nYour representative has too much voting weight.")
-            if (input("Change rep?(" + bc.boldstr("y") + "/n): ") or "y") == "y":
+            if input("Change rep?(" + bc.boldstr("y") + "/n): ") != "n":
                 args.rep = input("Rep : ")
     except:
         pass
 
 
-def generate_block(sk, pk, account):
+def generate_block(sk, pk, acc):
     nb = npy.state_block()
-    nb["account"] = account
-    bc.status("Acc", nb["account"])
+    nb["account"] = acc
+    bc.status("Acc", acc)
 
-    info = {"error": "Account not found"}
-    rb = {}
-    state_found = False
-    for state in states:
-        if config[state]["account"] == nb["account"]:
-            state_found = True
-            break
+    state = [s for s in states if config[s]["account"] == acc]
+    state = state[0] if state else None
 
     while True:
         if online:
-            info = rpc.account_info(nb["account"], representative=True)
-            rb = rpc.accounts_pending([nb["account"]])["blocks"]
-            if rb:
-                rb = rb[nb["account"]]
-        elif state_found:
-            try:
+            info = rpc.account_info(acc, representative=True)
+            rb = rpc.accounts_pending([acc])["blocks"]
+            rb = rb[acc] if rb else None
+        elif state:
+            if "frontier" in config[state]:
                 info["frontier"] = config[state]["frontier"]
                 info["balance"] = config[state]["balance"]
                 info["representative"] = config[state]["representative"]
-            except:
-                pass
             rb = get_no_value_options(state)
-        try:
+
+        if "frontier" in info:
             nb["previous"] = info["frontier"]
             nb["balance"] = info["balance"]
             nb["representative"] = info["representative"]
@@ -130,14 +123,10 @@ def generate_block(sk, pk, account):
             bc.status("Rep", nb["representative"])
 
             if online:
-                nag_rep(nb)
-
-            if args.rep:
-                assert npy.validate_account_number(args.rep)
-                nb["representative"] = args.rep
+                nag_rep(nb["representative"])
 
             if (not args.send) and (not args.rep):
-                if state_found and online:
+                if state and online:
                     config[state]["frontier"] = info["frontier"]
                     config[state]["balance"] = info["balance"]
                     config[state]["representative"] = info["representative"]
@@ -145,21 +134,17 @@ def generate_block(sk, pk, account):
                         config.write(f)
                 if not rb:
                     break
-                if (
-                    input("\nReceive pending blocks?(" + bc.boldstr("y") + "/n): ")
-                    or "y"
-                ) != "y":
+                if input("\nReceive pending?(" + bc.boldstr("y") + "/n): ") == "n":
                     break
 
-        except KeyError:
-            if not rb:
-                bc.warn2(info)
-                break
-            else:
-                args.send = None
-                nb["balance"] = "0"
-                bc.amt("Bal", npy.from_raw(nb["balance"]), bc.ok1)
-                nb["representative"] = input("Rep : ")
+        else:  # open a new acc
+            args.send = None
+            nb["balance"] = "0"
+            args.rep = input("Rep : ")
+
+        if args.rep:
+            assert npy.validate_account_number(args.rep)
+            nb["representative"] = args.rep
 
         if args.send:
             nb["link"] = npy.account_key(args.send)
@@ -168,12 +153,9 @@ def generate_block(sk, pk, account):
                 bc.amt("Amt", npy.from_raw(nb["balance"]), bc.warn2)
                 nb["balance"] = "0"
             else:
-                while True:
-                    amount = int(npy.to_raw(input("Amt : ")))
-                    if amount <= int(nb["balance"]):
-                        nb["balance"] = str(int(nb["balance"]) - amount)
-                        break
-                    bc.warn2("Amount must be less than or equal to balance.")
+                amount = int(npy.to_raw(input("Amt : ")))
+                assert amount <= int(nb["balance"])
+                nb["balance"] = str(int(nb["balance"]) - amount)
             bc.amt("Bal", npy.from_raw(nb["balance"]), bc.warn1)
 
         elif rb:
@@ -182,135 +164,79 @@ def generate_block(sk, pk, account):
                 r_block = rpc.blocks_info(rb)["blocks"][nb["link"]]
                 bc.status("From", r_block["block_account"])
                 amount = r_block["amount"]
-                nb["balance"] = str(int(nb["balance"]) + int(amount))
             else:
                 amount = config[state][rb[0]]
-                nb["balance"] = str(int(nb["balance"]) + int(amount))
+            nb["balance"] = str(int(nb["balance"]) + int(amount))
             bc.amt("Amt", npy.from_raw(amount), bc.ok3)
             bc.amt("Bal", npy.from_raw(nb["balance"]), bc.ok3)
 
         if args.send or args.rep or rb:
-            current_difficulty = None
+            current_difficulty = args.send = args.rep = None
             if args.network == "nano":
-                current_difficulty = "fffffff800000000"  # 8x
-                if rb:
-                    current_difficulty = "fffffe0000000000"  # 1/8x
-
-            args.send = None
-            args.rep = None
-
+                current_difficulty = "fffffe0000000000" if rb else "fffffff800000000"
             work_hash = (
-                nb["previous"]
-                if (nb["previous"] != "0" * 64)
-                else npy.account_key(nb["account"])
+                nb["previous"] if (nb["previous"] != "0" * 64) else npy.account_key(acc)
             )
-
             nb["work"] = npy.work_generate(work_hash, difficulty=current_difficulty)
             nb["signature"] = npy.sign(sk, block=nb, pk=pk)
 
             print("\n" + json.dumps(nb))
 
-            if (
-                input(
-                    "\n"
-                    + ("Broadcast block" if online else "Update state")
-                    + "?(y/"
-                    + bc.boldstr("n")
-                    + "): "
-                )
-                or "n"
-            ) == "y":
-                if args.demo:
-                    bc.warn1("demo mode")
-                else:
-                    if online:
-                        ack = rpc.process(json.dumps(nb))
+            q = "\nBroadcast block" if online else "\nUpdate state"
+            if input(q + "?(y/" + bc.boldstr("n") + "): ") == "y" and not args.demo:
+                if online:
+                    ack = rpc.process(json.dumps(nb))
+                    assert "hash" in ack
+                    bc.ok3(ack["hash"])
+                if state:
+                    config[state]["frontier"] = npy.block_hash(nb)
+                    config[state]["balance"] = nb["balance"]
+                    config[state]["representative"] = nb["representative"]
+                    if rb:
                         try:
-                            bc.ok3(ack["hash"])
+                            config.remove_option(state, rb[0])
                         except:
-                            bc.warn2(ack)
-                            state_found = False
-                    if state_found:
-                        config[state]["frontier"] = npy.block_hash(nb)
-                        config[state]["balance"] = nb["balance"]
-                        config[state]["representative"] = nb["representative"]
-                        if rb:
-                            try:
-                                config.remove_option(state, rb[0])
-                            except:
-                                pass
-                        with open(config_file, "w") as f:
-                            config.write(f)
-                        bc.ok3("saved new state to", config_file)
+                            pass
+                    with open(config_file, "w") as f:
+                        config.write(f)
+                    bc.ok3("saved new state to " + config_file)
 
 
-parser = argparse.ArgumentParser()
-
-subparsers = parser.add_subparsers()
-parser_open = subparsers.add_parser("open", help="Unlock *.kdbx file")
-parser_open.add_argument("f", metavar="FILE", type=str, help="*.kdbx file.")
-parser_open.add_argument("k", metavar="KEY", type=str, help="key to open/create.")
-parser_open.add_argument(
-    "-g",
-    "--group",
-    default="",
-    type=str,
-    help="Group in which to open key from. (Default=root)",
-)
-parser_open.add_argument(
-    "-i",
-    "--index",
-    default=0,
-    type=int,
-    help="Index of the account unlocked from the key. (Default=0)",
-)
-parser_open.add_argument(
-    "-r", "--rep", metavar="ADDRESS", help="Change representative to ADDRESS."
-)
-parser_open.add_argument("--offline", action="store_true", help="Run in offline mode.")
-
-open_group = parser_open.add_mutually_exclusive_group()
-open_group.add_argument("-s", "--send", metavar="ADDRESS", help="Send NANO to ADDRESS.")
-open_group.add_argument(
-    "-e", "--empty", metavar="ADDRESS", help="Send all the funds to ADDRESS."
-)
-open_group.add_argument(
+args = argparse.ArgumentParser()
+args.add_argument(
     "-a",
     "--audit",
-    action="store_true",
-    help="Check state of all accounts from index 0 to INDEX.",
-)
-
-open_group.add_argument(
-    "-n",
-    "--new",
-    action="store_true",
-    help="Generate a new key and save.",
-)
-parser.add_argument(
-    "-a",
-    "--audit-file",
     metavar="FILE",
     type=argparse.FileType("rb"),
-    help="Check state of all the accounts in FILE.",
+    help="Audit accounts in FILE.",
 )
-parser.add_argument(
-    "-b", "--broadcast", action="store_true", help="Broadcast a block in JSON format."
-)
-parser.add_argument(
+args.add_argument("-b", "--broadcast", action="store_true", help="Broadcast JSON block")
+args.add_argument(
     "-n",
     "--network",
     default="nano",
     choices=["nano", "beta", "banano"],
-    type=str,
     help="Choose the network to interact with.",
 )
-parser.add_argument(
-    "-t", "--tor", action="store_true", help="Connect to the RPC node via tor."
-)
-parser.add_argument("-d", "--demo", action="store_true", help="Run in demo mode.")
+args.add_argument("--offline", action="store_true", help="Run in offline mode.")
+args.add_argument("-t", "--tor", action="store_true", help="Connect via tor.")
 
-args = parser.parse_args()
+subparsers = args.add_subparsers(dest="sub")
+argOpen = subparsers.add_parser("open", help="Unlock *.kdbx file")
+argOpen.add_argument("f", metavar="FILE", help="*.kdbx file.")
+argOpen.add_argument("k", metavar="KEY", help="key to open/create.")
+argOpen.add_argument("-g", "--group", help="Key group. (root)")
+argOpen.add_argument("-i", "--index", default=0, type=int, help="Account index. (0)")
+argOpen.add_argument("-r", "--rep", metavar="ADDRESS", help="Change rep")
+argOpen.add_argument("--empty", action="store_true", help="Empty account")
+argOpen.add_argument("-d", "--demo", action="store_true", help="Run in demo mode.")
+
+openG = argOpen.add_mutually_exclusive_group()
+openG.add_argument("-a", "--audit", action="store_true", help="Audit accounts")
+openG.add_argument("-n", "--new", action="store_true", help="Add a new key.")
+openG.add_argument("-s", "--send", metavar="ADDRESS", help="Send to")
+
+args = args.parse_args()
 
 if args.network == "beta":
     npy.account_prefix = "xrb_"
@@ -341,104 +267,71 @@ config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
 states = config.sections()
-try:
+if "Accounts" in states:
     states.remove("Accounts")
-except:
-    pass
 
-online = not config["DEFAULT"].getboolean("offline")
-if online:
-    try:
-        online = not args.offline
-    except:
-        online = True
+online = not (args.offline or config["DEFAULT"].getboolean("offline"))
+tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
 
 if online:
-    try:
-        iploc = RPC(
-            url="http://ipinfo.io/json",
-            tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
-        )._get()
-        try:
-            bc.warn1(iploc["city"] + " " + iploc["country"])
-        except:
-            print(iploc)
-    except:
-        pass
-    rpc = RPC(
-        url=config["DEFAULT"].get("rpc", fallback=rpc_url),
-        tor=(args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)),
-    )
+    iploc = RPC(url="http://ipinfo.io/json", tor=tor)._get()
+    bc.warn1(iploc["city"] + " " + iploc["country"])
+    rpc = RPC(url=config["DEFAULT"].get("rpc", fallback=rpc_url), tor=tor)
 else:
     bc.warn1("Running in offline mode.")
 
-try:
-    unlock = args.f and args.k
-    if args.demo:
-        bc.warn1("Running in demo mode.")
-    if args.empty:
-        args.send = args.empty
-except:
-    unlock = False
-
 accounts = []
 
-if unlock:
+if args.sub:
+    if args.demo:
+        bc.warn1("Running in demo mode.")
     os.chmod(args.f, 0o600)
     kp = pykeepass.PyKeePass(args.f, password=getpass.getpass())
     group = kp.find_groups(name=args.group, first=True) if args.group else kp.root_group
 
     if args.new:
         seed = os.urandom(32)
-        _, _, account0 = npy.deterministic_key(seed.hex(), 0)
+        account0 = npy.deterministic_key(seed.hex(), 0)[2]
         bc.status(args.k, account0)
-        if args.demo:
-            bc.warn1("demo mode")
-        else:
+        if not args.demo:
             kp.add_entry(group, args.k, account0, base64.b85encode(seed).decode())
             kp.save()
 
     else:
         entry = kp.find_entries(title=args.k, group=group, recursive=False, first=True)
         seed = base64.b85decode(entry.password).hex()
-        _, _, account0 = npy.deterministic_key(seed, 0)
-        assert entry.username == account0
+        assert entry.username == npy.deterministic_key(seed, 0)[2]
 
         if args.audit:
-            for i in range(args.index + 1):
-                _, _, account_i = npy.deterministic_key(seed, i)
-                accounts.append(account_i)
-
+            accounts = [
+                npy.deterministic_key(seed, i)[2] for i in range(args.index + 1)
+            ]
         else:
             generate_block(*npy.deterministic_key(seed, args.index))
 
-elif args.broadcast and online:
-    if args.demo:
-        bc.warn1("demo mode")
-    else:
-        ack = rpc.process(input("Enter JSON block to broadcast: "))
-        try:
-            bc.ok3(ack["hash"])
-        except:
-            bc.warn2(ack)
+elif args.broadcast:
+    ack = rpc.process(input("Enter JSON block to broadcast: "))
+    assert "hash" in ack
+    bc.ok3(ack["hash"])
 
-elif args.audit_file:
-    accounts = [line.rstrip(b"\n").decode() for line in args.audit_file]
+elif args.audit:
+    accounts = [line.rstrip(b"\n").decode() for line in args.audit]
 
 else:
     accounts = get_no_value_options("Accounts")
 
 if accounts and online:
     info = rpc.accounts_balances(accounts)
-    for account in accounts:
-        bc.status("Acc", account)
-        try:
-            bc.amt("Bal", npy.from_raw(info["balances"][account]["balance"]), bc.ok1)
-            if int(info["balances"][account]["pending"]):
+    if "balances" in info:
+        for account in accounts:
+            accinfo = info["balances"][account]
+            bc.status("Acc", account)
+            bc.amt("Bal", npy.from_raw(accinfo["balance"]), bc.ok1)
+            if int(accinfo["pending"]):
                 bc.ok3("Pending block(s)")
-        except:
-            bc.warn2(info)
-        print("")
+            print("")
+    else:
+        bc.warn2(info)
 
 if online:
     rpc.disconnect()
@@ -446,14 +339,6 @@ if online:
 ticker = RPC(
     url="https://api.kraken.com/0/public/Ticker?pair=nanoxbt,nanousd,nanoeur"
 )._get()
-try:
-    print(
-        ticker["result"]["NANOXBT"]["c"][0],
-        "₿\t",
-        ticker["result"]["NANOUSD"]["c"][0],
-        "$\t",
-        ticker["result"]["NANOEUR"]["c"][0],
-        "€",
-    )
-except:
-    print(ticker)
+print(ticker["result"]["NANOXBT"]["c"][0], "₿")
+print(ticker["result"]["NANOUSD"]["c"][0], "$")
+print(ticker["result"]["NANOEUR"]["c"][0], "€")
