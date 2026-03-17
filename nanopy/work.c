@@ -12,7 +12,7 @@
 
 #if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
 // this is the variable opencl_program in raiblocks/rai/node/openclwork.cpp
-const char *opencl_program = R"%%%(
+char *opencl_program1 = R"%%%(
 enum blake2b_constant
 {
 	BLAKE2B_BLOCKBYTES = 128,
@@ -371,7 +371,8 @@ __kernel void raiblocks_work (__global ulong * attempt, __global ulong * result_
 	blake2b_update (&state, item_l, 32);
 	ulong result;
 	blake2b_final (&state, (uchar *) &result, sizeof (result));
-	if (result >= 0xffffffc000000000ul)
+	if (result >= )%%%";
+char *opencl_program2 = R"%%%()
 	//if (result >= 0xff00000000000000ul)
 	{
 		*result_a = attempt_l;
@@ -403,10 +404,10 @@ void swapLong(uint64_t *X) {
 static PyObject *generate(PyObject *self, PyObject *args) {
   int i, j;
   uint8_t *str;
-  uint64_t workb = 0, r_str = 0;
+  uint64_t work_limit = 0, workb = 0, r_str = 0;
   const size_t work_size = 1024 * 1024;  // default value from nano
 
-  if (!PyArg_ParseTuple(args, "y#", &str, &i)) return NULL;
+  if (!PyArg_ParseTuple(args, "y#K", &str, &i, &work_limit)) return NULL;
 
   srand(time(NULL));
   for (i = 0; i < 16; i++)
@@ -425,13 +426,17 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     printf("clGetPlatformIDs failed to find a gpu device\n");
     goto FAIL;
   } else {
-    size_t length = strlen(opencl_program);
+    size_t length = strlen(opencl_program1) + 21 + strlen(opencl_program2);
+    char *opencl_program = malloc(length);
     cl_mem d_rand, d_work, d_str;
     cl_device_id device_id;
     cl_context context;
     cl_command_queue queue;
     cl_program program;
     cl_kernel kernel;
+
+    sprintf(opencl_program, "%s%lu%s", opencl_program1, work_limit,
+            opencl_program2);
 
     err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS) {
@@ -556,6 +561,8 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       }
     }
 
+    free(opencl_program);
+
     err = clReleaseMemObject(d_rand);
     if (err != CL_SUCCESS) {
       printf("clReleaseMemObject failed with error code %d\n", err);
@@ -610,7 +617,7 @@ FAIL:
 
       swapLong(&b2b_b);
 
-      if (b2b_b >= 0xffffffc000000000ul) {
+      if (b2b_b >= work_limit) {
 #pragma omp atomic write
         workb = r_str_l;
 #pragma omp cancel for
