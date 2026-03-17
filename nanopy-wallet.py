@@ -101,11 +101,12 @@ if __name__ == '__main__':
 	parser.add_argument('-i', '--index', default=0, type=int, help='Index of the account generated from the seed. (Default=0)')
 	parser.add_argument('--new', action='store_true', help='Generate a new account and output the GPG encrypted seed.')
 
-	send_group = parser.add_mutually_exclusive_group()
-	send_group.add_argument('--send-to', metavar='XRB/NANO_ADDRESS', help='Send NANO to XRB/NANO_ADDRESS.')
-	send_group.add_argument('--empty-to', metavar='XRB/NANO_ADDRESS', help='Send all the funds to XRB/NANO_ADDRESS.')
+	parser.add_argument('--unlock', action='store_true', help='Unlock wallet.')
+	parser.add_argument('--change-rep-to', metavar='ADDRESS', help='Change representative to ADDRESS.')
 
-	parser.add_argument('--change-rep-to', metavar='XRB/NANO_ADDRESS', help='Change representative to XRB/NANO_ADDRESS.')
+	send_group = parser.add_mutually_exclusive_group()
+	send_group.add_argument('--send-to', metavar='ADDRESS', help='Send NANO to ADDRESS.')
+	send_group.add_argument('--empty-to', metavar='ADDRESS', help='Send all the funds to ADDRESS.')
 
 	parser.add_argument('--remote', action='store_true', help='Compute work on the node.')
 	parser.add_argument('-t', '--tor', action='store_true', help='Connect to the RPC node via tor.')
@@ -118,17 +119,21 @@ if __name__ == '__main__':
 
 	args = parser.parse_args()
 	
+	try:
+		with open(os.path.expanduser('~')+"/.config/nanopy-wallet.conf") as conf: options=json.load(conf)
+	except FileNotFoundError: options={'accounts': [''], 'tor': False, 'rpc': ['https://getcanoe.io/rpc']}
+	
 	if args.demo: print(bcolors.warn1, "Running in demo mode.", bcolors.end)
 	
 	if args.empty_to: args.send_to=args.empty_to
-
-	if args.tor:
+	
+	if (args.audit_seed or args.send_to or args.change_rep_to) : args.unlock = True
+	
+	if args.tor or options['tor']:
 		nanopy.rpc.proxies['http'] = 'socks5h://localhost:9050'
 		nanopy.rpc.proxies['https'] = 'socks5h://localhost:9050'
 
-	with open(os.path.dirname(os.path.abspath(nanopy.__file__))+"/api.dat", "rb") as f:
-		urls = [line.rstrip(b'\n').decode() for line in f]
-	nanopy.url=random.choice(urls)
+	nanopy.url=random.choice(options['rpc'])
 	
 	gpg = gnupg.GPG()
 
@@ -151,7 +156,7 @@ if __name__ == '__main__':
 		with open(args.audit_file, "rb") as f:
 			accounts = [line.rstrip(b'\n').decode() for line in f]
 
-	else:
+	elif args.unlock:
 
 		with open(input("GPG encrypted file name: "), "rb") as f:
 			seed=gpg.decrypt_file(f, passphrase=getpass.getpass())
@@ -163,13 +168,18 @@ if __name__ == '__main__':
 				for i in range(args.audit_seed+1):
 					accounts.append(nanopy.seed_nano(str(seed), i))
 
-			else: generate_block(str(seed))
+			else:
+				generate_block(str(seed))
+				sys.exit()
 
 		else:
 			print(bcolors.warn2, seed.status, bcolors.end)
 			sys.exit()
+	
+	else:
+		accounts=options['accounts']
 
-	if args.audit_file or args.audit_seed:
+	if accounts[0]:
 		info=nanopy.accounts_balances(accounts)
 		for account in accounts:
 			print("\nAcc:\t", account)
@@ -177,4 +187,3 @@ if __name__ == '__main__':
 				print("Bal:\t", bcolors.ok1, int(info[account]["balance"])/10**30, bcolors.end, "NANO\t", info[account]["balance"], "RAW")
 				if int(info[account]["pending"]): print(bcolors.ok3, "Pending block(s)", bcolors.end)
 			except KeyError: print(bcolors.warn2, info[account], bcolors.end)
-
