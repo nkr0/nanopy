@@ -1,4 +1,5 @@
 #include <Python.h>
+
 #include "blake2.h"
 #include "ed25519-donna/ed25519-hash-custom.h"
 #include "ed25519-donna/ed25519.h"

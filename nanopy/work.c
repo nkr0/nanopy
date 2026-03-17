@@ -7,6 +7,7 @@
 #include <OpenCL/opencl.h>
 #else
 #include <omp.h>
+
 #include "blake2.h"
 #endif
 
