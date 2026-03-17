@@ -155,10 +155,11 @@ def available_supply():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def block(_hash):
+def block_info(_hash, json_block=False):
     data = {}
-    data['action'] = 'block'
+    data['action'] = 'block_info'
     data['hash'] = _hash
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -169,13 +170,14 @@ def blocks(hashes):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def blocks_info(hashes, pending=False, source=False, balance=False):
+def blocks_info(hashes, pending=False, source=False, balance=False, json_block=False):
     data = {}
     data['action'] = 'blocks_info'
     data['hashes'] = hashes
     if pending: data['pending'] = True
     if source: data['source'] = True
     if balance: data['balance'] = True
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -205,13 +207,14 @@ def block_count_type():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def block_hash(block):
+def block_hash(block, json_block=False):
     data = {}
     data['action'] = 'block_hash'
     if type(block) == str:
         data['block'] = block
     else:
         data['block'] = json.dumps(block)
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -266,12 +269,13 @@ def confirmation_history():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def confirmation_info(root, contents=True, representatives=False):
+def confirmation_info(root, contents=True, representatives=False, json_block=False):
     data = {}
     data['action'] = 'confirmation_info'
     data['root'] = root
     if not contents: data['contents'] = False
     if representatives: data['representatives'] = True
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -400,7 +404,7 @@ def ledger(account,
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def block_create(balance, key, representative, link, previous, work=None):
+def block_create(balance, key, representative, link, previous, work=None, json_block=False):
     data = {}
     data['action'] = 'block_create'
     data['type'] = 'state'
@@ -410,6 +414,7 @@ def block_create(balance, key, representative, link, previous, work=None):
     data['link'] = link
     data['previous'] = previous
     if work: data['work'] = work
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -456,12 +461,13 @@ def payment_wait(account, amount, timeout):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def process(block, force=False, subtype=None):
+def process(block, force=False, subtype=None, json_block=False):
     data = {}
     data['action'] = 'process'
     data['block'] = block
     if force: data['force'] = True
     if subtype: data['subtype'] = subtype
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -559,13 +565,14 @@ def send(wallet, source, destination, amount, _id=None, work=None):
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def sign(key='', wallet='', account='', _hash=''):
+def sign(key='', wallet='', account='', _hash='', json_block=False):
     data = {}
     data['action'] = 'sign'
     if key: data['key'] = key
     if wallet: data['wallet'] = wallet
     if account: data['account'] = account
     if _hash: data['_hash'] = _hash
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
@@ -649,18 +656,20 @@ def unchecked_clear():
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def unchecked_get(_hash):
+def unchecked_get(_hash, json_block=False):
     data = {}
     data['action'] = 'unchecked_get'
     data['hash'] = _hash
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
-def unchecked_keys(key, count=1):
+def unchecked_keys(key, count=1, json_block=False):
     data = {}
     data['action'] = 'unchecked_keys'
     data['key'] = key
     data['count'] = count
+    if json_block: data['json_block'] = True
     return json.loads(session.post(url, data=json.dumps(data)).text)
 
 
