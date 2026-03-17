@@ -81,6 +81,12 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   if (err || !num)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
+#if !defined(NDEBUG) || defined(DEBUG) || defined(OCLDEBUG)
+  char cl_platform_name[128];
+  clGetPlatformInfo(cpPlatform, CL_PLATFORM_NAME, sizeof(cl_platform_name),
+                    cl_platform_name, NULL);
+  printf("OpenCL: %s\n", cl_platform_name);
+#endif
 
   size_t length = strlen(opencl_program);
   cl_mem d_nonce, d_work, d_h32, d_difficulty;
@@ -90,10 +96,20 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   cl_program program;
   cl_kernel kernel;
 
+#ifdef OCL_USE_CPU
+  err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+#else
   err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+#endif
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetDeviceIDs", err);
+#if !defined(NDEBUG) || defined(DEBUG) || defined(OCLDEBUG)
+  char cl_device_name[128];
+  clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(cl_device_name),
+                  cl_device_name, NULL);
+  printf("OpenCL: %s\n", cl_device_name);
+#endif
 
   context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
   if (err)

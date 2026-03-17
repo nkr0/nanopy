@@ -43,7 +43,7 @@ else:
 if ED25519_IMPL:
     e_args["define_macros"] += [(ED25519_IMPL, None)]
 
-if os.environ.get("USE_GPU"):
+if os.environ.get("USE_OCL"):
     if k == "Darwin":
         e_args["define_macros"] += [("HAVE_OPENCL_OPENCL_H", None)]
         e_args["extra_link_args"] += ["-framework", "OpenCL"]

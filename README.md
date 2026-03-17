@@ -8,11 +8,11 @@ pip install nanopy
 
 When needed, use the environment variables `CC`, `LDSHARED`, `CFLAGS`, and `LDFLAGS` to tweak build options. See [*setuptools* documentation](https://setuptools.pypa.io/) for further info.
 
-GPU support can be enabled with ``USE_GPU=1`` and appropriate *OpenCL ICD* headers.
+GPU support can be enabled with ``USE_OCL=1`` and appropriate *OpenCL* dependencies.
 
 ```sh
-sudo apt install gcc python3-dev ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd
-USE_GPU=1 pip install nanopy
+sudo apt install gcc python3-dev ocl-icd-opencl-dev intel/mesa/nvidia/pocl/rocm-opencl-icd
+USE_OCL=1 pip install nanopy
 ```
 
 * Install `mnemonic` to generate mnemonic wallets.
