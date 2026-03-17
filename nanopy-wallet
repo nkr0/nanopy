@@ -59,7 +59,8 @@ def pretty_bal(label, colour, amount):
 def gpg_encrypt(secret, filename):
     cipher, _, _ = gpg_ctx.encrypt(secret.encode(), sign=False)
     print(filename)
-    if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
+    if args.demo:
+        print(bcolors.warn1, 'demo mode', bcolors.end)
     else:
         print(cipher.decode())
         with open(filename, 'wb') as f:
@@ -125,7 +126,8 @@ def generate_block(sk, pk, account):
                     config[state]['representative'] = info['representative']
                     with open(config_file, 'w') as f:
                         config.write(f)
-                if not rb: break
+                if not rb:
+                    break
                 if (input('\nReceive pending blocks?(' + bcolors.bold + 'y' +
                           bcolors.end + '/n): ') or 'y') != 'y':
                     break
@@ -185,7 +187,8 @@ def generate_block(sk, pk, account):
             if (input('\n' + ('Broadcast block' if online else 'Update state') +
                       '?(y/' + bcolors.bold + 'n' + bcolors.end + '): ') or
                     'n') == 'y':
-                if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
+                if args.demo:
+                    print(bcolors.warn1, 'demo mode', bcolors.end)
                 else:
                     if online:
                         ack = rpc.process(json.dumps(nb))
@@ -341,8 +344,10 @@ else:
 
 try:
     unlock = (args.f != None)
-    if args.demo: print(bcolors.warn1, 'Running in demo mode.', bcolors.end)
-    if args.empty: args.send = args.empty
+    if args.demo:
+        print(bcolors.warn1, 'Running in demo mode.', bcolors.end)
+    if args.empty:
+        args.send = args.empty
 except:
     unlock = False
 
@@ -375,7 +380,8 @@ elif unlock:
 
 elif args.broadcast and online:
     bb = json.dumps(json.loads(input('Enter JSON block to broadcast: ')))
-    if args.demo: print(bcolors.warn1, 'demo mode', bcolors.end)
+    if args.demo:
+        print(bcolors.warn1, 'demo mode', bcolors.end)
     else:
         ack = rpc.process(bb)
         try:
@@ -399,7 +405,8 @@ if accounts and online:
         except:
             print(bcolors.warn2, info, bcolors.end, '\n')
 
-if online: rpc.disconnect()
+if online:
+    rpc.disconnect()
 
 rpc = RPC(url='https://api.kraken.com/0/public/Ticker')
 print(
