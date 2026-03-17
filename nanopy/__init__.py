@@ -6,44 +6,44 @@ def nano_account(address):
 	if (len(address) == 64 and (address[:4] == 'xrb_')) or (len(address) == 65 and (address[:5] == 'nano_')):
 		account_map = "13456789abcdefghijkmnopqrstuwxyz"
 		account_lookup = {}
-		for i in range(0,32): account_lookup[account_map[i]] = bin(i)[2:].zfill(5) # "{0:0>5b}".format(i)
+		for x in range(32): account_lookup[account_map[x]] = bin(x)[2:].zfill(5) # "{0:0>5b}".format(i)
 
 		acrop_key = address[-60:-8]
 		acrop_check = address[-8:]
 
 		number_l = ""
-		for x in range(0, len(acrop_key)): number_l+=account_lookup[acrop_key[x]]
-		number_l = hex(int(number_l[4:], 2))[2:]
+		for x in range(52): number_l+=account_lookup[acrop_key[x]]
+		number_l=bytearray(int(number_l[4:], 2).to_bytes(32, byteorder='big'))
 
 		check_l = ""
-		for x in range(0, len(acrop_check)): check_l+=account_lookup[acrop_check[x]]
-		check_l=hex(int(check_l, 2))[2:]
-		check_l="".join(reversed([check_l[i:i+2] for i in range(0, len(check_l), 2)]))
+		for x in range(8): check_l+=account_lookup[acrop_check[x]]
+		check_l=bytearray(int(check_l, 2).to_bytes(5, byteorder='big'))
+		check_l.reverse()
 
 		h = hashlib.blake2b(digest_size=5)
-		h.update(bytes.fromhex(number_l))
-		if (h.hexdigest() == check_l):return number_l
+		h.update(number_l)
+		if (h.digest() == check_l):return number_l.hex()
 	return False
 
 def account_nano(account):
 	account_map = "13456789abcdefghijkmnopqrstuwxyz"
 	account_lookup = {}
-	for i in range(0,32): account_lookup[bin(i)[2:].zfill(5)] = account_map[i] # account_lookup["{0:0>5b}".format(i)]
+	for x in range(32): account_lookup[bin(x)[2:].zfill(5)] = account_map[x] # account_lookup["{0:0>5b}".format(i)]
 
 	h = hashlib.blake2b(digest_size=5)
 	h.update(bytes.fromhex(account))
-	checksum = h.hexdigest()
+	checksum = bytearray(h.digest())
 
-	checksum="".join(reversed([checksum[i:i+2] for i in range(0, len(checksum), 2)]))
-	checksum=bin(int(checksum, 16))[2:].zfill(40) # "{0:0>40b}".format(int(checksum, 16))
+	checksum.reverse()
+	checksum=bin(int.from_bytes(checksum, byteorder='big'))[2:].zfill(40)
 
 	encode_check = ''
-	for x in range(0,int(len(checksum)/5)): encode_check += account_lookup[checksum[x*5:x*5+5]]
+	for x in range(8): encode_check += account_lookup[checksum[x*5:x*5+5]]
 
-	account = bin(int(account, 16))[2:].zfill(260) # "{0:0>260b}".format(int(account, 16))
+	account = bin(int(account, 16))[2:].zfill(260)
 
 	encode_account = ''
-	for x in range(0,int(len(account)/5)): encode_account += account_lookup[account[x*5:x*5+5]]
+	for x in range(52): encode_account += account_lookup[account[x*5:x*5+5]]
 
 	return 'nano_'+encode_account+encode_check
 
@@ -68,10 +68,12 @@ def pow_validate(pow, hash):
 	pow_data = bytearray.fromhex(pow)
 	hash_data = bytearray.fromhex(hash)
 
-	h = hashlib.blake2b(digest_size=8)
 	pow_data.reverse()
+
+	h = hashlib.blake2b(digest_size=8)
 	h.update(pow_data)
 	h.update(hash_data)
+
 	final = bytearray(h.digest())
 	final.reverse()
 
@@ -83,6 +85,7 @@ def pow_generate(hash):
 		lib.pow_generate.restype = ctypes.c_char_p
 		return lib.pow_generate(ctypes.c_char_p(hash.encode("utf-8"))).decode("utf-8")
 	except OSError:
+		print("Unable to find libnanopow.so. Computing work in Python.")
 		hash_bytes = bytearray.fromhex(hash)
 		while True:
 			random_bytes = bytearray((random.getrandbits(8) for i in range(8)))
