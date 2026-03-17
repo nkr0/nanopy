@@ -15,33 +15,28 @@ def get_work_ext_kwargs(use_gpu):
         "name": "nanopy.work",
         "sources": ["nanopy/work.c", BLAKE2B_SRC],
         "include_dirs": [BLAKE2B_DIR],
-        "extra_compile_args": ["-O3", "-march=native"],
-        "extra_link_args": ["-s"],
-        "libraries": [],
-        "define_macros": [],
+        "extra_compile_args": [],
+        "extra_link_args": [],
     }
+
+    if sys.platform == "linux":
+        e_args["extra_compile_args"] = ["-O3", "-march=native"]
+        e_args["extra_link_args"] = ["-s"]
+    elif sys.platform == "win32":
+        e_args["extra_compile_args"] = ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
 
     if use_gpu:
         if sys.platform == "darwin":
             e_args["define_macros"] = [("HAVE_OPENCL_OPENCL_H", "1")]
-            e_args["extra_link_args"].extend("-framework", "OpenCL")
+            e_args["extra_link_args"].append("-framework", "OpenCL")
         else:
-            if sys.platform == "win32":
-                e_args["extra_compile_args"] = []
-                e_args["extra_link_args"] = []
             e_args["define_macros"] = [("HAVE_CL_CL_H", "1")]
             e_args["libraries"] = ["OpenCL"]
+    elif sys.platform == "win32":
+        e_args["extra_compile_args"].append("/openmp:llvm")
     else:
         e_args["extra_compile_args"].append("-fopenmp")
         e_args["extra_link_args"].append("-fopenmp")
-        if sys.platform == "win32":
-            e_args["extra_compile_args"] = [
-                "/openmp:llvm",
-                "/arch:SSE2",
-                "/arch:AVX",
-                "/arch:AVX2",
-            ]
-            e_args["extra_link_args"] = []
 
     return e_args
 
@@ -57,21 +52,16 @@ def get_ed25519_blake2b_ext_kwargs():
         "name": "nanopy.ed25519_blake2b",
         "sources": ["nanopy/ed25519_blake2b.c", BLAKE2B_SRC, ED25519_SRC],
         "include_dirs": [BLAKE2B_DIR, ED25519_DIR],
-        "extra_compile_args": ["-O3", "-march=native"],
-        "extra_link_args": ["-s"],
-        "define_macros": [],
     }
 
-    if ED25519_IMPL:
-        e_args["define_macros"].append((ED25519_IMPL, "1"))
+    if sys.platform == "linux":
+        e_args["extra_compile_args"] = ["-O3", "-march=native"]
+        e_args["extra_link_args"] = ["-s"]
+    elif sys.platform == "win32":
+        e_args["extra_compile_args"] = ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
 
-    if sys.platform == "win32":
-        e_args["extra_compile_args"] = [
-            "/arch:SSE2",
-            "/arch:AVX",
-            "/arch:AVX2",
-        ]
-        e_args["extra_link_args"] = []
+    if ED25519_IMPL:
+        e_args["define_macros"] = [(ED25519_IMPL, "1")]
 
     return e_args
 

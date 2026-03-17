@@ -1,4 +1,5 @@
 mnemonic
 pysocks
 requests
+setuptools
 websocket-client
