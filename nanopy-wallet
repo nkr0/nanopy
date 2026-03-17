@@ -104,6 +104,7 @@ def generate_block(sk, pk, acc):
     state = state[0] if state else None
 
     while True:
+        info = {}
         if online:
             info = rpc.account_info(acc, representative=True)
             rb = rpc.accounts_receivable([acc])
@@ -114,6 +115,8 @@ def generate_block(sk, pk, acc):
                 info["balance"] = config[state]["balance"]
                 info["representative"] = config[state]["representative"]
             rb = get_no_value_options(state)
+        else:
+            break
 
         if "frontier" in info:
             nb["previous"] = info["frontier"]
@@ -339,6 +342,5 @@ if online:
 ticker = RPC(
     url="https://api.kraken.com/0/public/Ticker?pair=nanoxbt,nanousd,nanoeur"
 )._get()
-print(ticker["result"]["NANOXBT"]["c"][0], "₿")
 print(ticker["result"]["NANOUSD"]["c"][0], "$")
 print(ticker["result"]["NANOEUR"]["c"][0], "€")
