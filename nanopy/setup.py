@@ -22,28 +22,17 @@ try:
         macros = [('HAVE_CL_CL_H', '1')]
         try_build()
     except:
-        macros = [('HAVE_OPENCL_CL_H', '1')]
+        macros = [('HAVE_OPENCL_OPENCL_H', '1')]
         try_build()
     print('\033[92m' + "Success!!! Built with GPU work computation." +
           '\033[0m')
 except:
     try:
-        libs = ['CL']
-        try:
-            macros = [('HAVE_CL_CL_H', '1')]
-            try_build()
-        except:
-            macros = [('HAVE_OPENCL_CL_H', '1')]
-            try_build()
-        print('\033[92m' + "Success!!! Built with GPU work computation." +
-              '\033[0m')
+        libs = ['b2']
+        eca = ['-fopenmp']
+        macros = []
+        try_build()
+        print('\033[92m' +
+              "Success!!! Built with OpenMP work computation." + '\033[0m')
     except:
-        try:
-            libs = ['b2']
-            eca = ['-fopenmp']
-            macros = []
-            try_build()
-            print('\033[92m' +
-                  "Success!!! Built with OpenMP work computation." + '\033[0m')
-        except:
-            print('\033[91m' + "Build failed." + '\033[0m')
+        print('\033[91m' + "Build failed." + '\033[0m')
