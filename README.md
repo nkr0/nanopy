@@ -1,6 +1,8 @@
 # nanopy
 Python 3 implementation of NANO-related functions and an RPC light wallet.
 
+Addresses can be input in both `xrb_` and `nano_`. However, the RPC responses from the nodes are still in `xrb_` format.
+
 ## Wallet options
 * `--new`. Generate a new seed and derive index 0 account from it.
   * Seeds are generated using `os.urandom()`
@@ -18,3 +20,4 @@ Python 3 implementation of NANO-related functions and an RPC light wallet.
 * `--audit-seed`. Check state of all accounts from index 0 to the specified limit.
 * `--audit-file`. Check state of all accounts in a file.
 * `-t` or `--tor`. Communicate with RPC node via the tor network.
+* `--demo`. Run in demo mode. Never broadcast blocks.
