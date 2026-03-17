@@ -6,7 +6,7 @@
 #elif HAVE_OPENCL_OPENCL_H
 #include <OpenCL/opencl.h>
 #else
-#include <blake2.h>
+#include "b2b/blake2.h"
 #include <omp.h>
 #endif
 
