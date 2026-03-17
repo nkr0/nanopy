@@ -23,10 +23,6 @@ def get_no_value_options(section):
     except:
         pass
     try:
-        options.remove('mmdb')
-    except:
-        pass
-    try:
         options.remove('rpc')
     except:
         pass
@@ -327,21 +323,12 @@ if online:
 if online:
     rpc.url = config['DEFAULT'].get('rpc', fallback=rpc.url)
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
-        rpc.session.proxies['http'] = 'socks5h://localhost:9050'
-        rpc.session.proxies['https'] = 'socks5h://localhost:9050'
-        mmdb = config['DEFAULT'].get('mmdb')
-        if mmdb:
-            try:
-                import maxminddb
-                torip = json.loads(
-                    rpc.session.get('http://httpbin.org/ip').text)['origin']
-                reader = maxminddb.open_database(mmdb)
-                match = reader.get(torip)
-                reader.close()
-                print('\033[92m' + torip, ' ',
-                      match['country']['names']['en'] + '\033[0m')
-            except:
-                pass
+        try:
+            rpc.session.proxies['http'] = 'socks5h://localhost:9050'
+            rpc.session.proxies['https'] = 'socks5h://localhost:9050'
+            print(bcolors.ok3, 'Connected via tor.', bcolors.end)
+        except:
+            print(bcolors.warn2, 'Unable to connect via tor.', bcolors.end)
 else:
     print(bcolors.warn1, 'Running in offline mode.', bcolors.end)
 
