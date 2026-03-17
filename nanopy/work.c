@@ -1,16 +1,16 @@
 #include <Python.h>
 #include <time.h>
 
-#ifdef HAVE_OPENCL_CL_H
-#include <OpenCL/cl.h>
-#elif HAVE_CL_CL_H
+#ifdef HAVE_CL_CL_H
 #include <CL/cl.h>
+#elif HAVE_OPENCL_OPENCL_H
+#include <OpenCL/opencl.h>
 #else
 #include <blake2.h>
 #include <omp.h>
 #endif
 
-#if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
+#if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
 // this is the variable opencl_program in raiblocks/rai/node/openclwork.cpp
 const char *opencl_program = R"%%%(
 enum blake2b_constant
@@ -412,7 +412,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   for (i = 0; i < 16; i++)
     for (j = 0; j < 4; j++) ((uint16_t *)&s[i])[j] = rand();
 
-#if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
+#if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
   int err;
   cl_uint num;
   cl_platform_id cpPlatform;
@@ -428,7 +428,10 @@ static PyObject *generate(PyObject *self, PyObject *args) {
     size_t length = strlen(opencl_program);
     cl_mem d_rand, d_work, d_str;
     cl_device_id device_id;
+    cl_context context;
+    cl_command_queue queue;
     cl_program program;
+    cl_kernel kernel;
 
     err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
     if (err != CL_SUCCESS) {
@@ -436,19 +439,26 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    cl_context context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+    context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateContext failed with error code %d\n", err);
       goto FAIL;
     }
 
-    cl_command_queue queue =
-        clCreateCommandQueueWithProperties(context, device_id, 0, &err);
+#if CL_TARGET_OPENCL_VERSION >= 200
+    queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
     if (err != CL_SUCCESS) {
       printf("clCreateCommandQueueWithProperties failed with error code %d\n",
              err);
       goto FAIL;
     }
+#else
+    queue = clCreateCommandQueue(context, device_id, 0, &err);
+    if (err != CL_SUCCESS) {
+      printf("clCreateCommandQueue failed with error code %d\n", err);
+      goto FAIL;
+    }
+#endif
 
     program = clCreateProgramWithSource(
         context, 1, (const char **)&opencl_program, &length, &err);
@@ -484,7 +494,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       goto FAIL;
     }
 
-    cl_kernel kernel = clCreateKernel(program, "raiblocks_work", &err);
+    kernel = clCreateKernel(program, "raiblocks_work", &err);
     if (err != CL_SUCCESS) {
       printf("clCreateKernel failed with error code %d\n", err);
       goto FAIL;
@@ -546,13 +556,41 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       }
     }
 
-    clReleaseMemObject(d_rand);
-    clReleaseMemObject(d_work);
-    clReleaseMemObject(d_str);
-    clReleaseKernel(kernel);
-    clReleaseProgram(program);
-    clReleaseCommandQueue(queue);
-    clReleaseContext(context);
+    err = clReleaseMemObject(d_rand);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseMemObject failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseMemObject(d_work);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseMemObject failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseMemObject(d_str);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseMemObject failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseKernel(kernel);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseKernel failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseProgram(program);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseProgram failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseCommandQueue(queue);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseCommandQueue failed with error code %d\n", err);
+      goto FAIL;
+    }
+    err = clReleaseContext(context);
+    if (err != CL_SUCCESS) {
+      printf("clReleaseContext failed with error code %d\n", err);
+      goto FAIL;
+    }
   }
 #else
   while (workb == 0) {
@@ -581,7 +619,7 @@ static PyObject *generate(PyObject *self, PyObject *args) {
   }
 #endif
   swapLong(&workb);
-#if defined(HAVE_OPENCL_CL_H) || defined(HAVE_CL_CL_H)
+#if defined(HAVE_CL_CL_H) || defined(HAVE_OPENCL_OPENCL_H)
 FAIL:
 #endif
   return Py_BuildValue("K", workb);
