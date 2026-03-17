@@ -1,7 +1,7 @@
 # nanopy
 Python implementation of NANO-related functions.
 
-## C library for work generation
+## C libraries for work generation and signing messages
 * Install the library from PyPI by running `pip install nanopy`.
 * Install the library from source by running `python setup.py build && python setup.py install`.
 * Point to custom compiler by prepending the installation command with `CC=path/to/custom/c/compiler`.
