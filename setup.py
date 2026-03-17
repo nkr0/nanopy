@@ -1,5 +1,10 @@
 from setuptools import setup, Extension
-import sys
+import sys, os
+
+
+os.environ["CC"] = "gcc"
+if sys.platform == 'darwin':
+    os.environ["CC"] = "gcc-8"
 
 eca = []
 ela = []
