@@ -1,0 +1,2 @@
+.. automodule:: nanopy.rpc
+   :members:

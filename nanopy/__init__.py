@@ -1,3 +1,8 @@
+"""
+nanopy
+######
+"""
+
 import os, hashlib, base64, decimal, hmac
 try:
     import nanopy.ed25519_blake2b as ed25519_blake2b
@@ -24,6 +29,13 @@ def state_block():
 
 
 def account_key(account):
+    """Get the public key for account
+
+    :param str account: account number
+    :return: 64 hex-char public key
+    :rtype: str
+    :raise AssertionError: for invalid account
+    """
     assert len(account) == len(
         account_prefix) + 60 and account[:len(account_prefix)] == account_prefix
 
@@ -40,6 +52,13 @@ def account_key(account):
 
 
 def account_get(key):
+    """Get account number for the public key
+
+    :param str key: 64 hex-char public key
+    :return: account number
+    :rtype: str
+    :raise AssertionError: for invalid key
+    """
     assert len(key) == 64
 
     key = bytes.fromhex(key)
@@ -52,6 +71,12 @@ def account_get(key):
 
 
 def validate_account_number(account):
+    """Check whether account is a valid account number using checksum
+
+    :param str account: account number
+    :return: ``True``/``False``
+    :rtype: bool
+    """
     try:
         account_key(account)
         return True
@@ -60,11 +85,28 @@ def validate_account_number(account):
 
 
 def key_expand(key):
+    """Derive public key and account number from private key
+
+    :param str key: 64 hex-char private key
+    :return: (private key, public key, account number)
+    :rtype: tuple
+    :raise AssertionError: for invalid key
+    """
+    assert len(key) == 64
     pk = ed25519_blake2b.publickey(bytes.fromhex(key)).hex()
     return key, pk, account_get(pk)
 
 
 def deterministic_key(seed, index=0):
+    """Derive deterministic keypair from seed based on index
+
+    :param str seed: 64 hex-char seed
+    :param int index: index number, 0 to 2^32 - 1
+    :return: (private key, public key, account number)
+    :rtype: tuple
+    :raise AssertionError: for invalid seed
+    """
+    assert len(seed) == 64
     return key_expand(
         hashlib.blake2b(bytes.fromhex(seed) +
                         index.to_bytes(4, byteorder='big'),
@@ -75,10 +117,24 @@ try:
     import mnemonic
 
     def generate_mnemonic(strength=256, language='english'):
+        """Generate a BIP39 type mnemonic. Requires mnemonic package. https://pypi.org/project/mnemonic/
+
+        :param int strength: choose from 128, 160, 192, 224, 256
+        :param str language: one of the installed word list languages
+        :return: word list
+        :rtype: str
+        """
         m = mnemonic.Mnemonic(language)
         return m.generate(strength=strength)
 
     def mnemonic_key(words, index=0, passphrase='', language='english'):
+        """Derive deterministic keypair from mnemonic based on index. Requires mnemonic package. https://pypi.org/project/mnemonic/
+
+        :param str words: word list
+        :return: (private key, public key, account number)
+        :rtype: tuple
+        :raise AssertionError: for invalid key
+        """
         m = mnemonic.Mnemonic(language)
         assert (m.check(words))
         for i in ['m', 44, 165, index]:
@@ -96,17 +152,38 @@ except ModuleNotFoundError:
 
 
 def from_multiplier(multiplier):
+    """Get difficulty from multiplier
+
+    :param int multiplier: positive number
+    :return: 16 hex-char difficulty
+    :rtype: str
+    """
     return format(
         int((int(work_difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)),
         '016x')
 
 
 def to_multiplier(difficulty):
+    """Get multiplier from difficulty
+
+    :param str difficulty: 16 hex-char difficulty
+    :return: multiplier
+    :rtype: float
+    """
     return float((1 << 64) - int(work_difficulty, 16)) / float(
         (1 << 64) - int(difficulty, 16))
 
 
 def work_validate(work, _hash, difficulty=None, multiplier=0):
+    """Check whether work is valid for _hash.
+
+    :param str work: 16 hex-char work
+    :param str _hash: 64 hex-char hash
+    :param str difficulty: 16 hex-char difficulty
+    :param int multiplier: positive number, overrides difficulty
+    :return: ``True``/``False``
+    :rtype: bool
+    """
     work = bytearray.fromhex(work)
     _hash = bytes.fromhex(_hash)
     if multiplier:
@@ -127,6 +204,14 @@ try:
     import nanopy.work
 
     def work_generate(_hash, difficulty=None, multiplier=0):
+        """Check whether work is valid for _hash.
+
+        :param str _hash: 64 hex-char hash
+        :param str difficulty: 16 hex-char difficulty
+        :param int multiplier: positive number, overrides difficulty
+        :return: 16 hex-char work
+        :rtype: str
+        """
         if multiplier:
             difficulty = from_multiplier(multiplier)
         else:
@@ -162,6 +247,13 @@ except ModuleNotFoundError:
 
 
 def from_raw(amount, exp=0):
+    """Divide amount by 10^exp
+
+    :param str amount: amount
+    :param int exp: positive number
+    :return: amount divided by 10^exp
+    :rtype: str
+    """
     assert type(amount) is str
     exp = exp if exp else standard_exponent
     mrai = _D(amount) * _D(_D(10)**-exp)
@@ -169,6 +261,13 @@ def from_raw(amount, exp=0):
 
 
 def to_raw(amount, exp=0):
+    """Multiply amount by 10^exp
+
+    :param str amount: amount
+    :param int exp: positive number
+    :return: amount multiplied by 10^exp
+    :rtype: str
+    """
     assert type(amount) is str
     exp = exp if exp else standard_exponent
     raw = _D(amount) * _D(_D(10)**exp)
@@ -176,30 +275,72 @@ def to_raw(amount, exp=0):
 
 
 def mrai_from_raw(amount):
+    """Divide a raw amount down by the Mrai ratio (10^30)
+
+    :param str amount: amount in raw
+    :return: amount in Mrai
+    :rtype: str
+    """
     return from_raw(amount, exp=30)
 
 
 def mrai_to_raw(amount):
+    """Multiply an Mrai amount by the Mrai ratio (10^30)
+
+    :param str amount: amount in Mrai
+    :return: amount in raw
+    :rtype: str
+    """
     return to_raw(amount, exp=30)
 
 
 def krai_from_raw(amount):
+    """Divide a raw amount down by the Krai ratio (10^27)
+
+    :param str amount: amount in raw
+    :return: amount in Krai
+    :rtype: str
+    """
     return from_raw(amount, exp=27)
 
 
 def krai_to_raw(amount):
+    """Multiply a Krai amount by the Krai ratio (10^27)
+
+    :param str amount: amount in Krai
+    :return: amount in raw
+    :rtype: str
+    """
     return to_raw(amount, exp=27)
 
 
 def rai_from_raw(amount):
+    """Divide a raw amount down by the rai ratio (10^24)
+
+    :param str amount: amount in raw
+    :return: amount in rai
+    :rtype: str
+    """
     return from_raw(amount, exp=24)
 
 
 def rai_to_raw(amount):
+    """Multiply a rai amount by the rai ratio (10^24)
+
+    :param str amount: amount in rai
+    :return: amount in raw
+    :rtype: str
+    """
     return to_raw(amount, exp=24)
 
 
 def block_hash(block):
+    """Compute block hash
+
+    :param dict block: 'account', 'previous', 'representative', 'balance', and 'link' are the required entries
+    :return: 64 hex-char hash
+    :rtype: str
+    """
     return hashlib.blake2b(
         bytes.fromhex('0' * 63 + '6' + account_key(block['account']) +
                       block['previous'] + account_key(block['representative']) +
@@ -208,6 +349,17 @@ def block_hash(block):
 
 
 def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
+    """Sign a block, hash, or message
+
+    :param str key: 64 hex-char private key
+    :param dict block: 'account', 'previous', 'representative', 'balance', and 'link' are the required entries
+    :param str _hash: 64 hex-char hash. Overrides ``block``.
+    :param str msg: message to sign. Overrides ``_hash`` and ``block``.
+    :param str account: account
+    :param str pk: 64 hex-char public key
+    :return: 128 hex-char signature
+    :rtype: str
+    """
     sk = bytes.fromhex(key)
 
     if msg:
@@ -236,6 +388,16 @@ def sign(key, block=None, _hash=None, msg=None, account=None, pk=None):
 
 
 def block_create(key, previous, representative, balance, link):
+    """Create a block
+
+    :param str key: 64 hex-char private key
+    :param str previous: 64 hex-char previous hash
+    :param str representative: representative address
+    :param str balance: balance in raw
+    :param str link: 64 hex-char link
+    :return: a block with work and signature
+    :rtype: dict
+    """
     nb = state_block()
     nb['account'] = account_get(
         ed25519_blake2b.publickey(bytes.fromhex(key)).hex())
