@@ -903,13 +903,15 @@ class RPC:
                       _hash,
                       use_peers=False,
                       difficulty=None,
-                      multiplier=0):
+                      multiplier=0,
+                      account=None):
         data = {}
         data['action'] = 'work_generate'
         data['hash'] = _hash
         if use_peers: data['use_peers'] = True
         if multiplier: data['multiplier'] = multiplier
         elif difficulty: data['difficulty'] = difficulty
+        if account: data['account'] = account
         return self._post(data)
 
     def work_get(self, wallet, account):
