@@ -11,12 +11,10 @@ def nano_account(address):
 		acrop_key = address[-60:-8]
 		acrop_check = address[-8:]
 
-		number_l = ""
-		for x in range(52): number_l+=account_lookup[acrop_key[x]]
+		number_l = ''.join(account_lookup[acrop_key[x]] for x in range (52))
 		number_l=int(number_l[4:], 2).to_bytes(32, byteorder='big')
 
-		check_l = ""
-		for x in range(8): check_l+=account_lookup[acrop_check[x]]
+		check_l = ''.join(account_lookup[acrop_check[x]] for x in range(8))
 		check_l=bytearray(int(check_l, 2).to_bytes(5, byteorder='big'))
 		check_l.reverse()
 
@@ -37,13 +35,11 @@ def account_nano(account):
 	checksum.reverse()
 	checksum=format(int.from_bytes(checksum, byteorder='big'),'040b')
 
-	encode_check = ''
-	for x in range(8): encode_check += account_lookup[checksum[x*5:x*5+5]]
+	encode_check = ''.join(account_lookup[checksum[x*5:x*5+5]] for x in range(8))
 
 	account = format(int(account, 16),'0260b')
 
-	encode_account = ''
-	for x in range(52): encode_account += account_lookup[account[x*5:x*5+5]]
+	encode_account = ''.join(account_lookup[account[x*5:x*5+5]] for x in range(52))
 
 	return 'nano_'+encode_account+encode_check
 
