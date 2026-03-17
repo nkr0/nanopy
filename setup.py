@@ -183,5 +183,5 @@ setup(
             )
         ),
     ],
-    extras_require={"full": ["requests", "websocket-client", "pysocks", "mnemonic"]},
+    extras_require={"full": ["requests", "websocket-client[optional]", "mnemonic"]},
 )
