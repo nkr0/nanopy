@@ -1,5 +1,7 @@
 import hashlib, nanopy.ed25519_blake2b, nanopy.work
 
+nano_prefix = 'nano_'
+
 
 def nano_block():
     return dict(
@@ -13,9 +15,7 @@ def nano_block():
 
 
 def nano_account(address):
-    assert (len(address) == 64 and
-            (address[:4] == 'xrb_')) or (len(address) == 65 and
-                                         (address[:5] == 'nano_'))
+    # ~ assert (len(address) == len(nano_prefix)+60)
     account_map = "13456789abcdefghijkmnopqrstuwxyz"
     account_lookup = {}
     for x in range(32):
@@ -59,7 +59,7 @@ def account_nano(account):
     encode_account = ''.join(
         account_lookup[account[x * 5:x * 5 + 5]] for x in range(52))
 
-    return 'nano_' + encode_account + encode_check
+    return nano_prefix + encode_account + encode_check
 
 
 def seed_keys(seed, index):

@@ -71,9 +71,12 @@ def generate_block(sk, pk):
     while True:
         if online:
             info = rpc.account_info(nb['account'])
-            rb = rpc.accounts_pending([nb['account']])['blocks'][
-                'xrb' +
-                nb['account'][-61:]]  # just change already!!!! !@$@#%!$#^#!^
+            if nanopy.nano_prefix == 'nano_':  # just change already!!!! !@$@#%!$#^#!^
+                rb = rpc.accounts_pending(
+                    [nb['account']])['blocks']['xrb_' + nb['account'][-60:]]
+            else:
+                rb = rpc.accounts_pending(
+                    [nb['account']])['blocks'][nb['account']]
         elif state_found:
             info['frontier'] = config[state]['frontier']
             info['balance'] = config[state]['balance']
@@ -114,8 +117,8 @@ def generate_block(sk, pk):
                     config[state]['balance'] = info['balance']
                     config[state]['representative'] = info['representative']
                     with open(
-                            os.path.expanduser('~') +
-                            "/.config/nanopy-wallet.conf", 'w') as f:
+                            os.path.expanduser('~') + "/.config/nanopy-confs/" +
+                            args.network + ".conf", 'w') as f:
                         config.write(f)
                 if not rb: break
                 if (input("\nReceive pending blocks?(" + bcolors.bold + "y" +
@@ -221,12 +224,14 @@ def generate_block(sk, pk):
                                 pass
                         with open(
                                 os.path.expanduser('~') +
-                                "/.config/nanopy-wallet.conf", 'w') as f:
+                                "/.config/nanopy-confs/" + args.network +
+                                ".conf", 'w') as f:
                             config.write(f)
                         print(
                             bcolors.ok3,
                             'saved new state to ' + os.path.expanduser('~') +
-                            "/.config/nanopy-wallet.conf", bcolors.end)
+                            "/.config/nanopy-confs/" + args.network + ".conf",
+                            bcolors.end)
 
 
 parser = argparse.ArgumentParser()
@@ -284,11 +289,27 @@ parser.add_argument(
     action='store_true',
     help='Broadcast a block in JSON format.')
 parser.add_argument(
+    '--network',
+    default='main',
+    type=str,
+    help='Choose the network to interact with. main, beta, banano..')
+parser.add_argument(
     '-t', '--tor', action='store_true', help='Connect to the RPC node via tor.')
 
 args = parser.parse_args()
+
+if args.network == 'beta':
+    nanopy.nano_prefix = 'xrb_'
+    lh = 'http://localhost:55000'
+elif args.network == 'banano':
+    nanopy.nano_prefix = 'ban_'
+    lh = 'http://localhost:55000'
+else:
+    lh = 'http://localhost:7076'
+
 config = configparser.ConfigParser(allow_no_value=True)
-config.read(os.path.expanduser('~') + "/.config/nanopy-wallet.conf")
+config.read(
+    os.path.expanduser('~') + "/.config/nanopy-confs/" + args.network + ".conf")
 
 states = config.sections()
 try:
@@ -305,7 +326,7 @@ if online:
 
 if online:
     import nanopy.rpc as rpc
-    rpc.url = config['DEFAULT'].get('rpc', fallback='http://localhost:7076')
+    rpc.url = config['DEFAULT'].get('rpc', fallback=lh)
     if args.tor or config['DEFAULT'].getboolean('tor', fallback=args.tor):
         rpc.session.proxies['http'] = 'socks5h://localhost:9050'
         rpc.session.proxies['https'] = 'socks5h://localhost:9050'
