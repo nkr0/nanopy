@@ -466,6 +466,7 @@ class RPC:
                      destination=None,
                      link=None,
                      work=None,
+                     version='work_1',
                      json_block=False):
         data = {}
         data['action'] = 'block_create'
@@ -480,6 +481,8 @@ class RPC:
         data['representative'] = representative
         data['previous'] = previous
         if work: data['work'] = work
+        # Currently 'work_1' is the default and only valid option.
+        # if version in []: data['version'] = version
         if json_block: data['json_block'] = True
         return self._post(data)
 
@@ -920,7 +923,8 @@ class RPC:
                       use_peers=False,
                       difficulty=None,
                       multiplier=0,
-                      account=None):
+                      account=None,
+                      version='work_1'):
         data = {}
         data['action'] = 'work_generate'
         data['hash'] = _hash
@@ -928,6 +932,8 @@ class RPC:
         if multiplier: data['multiplier'] = multiplier
         elif difficulty: data['difficulty'] = difficulty
         if account: data['account'] = account
+        # Currently 'work_1' is the default and only valid option.
+        # if version in []: data['version'] = version
         return self._post(data)
 
     def work_get(self, wallet, account):
@@ -962,11 +968,18 @@ class RPC:
         data['action'] = 'work_peers_clear'
         return self._post(data)
 
-    def work_validate(self, work, _hash, difficulty=None, multiplier=0):
+    def work_validate(self,
+                      work,
+                      _hash,
+                      difficulty=None,
+                      multiplier=0,
+                      version='work_1'):
         data = {}
         data['action'] = 'work_validate'
         data['work'] = work
         data['hash'] = _hash
         if multiplier: data['multiplier'] = multiplier
         elif difficulty: data['difficulty'] = difficulty
+        # Currently 'work_1' is the default and only valid option.
+        # if version in []: data['version'] = version
         return self._post(data)
