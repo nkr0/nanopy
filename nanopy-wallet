@@ -1,5 +1,8 @@
+#!/usr/bin/env python3
+
 import sys, argparse, getpass, gnupg, os, random, json, configparser
 from nanopy import *
+import nanopy.work as work
 
 class bcolors:
 	ok1 = '\033[95m'
@@ -120,7 +123,7 @@ def generate_block(seed):
 					args.remote=False
 
 			while True:
-				if not args.remote: nb['work']=pow_generate(work_hash)
+				if not args.remote: nb['work']=work.generate(work_hash)
 				if pow_validate(nb['work'], work_hash): break
 
 			nb['signature'] = sign_block(seed, args.index, nb)
