@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "nanopy"
-version = "27.0.9"
+version = "27.0.10"
 license = "MIT"
 
 [project.optional-dependencies]
@@ -21,7 +21,7 @@ files = "nanopy, nanopy-wallet, tests"
 strict = true
 
 [tool.pylint]
-disable = ["c-extension-no-member", "too-many-arguments", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
+disable = ["c-extension-no-member", "too-many-arguments", "too-many-instance-attributes", "too-many-lines", "too-many-positional-arguments", "too-many-public-methods"]
 
 [tool.pytest.ini_options]
 addopts = "--cov nanopy --cov-fail-under=100"

@@ -79,7 +79,6 @@ def generate_block(acc: "npy.Account") -> None:
             raw_amt = acc.raw_bal if args.empty else int(n.to_raw(input("Amt : ")))
             bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
             nb = acc.send(args.send, raw_amt, args.rep)
-            nb.work_generate(acc.network.send_difficulty)
             args.send = None
         elif rb and input("\nReceive blocks?(" + bc.boldstr("y") + "/n): ") != "n":
             rbi = rpc.block_info(rb)
@@ -87,10 +86,8 @@ def generate_block(acc: "npy.Account") -> None:
             raw_amt = int(rbi["amount"])
             bc.amt("Amt", n.from_raw(raw_amt), bc.ok)
             nb = acc.receive(rb, raw_amt, args.rep)
-            nb.work_generate(acc.network.receive_difficulty)
         elif args.rep:
             nb = acc.change_rep(args.rep)
-            nb.work_generate(acc.network.send_difficulty)
         else:
             break
 

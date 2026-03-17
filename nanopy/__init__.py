@@ -11,19 +11,13 @@ import hashlib
 import hmac
 import json
 import os
-from typing import Optional, Tuple
+from typing import ClassVar, Optional, Tuple
 from . import ext  # type: ignore
 
 decimal.setcontext(decimal.BasicContext)
 decimal.getcontext().traps[decimal.Inexact] = True
 decimal.getcontext().traps[decimal.Subnormal] = True
 decimal.getcontext().prec = 40
-_D = decimal.Decimal
-
-B32STD = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
-B32NANO = b"13456789abcdefghijkmnopqrstuwxyz"
-NANO2B32 = bytes.maketrans(B32NANO, B32STD)
-B322NANO = bytes.maketrans(B32STD, B32NANO)
 
 
 def deterministic_key(seed: str, i: int = 0) -> str:
@@ -56,8 +50,8 @@ try:
     def mnemonic_key(
         words: str, i: int = 0, passphrase: str = "", language: str = "english"
     ) -> str:
-        """Derive deterministic private key from mnemonic based on index i. Requires
-          `mnemonic <https://pypi.org/project/mnemonic>`_
+        """Derive deterministic private key from mnemonic based on index i.
+           Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
         :arg words: word list
         :arg i: account index
@@ -82,27 +76,140 @@ except ModuleNotFoundError:  # pragma: no cover
     pass  # pragma: no cover
 
 
+@dataclasses.dataclass
+class Network:
+    """Network
+
+    :arg prefix: prefix for accounts in the network
+    :arg difficulty: base difficulty
+    :arg send_difficulty: difficulty for send/change blocks
+    :arg receive_difficulty: difficulty for receive/open blocks
+    :arg exp: exponent to convert between raw and base currency unit
+    """
+
+    prefix: str = "nano_"
+    difficulty: str = "ffffffc000000000"
+    send_difficulty: str = "fffffff800000000"
+    receive_difficulty: str = "fffffe0000000000"
+    exp: int = 30
+
+    _D: ClassVar[type["decimal.Decimal"]] = decimal.Decimal
+    _B32STD: ClassVar[bytes] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZ234567"
+    _B32NANO: ClassVar[bytes] = b"13456789abcdefghijkmnopqrstuwxyz"
+    _NANO2STD: ClassVar[bytes] = bytes.maketrans(_B32NANO, _B32STD)
+    _STD2NANO: ClassVar[bytes] = bytes.maketrans(_B32STD, _B32NANO)
+
+    def from_multiplier(self, multiplier: float) -> str:
+        """Get difficulty from multiplier
+
+        :arg multiplier: positive number
+        :return: 16 hex char difficulty
+        """
+        return format(
+            int((int(self.difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)), "016x"
+        )
+
+    def to_multiplier(self, difficulty: str) -> float:
+        """Get multiplier from difficulty
+
+        :arg difficulty: 16 hex char difficulty
+        :return: multiplier
+        """
+        if len(difficulty) != 16:
+            raise ValueError("Difficulty should be 16 hex char")
+        return float((1 << 64) - int(self.difficulty, 16)) / float(
+            (1 << 64) - int(difficulty, 16)
+        )
+
+    def from_pk(self, pk: str) -> str:
+        """Get account address from public key
+
+        :arg pk: 64 hex char public key
+        """
+        if len(pk) != 64:
+            raise ValueError("Public key should be 64 hex char")
+        p = bytes.fromhex(pk)
+        checksum = hashlib.blake2b(p, digest_size=5).digest()
+        p = b"\x00\x00\x00" + p + checksum[::-1]
+        addr = base64.b32encode(p)
+        addr = addr.translate(self._STD2NANO)[4:]
+        return self.prefix + addr.decode()
+
+    def to_pk(self, addr: str) -> str:
+        """Get public key from account address
+
+        :arg addr: account address
+        """
+        if len(addr) != len(self.prefix) + 60:
+            raise ValueError("Invalid address:", addr)
+        if addr[: len(self.prefix)] != self.prefix:
+            raise ValueError("Invalid address:", addr)
+        p = base64.b32decode((b"1111" + addr[-60:].encode()).translate(self._NANO2STD))
+        checksum = p[:-6:-1]
+        p = p[3:-5]
+        if hashlib.blake2b(p, digest_size=5).digest() != checksum:
+            raise ValueError("Invalid address:", addr)
+        return p.hex()
+
+    def from_raw(self, raw: int, exp: int = 0) -> str:
+        """Divide raw by 10^exp
+
+        :arg raw: raw amount
+        :arg exp: positive number
+        :return: raw divided by 10^exp
+        """
+        if exp <= 0:
+            exp = self.exp
+        nano = self._D(raw) * self._D(self._D(10) ** -exp)
+        return format(nano.quantize(self._D(self._D(10) ** -exp)), "." + str(exp) + "f")
+
+    def to_raw(self, val: str, exp: int = 0) -> int:
+        """Multiply val by 10^exp
+
+        :arg val: val
+        :arg exp: positive number
+        :return: val multiplied by 10^exp
+        """
+        if exp <= 0:
+            exp = self.exp
+        return int((self._D(val) * self._D(self._D(10) ** exp)).quantize(self._D(1)))
+
+
+NANO = Network()
+
+
 class Account:
     """Account
 
     :arg network: network of this account
     """
 
-    def __init__(self, network: "Network", addr: str = "") -> None:
-        self.frontier = "0" * 64
+    def __init__(self, network: "Network" = NANO, addr: str = "") -> None:
+        self._frontier = "0" * 64
         self.network = network
         self._pk = self.network.to_pk(addr) if addr else ""
         self._raw_bal = 0
-        self.rep = self
+        self._rep = self
         self._sk = ""
 
     def __repr__(self) -> str:
         return self.addr
 
+    def __bool__(self) -> bool:
+        try:
+            return self.addr != ""
+        except ValueError:
+            return False
+
     @property
     def addr(self) -> str:
         "Account address"
         return self.network.from_pk(self._pk)
+
+    @addr.setter
+    def addr(self, addr: str) -> None:
+        self._pk = self.network.to_pk(addr)
+        self._sk = ""
 
     @property
     def pk(self) -> str:
@@ -149,48 +256,80 @@ class Account:
         self._raw_bal = val
 
     @property
+    def frontier(self) -> str:
+        "64 hex char account frontier block hash"
+        return self._frontier
+
+    @frontier.setter
+    def frontier(self, frontier: str) -> None:
+        assert len(bytes.fromhex(frontier)) == 32
+        self._frontier = frontier
+
+    @property
+    def rep(self) -> "Account":
+        "Account representative"
+        return self._rep
+
+    @rep.setter
+    def rep(self, rep: "Account") -> None:
+        if not rep:
+            raise ValueError("Representative is not initialised")
+        self._rep = rep
+
+    @property
     def state(self) -> Tuple[str, int, "Account"]:
         "State of the account (frontier block digest, raw balance, representative)"
         return self.frontier, self.raw_bal, self.rep
 
     @state.setter
     def state(self, value: Tuple[str, int, "Account"]) -> None:
-        assert len(bytes.fromhex(value[0])) == 32
         self.frontier = value[0]
         self.raw_bal = value[1]
         self.rep = value[2]
 
-    def change_rep(self, rep: "Account") -> "StateBlock":
-        """Construct a signed change StateBlock. Work is not added.
+    def change_rep(self, rep: "Account", work: str = "") -> "StateBlock":
+        """Construct a signed change StateBlock with work
 
         :arg rep: representative account
+        :arg work: 16 hex char work for the block
         :return: a signed change StateBlock
         """
         b = StateBlock(self, rep, self.raw_bal, self.frontier, "0" * 64)
-        self.sign(b)
+        self._sign(b)
+        if work:
+            assert len(bytes.fromhex(work)) == 8
+            b.work = work
+        else:
+            b.work_generate(self.network.send_difficulty)
         self.rep = rep
         self.frontier = b.digest
         return b
 
     def receive(
-        self, digest: str, raw_amt: int, rep: Optional["Account"] = None
+        self, digest: str, raw_amt: int, rep: Optional["Account"] = None, work: str = ""
     ) -> "StateBlock":
-        """Construct a signed receive StateBlock. Work is not added.
+        """Construct a signed receive StateBlock with work
 
         :arg digest: 64 hex char hash digest of the receive block
         :arg raw_amt: raw amount to receive
-        :arg rep: Optionally, change representative account
+        :arg rep: representative account
+        :arg work: 16 hex char work for the block
         :return: a signed receive StateBlock
         """
         assert len(bytes.fromhex(digest)) == 32
         if raw_amt <= 0:
-            raise AttributeError("Amount must be a positive integer")
+            raise ValueError("Amount must be a positive integer")
         final_raw_bal = self.raw_bal + raw_amt
         if final_raw_bal >= 1 << 128:
-            raise AttributeError("raw balance after receive cannot be >= 2^128")
+            raise ValueError("raw balance after receive cannot be >= 2^128")
         brep = rep if rep else self.rep
         b = StateBlock(self, brep, final_raw_bal, self.frontier, digest)
-        self.sign(b)
+        self._sign(b)
+        if work:
+            assert len(bytes.fromhex(work)) == 8
+            b.work = work
+        else:
+            b.work_generate(self.network.receive_difficulty)
         if rep:
             self.rep = rep
         self.raw_bal = final_raw_bal
@@ -198,30 +337,40 @@ class Account:
         return b
 
     def send(
-        self, to: "Account", raw_amt: int, rep: Optional["Account"] = None
+        self,
+        to: "Account",
+        raw_amt: int,
+        rep: Optional["Account"] = None,
+        work: str = "",
     ) -> "StateBlock":
-        """Construct a signed send StateBlock. Work is not added.
+        """Construct a signed send StateBlock with work
 
         :arg to: Destination account
         :arg raw_amt: raw amount to send
-        :arg rep: Optionally, change representative account
+        :arg rep: representative account
+        :arg work: 16 hex char work for the block
         :return: a signed send StateBlock
         """
         if not isinstance(raw_amt, int) or raw_amt <= 0:
-            raise AttributeError("Amount must be a positive integer")
+            raise ValueError("Amount must be a positive integer")
         final_raw_bal = self.raw_bal - raw_amt
         if final_raw_bal < 0:
-            raise AttributeError("raw balance after send cannot be < 0")
+            raise ValueError("raw balance after send cannot be < 0")
         brep = rep if rep else self.rep
         b = StateBlock(self, brep, final_raw_bal, self.frontier, to.pk)
-        self.sign(b)
+        self._sign(b)
+        if work:
+            assert len(bytes.fromhex(work)) == 8
+            b.work = work
+        else:
+            b.work_generate(self.network.send_difficulty)
         if rep:
             self.rep = rep
         self.raw_bal = final_raw_bal
         self.frontier = b.digest
         return b
 
-    def sign(self, b: "StateBlock") -> None:
+    def _sign(self, b: "StateBlock") -> None:
         """Sign a block
 
         :arg b: state block to be signed
@@ -234,109 +383,16 @@ class Account:
 
 
 @dataclasses.dataclass
-class Network:
-    """Network
-
-    :arg prefix: prefix for accounts in the network
-    :arg difficulty: base difficulty
-    :arg send_difficulty: difficulty for send/change blocks
-    :arg receive_difficulty: difficulty for receive/open blocks
-    :arg exp: exponent to convert between raw and base currency unit
-    """
-
-    prefix: str = "nano_"
-    difficulty: str = "ffffffc000000000"
-    send_difficulty: str = "fffffff800000000"
-    receive_difficulty: str = "fffffe0000000000"
-    exp: int = 30
-
-    def from_multiplier(self, multiplier: float) -> str:
-        """Get difficulty from multiplier
-
-        :arg multiplier: positive number
-        :return: 16 hex char difficulty
-        """
-        return format(
-            int((int(self.difficulty, 16) - (1 << 64)) / multiplier + (1 << 64)), "016x"
-        )
-
-    def to_multiplier(self, difficulty: str) -> float:
-        """Get multiplier from difficulty
-
-        :arg difficulty: 16 hex char difficulty
-        :return: multiplier
-        """
-        if len(difficulty) != 16:
-            raise ValueError("Difficulty should be 16 hex char")
-        return float((1 << 64) - int(self.difficulty, 16)) / float(
-            (1 << 64) - int(difficulty, 16)
-        )
-
-    def from_pk(self, pk: str) -> str:
-        """Get account address from public key
-
-        :arg pk: 64 hex char public key
-        """
-        if len(pk) != 64:
-            raise ValueError("Public key should be 64 hex char")
-        p = bytes.fromhex(pk)
-        checksum = hashlib.blake2b(p, digest_size=5).digest()
-        p = b"\x00\x00\x00" + p + checksum[::-1]
-        addr = base64.b32encode(p)
-        addr = addr.translate(B322NANO)[4:]
-        return self.prefix + addr.decode()
-
-    def to_pk(self, addr: str) -> str:
-        """Get public key from account address
-
-        :arg addr: account address
-        """
-        if len(addr) != len(self.prefix) + 60:
-            raise ValueError("Invalid address:", addr)
-        if addr[: len(self.prefix)] != self.prefix:
-            raise ValueError("Invalid address:", addr)
-        p = base64.b32decode((b"1111" + addr[-60:].encode()).translate(NANO2B32))
-        checksum = p[:-6:-1]
-        p = p[3:-5]
-        if hashlib.blake2b(p, digest_size=5).digest() != checksum:
-            raise ValueError("Invalid address:", addr)
-        return p.hex()
-
-    def from_raw(self, raw: int, exp: int = 0) -> str:
-        """Divide raw by 10^exp
-
-        :arg raw: raw amount
-        :arg exp: positive number
-        :return: raw divided by 10^exp
-        """
-        if exp <= 0:
-            exp = self.exp
-        nano = _D(raw) * _D(_D(10) ** -exp)
-        return format(nano.quantize(_D(_D(10) ** -exp)), "." + str(exp) + "f")
-
-    def to_raw(self, val: str, exp: int = 0) -> int:
-        """Multiply val by 10^exp
-
-        :arg val: val
-        :arg exp: positive number
-        :return: val multiplied by 10^exp
-        """
-        if exp <= 0:
-            exp = self.exp
-        return int((_D(val) * _D(_D(10) ** exp)).quantize(_D(1)))
-
-
-@dataclasses.dataclass
 class StateBlock:
     """State block
 
     :arg acc: account of the block
     :arg rep: account representative
     :arg bal: account balance
-    :arg prev: hash digest of the previous block
-    :arg link: block link
-    :arg sig: block signature
-    :arg work: block work
+    :arg prev: 64 hex char hash digest of the previous block
+    :arg link: 64 hex char block link
+    :arg sig: 128 hex char block signature
+    :arg work: 16 hex char block work
     """
 
     acc: Account
