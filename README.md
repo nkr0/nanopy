@@ -4,15 +4,39 @@
 * Point to a custom compiler (default is `gcc`) by prepending the installation command with `CC=path/to/custom/c/compiler`.
 * For GPU, appropriate OpenCL ICD and headers are required. `sudo apt install ocl-icd-opencl-dev amd/intel/nvidia-opencl-icd`
   * Enable GPU usage by prepending the installation command with `USE_GPU=1`.
-
-[![PyPI](https://img.shields.io/pypi/v/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Implementation](https://img.shields.io/pypi/implementation/nanopy)](https://pypi.org/project/nanopy) [![PyPI - Downloads](https://img.shields.io/pypi/dm/nanopy)](https://pypistats.org/packages/nanopy) [![PyPI - License](https://img.shields.io/pypi/l/nanopy)](https://opensource.org/licenses/MIT)
+  * **GPU code is a bit of a hit and miss. It is not properly tested and may or may not work**
 
 ## Usage
-* Functions in the core library are written in the same template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). If there is a function, you can more or less call it the same way you would get that `action` done via RPC. For e.g., the RPC `action` to generate work for a hash is, [work_generate](https://docs.nano.org/commands/rpc-protocol/#work_generate) with `hash` as a parameter. In the library, the `action` becomes the function name and parameters become function arguments. Thus to generate work, call `work_generate(hash)`.
-  * Optional RPC parameters become optional function arguments in python. In `work_generate`, `use_peers` and `difficulty` are optional arguments available for RPC. However, `use_peers` is not a useful argument for local operations. Thus only `difficulty` is available as an argument. It can be supplied as `work_generate(hash, difficulty=x)`.
-  * Only purely local `action`s are supported in the core library (work generation, signing, account key derivations, etc.).
-* Functions in the `rpc` sub-module follow the exact template as [nano's RPC protocol](https://docs.nano.org/commands/rpc-protocol/). Unlike the core library, there is no reason to omit an `action` or parameter. Thus the library is a fully compatible API to nano-node's RPC.
-* [nano's RPC docs](https://docs.nano.org/commands/rpc-protocol/) can be used as a manual for this library. There are no changes in `action` or `parameter` names, except in a few cases \(`hash`, `id`, `type`, `async`\) where the parameter names are keywords in python. For those exceptions, arguments are prepended with an underscore \(`_hash`, `_id`, `_type`, `_async`\).
+```py
+# create a network object. Defaults to nano network
+n = npy.Network()
+
+# create an account and set secret key
+seed = "0000000...."
+index = 2
+acc = npy.Account(n)
+acc.sk = npy.deterministic_key(seed, index)
+
+# if it is not a new account, set the current state of the account (frontier, raw bal, rep)
+acc.state = ("1234....", 1200000000000000, npy.Account(n, "nano_repaddress..."))
+
+# create a receive block and optionally, change rep along with it
+_hash = "5678...."
+raw_amt = n.to_raw("10")
+rep = npy.Account(n, "nano_newrepaddress...")
+rb = acc.receive(_hash, raw_amt, rep)
+rb.work_generate(n.receive_difficulty)
+
+# create a send block
+to = npy.Account(n, "nano_sendaddress...")
+raw_amt = n.to_raw("1")
+sb = acc.send(to, raw_amt)
+sb.work_generate(n.send_difficulty)
+
+# broadcast
+rpc.process(rb.json)
+rpc.process(sb.json)
+```
 
 ## Wallet
 Although not part of the package, the light wallet included in the repository can be a reference to understand how the library works.
@@ -39,7 +63,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE KEY`, to use seeds from *
 
 ## Support
 Contact me on discord (`npy#2928`). You can support the project by reporting any bugs you find and/or submitting fixes/improvements. When submitting pull requests please format the code using `black` (for Python) or `clang-format` (for C).
-```
+```sh
 clang-format -i nanopy/*.c
 black docs nanopy tests nanopy-wallet setup.py
 ```
