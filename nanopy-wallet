@@ -17,21 +17,19 @@ class BColours:
     _warn = "\033[31m"
 
     def ok(self, s: str, prefix: str = "", suffix: str = "") -> None:
-        print(prefix + self._ok + s + self._end + suffix)
+        print(f"{prefix}{self._ok}{s}{self._end}{suffix}")
 
     def warn(self, s: str, prefix: str = "", suffix: str = "") -> None:
-        print(prefix + self._warn + s + self._end + suffix)
+        print(f"{prefix}{self._warn}{s}{self._end}{suffix}")
 
-    def boldstr(self, s: str) -> str:
-        return self._bold + s + self._end
+    def bold(self, s: str) -> str:
+        return f"{self._bold}{s}{self._end}"
 
-    def amt(
-        self, label: str, amount: str, colour: Callable[[str, str, str], None]
-    ) -> None:
-        colour("{:>40}".format(amount), label + " : ", " " + std_unit)
+    def amt(self, l: str, a: str, c: Callable[[str, str, str], None]) -> None:
+        c(f"{a:>40}", f"{l} : ", f" {std_unit}")
 
     def status(self, label: str, msg: str) -> None:
-        print(label + " : " + msg)
+        print(f"{label} : {msg}")
 
 
 def broadcast(block: str) -> None:
@@ -80,7 +78,7 @@ def generate_block(acc: "npy.Account") -> None:
             bc.amt("Amt", n.from_raw(raw_amt), bc.warn)
             nb = acc.send(args.send, raw_amt, args.rep)
             args.send = None
-        elif rb and input("\nReceive blocks?(" + bc.boldstr("y") + "/n): ") != "n":
+        elif rb and input(f"\nReceive blocks?({bc.bold('y')}/n): ") != "n":
             rbi = rpc.block_info(rb)
             bc.status("From", rbi["block_account"])
             raw_amt = int(rbi["amount"])
@@ -92,8 +90,8 @@ def generate_block(acc: "npy.Account") -> None:
             break
 
         args.rep = None
-        print("\n" + nb.json)
-        if input("\nBroadcast block?(y/" + bc.boldstr("n") + "): ") == "y":
+        print(nb.json)
+        if input(f"\nBroadcast block?(y/{bc.bold('n')}): ") == "y":
             broadcast(nb.json)
 
 
@@ -155,9 +153,6 @@ config = configparser.ConfigParser(allow_no_value=True)
 config.read(config_file)
 
 tor = args.tor or config["DEFAULT"].getboolean("tor", fallback=args.tor)
-
-iploc = RPC(url="https://ipinfo.io/json", tor=tor).get()
-bc.warn(iploc["city"] + " " + iploc["country"])
 rpc = RPC(url=str(config[args.network].get("rpc", fallback=rpc_url)), tor=tor)
 
 if args.sub:
