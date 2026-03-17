@@ -265,7 +265,7 @@ if args.network == 'beta':
 elif args.network in ['banano', 'ban']:
     args.network = 'banano'
     nanopy.account_prefix = 'ban_'
-    nanopy.work_difficulty = 0xfffffe0000000000
+    nanopy.work_difficulty = 'fffffe0000000000'
     nanopy.standard_exponent = 29
     rpc_url = 'http://localhost:7072'
     std_unit = 'BAN'
