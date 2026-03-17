@@ -591,8 +591,8 @@ static PyObject *generate(PyObject *self, PyObject *args) {
       printf("clReleaseContext failed with error code %d\n", err);
       goto FAIL;
     }
-  FAIL:
   }
+FAIL:
 #else
   while (workb == 0) {
     r_str = xorshift1024star();
