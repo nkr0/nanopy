@@ -7,9 +7,22 @@ Python implementation of NANO-related functions.
 
 Install the library by running `python setup.py build && python setup.py install`.
 
+## WSGI node API.
+  * When using Apache2, mod_wsgi is required. `sudo apt-get install libapache2-mod-wsgi-py3`
+  * Add the directives below into apache conf file. `/etc/apache2/sites-available/000-default.conf`. Modify the path and url as necessary.
+```
+WSGIScriptAlias /url /path/to/nanopy.wsgi
+<Directory /path/to>
+    Require all granted
+</Directory>
+```
+  * `sudo systemctl restart apache2`
+  * Node API will be served at `http://localhost/url` and RPC commands can be submitted as POST requests.
+
+## Wallet
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
 
-## Wallet options
+### Wallet options
 * The wallet looks for default configuration in `$HOME/.config/nanopy-confs/<network>.conf`.
   * Default mode of operation is to check state of all accounts in `$HOME/.config/nanopy-confs/<network>.conf`.
 * `--new`. Generate a new seed and derive index 0 account from it.
@@ -42,6 +55,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
   * `clang-format --style google -i nanopy/work.c`
   * `yapf --style google -i -r nanopy`
   * `yapf --style google -i nanopy-wallet`
+  * `yapf --style google -i nanopy.wsgi`
 
 ## Contact
   * Find me on discord in NANO's channel. My handle is `128#2928`.
