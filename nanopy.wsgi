@@ -64,24 +64,30 @@ def application(environ, start_response):
         else:
             raise ValueError
 
-        if (environ['REQUEST_METHOD'] == 'GET'):
-            query_raw = urllib.parse.parse_qs(environ['QUERY_STRING'])
-            query = {}
-            for key in query_raw:
-                query[key] = str(query_raw.get(key)[0])
-            request_body = json.dumps(query).encode('utf-8')
-        elif (environ['REQUEST_METHOD'] == 'POST'):
+        if environ['REQUEST_METHOD'] == 'GET':
+            if environ['QUERY_STRING']:
+                query_raw = urllib.parse.parse_qs(environ['QUERY_STRING'])
+                query = {}
+                for key in query_raw:
+                    query[key] = str(query_raw.get(key)[0])
+                request_body = json.dumps(query).encode('utf-8')
+        elif environ['REQUEST_METHOD'] == 'POST':
             try:
                 request_body_size = int(environ.get('CONTENT_LENGTH', 0))
             except (ValueError):
                 request_body_size = 0
-            request_body = environ['wsgi.input'].read(request_body_size)
+            if request_body_size:
+                request_body = environ['wsgi.input'].read(request_body_size)
 
+        if not request_body:
+            data = {}
+            data['action'] = 'block_count'
+            request_body = json.dumps(data).encode('utf-8')
         if json.loads(request_body)['action'] in rpc_enabled:
             req = urllib.request.Request(rpc, request_body)
             with urllib.request.urlopen(req) as response_raw:
                 response = response_raw.read()
-            status = '200 OK'
+        status = '200 OK'
     except:
         pass
 

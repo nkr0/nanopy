@@ -27,6 +27,7 @@ WSGIScriptAlias /rpc-banano /path/to/nanopy.wsgi
 </Directory>
 ```
 * `sudo a2enmod wsgi && sudo systemctl restart apache2`
+* If you want to throttle/rate-limit/authenticate your clients, apache2 has several modules that can help you with this. `mod_evasive, mod_ratelimit, mod_auth*`.
 
 ## Wallet
 Although not part of the package, the light wallet included in the repository is a good reference to understand how the library works.
