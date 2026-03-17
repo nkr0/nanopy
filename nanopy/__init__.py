@@ -7,7 +7,7 @@ except ModuleNotFoundError:
     ed25519_blake2b_c = False
 
 account_prefix = 'nano_'
-work_difficulty = 0xffffffc000000000
+work_difficulty = 'ffffffc000000000'
 standard_exponent = 30
 
 decimal.getcontext().traps[decimal.Inexact] = 1
@@ -100,22 +100,20 @@ except ModuleNotFoundError:
     pass
 
 
-def work_validate(work, _hash, difficulty=0, multiplier=0):
+def work_validate(work, _hash, difficulty=None, multiplier=0):
     work = bytearray.fromhex(work)
-    work.reverse()
     _hash = bytes.fromhex(_hash)
-    global work_difficulty
-    if type(work_difficulty) == str: work_difficulty = int(work_difficulty, 16)
-    if type(difficulty) == str: difficulty = int(difficulty, 16)
     if multiplier:
-        difficulty = int((work_difficulty - (1 << 64)) / multiplier + (1 << 64))
+        difficulty = format(
+            int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
+                (1 << 64)), '016x')
     else:
         difficulty = difficulty if difficulty else work_difficulty
+    difficulty = bytes.fromhex(difficulty)
 
-    b2b_h = int.from_bytes(hashlib.blake2b(work + _hash,
-                                           digest_size=8).digest(),
-                           byteorder='little')
-    # ~ multiplier = float((1 << 64) - work_difficulty) / float((1 << 64) - b2b_h)
+    work.reverse()
+    b2b_h = bytearray(hashlib.blake2b(work + _hash, digest_size=8).digest())
+    b2b_h.reverse()
     if b2b_h >= difficulty: return True
     return False
 
@@ -123,43 +121,39 @@ def work_validate(work, _hash, difficulty=0, multiplier=0):
 try:
     import nanopy.work
 
-    def work_generate(_hash, difficulty=0, multiplier=0):
-        global work_difficulty
-        if type(work_difficulty) == str:
-            work_difficulty = int(work_difficulty, 16)
-        if type(difficulty) == str: difficulty = int(difficulty, 16)
+    def work_generate(_hash, difficulty=None, multiplier=0):
         if multiplier:
-            difficulty = int((work_difficulty - (1 << 64)) / multiplier +
-                             (1 << 64))
+            difficulty = format(
+                int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
+                    (1 << 64)), '016x')
         else:
             difficulty = difficulty if difficulty else work_difficulty
-        work = format(nanopy.work.generate(bytes.fromhex(_hash), difficulty),
-                      '016x')
+        work = format(
+            nanopy.work.generate(bytes.fromhex(_hash), int(difficulty, 16)),
+            '016x')
         assert work_validate(work, _hash, difficulty)
         return work
 except ModuleNotFoundError:
     print('\033[93m' + 'No work extension' + '\033[0m')
     import random
 
-    def work_generate(_hash, difficulty=0, multiplier=0):
+    def work_generate(_hash, difficulty=None, multiplier=0):
         _hash = bytes.fromhex(_hash)
-        global work_difficulty
-        if type(work_difficulty) == str:
-            work_difficulty = int(work_difficulty, 16)
-        if type(difficulty) == str: difficulty = int(difficulty, 16)
+        b2b_h = bytearray.fromhex('0' * 16)
         if multiplier:
-            difficulty = int((work_difficulty - (1 << 64)) / multiplier +
-                             (1 << 64))
+            difficulty = format(
+                int((int(work_difficulty, 16) - (1 << 64)) / multiplier +
+                    (1 << 64)), '016x')
         else:
             difficulty = difficulty if difficulty else work_difficulty
-        b2b_h = 0
+        difficulty = bytes.fromhex(difficulty)
         while b2b_h < difficulty:
             work = bytearray((random.getrandbits(8) for i in range(8)))
             for r in range(0, 256):
                 work[7] = (work[7] + r) % 256
-                b2b_h = int.from_bytes(hashlib.blake2b(work + _hash,
-                                                       digest_size=8).digest(),
-                                       byteorder='little')
+                b2b_h = bytearray(
+                    hashlib.blake2b(work + _hash, digest_size=8).digest())
+                b2b_h.reverse()
                 if b2b_h >= difficulty: break
         work.reverse()
         return work.hex()

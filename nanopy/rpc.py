@@ -903,9 +903,7 @@ class RPC:
         data['hash'] = _hash
         if use_peers: data['use_peers'] = True
         if multiplier: data['multiplier'] = multiplier
-        elif difficulty:
-            if type(difficulty) == str: data['difficulty'] = difficulty
-            else: data['difficulty'] = format(difficulty, '016x')
+        elif difficulty: data['difficulty'] = difficulty
         return self._post(data)
 
     def work_get(self, wallet, account):
@@ -940,13 +938,11 @@ class RPC:
         data['action'] = 'work_peers_clear'
         return self._post(data)
 
-    def work_validate(self, work, _hash, difficulty=None, multiplier=1):
+    def work_validate(self, work, _hash, difficulty=None, multiplier=0):
         data = {}
         data['action'] = 'work_validate'
         data['work'] = work
         data['hash'] = _hash
         if multiplier: data['multiplier'] = multiplier
-        elif difficulty:
-            if type(difficulty) == str: data['difficulty'] = difficulty
-            else: data['difficulty'] = format(difficulty, '016x')
+        elif difficulty: data['difficulty'] = difficulty
         return self._post(data)
