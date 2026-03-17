@@ -59,6 +59,7 @@ The wallet has a sub-command, `nanopy-wallet open FILE.asc`, to unlock previousl
   * `clang-format --style google -i nanopy/work.c`
   * `yapf --style google -i -r nanopy`
   * `yapf --style google -i nanopy-wallet`
+  * `yapf --style google -i setup.py`
   * `yapf --style google -i nanopy.wsgi`
 
 ## Contact
