@@ -2,7 +2,7 @@ import hashlib
 import json
 import os
 import re
-import pytest
+import unittest
 import nanopy as npy
 
 PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
@@ -23,30 +23,31 @@ def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
     return False
 
 
-def test_deterministic_key() -> None:
-    assert (
-        npy.deterministic_key(Z64, 0)
-        == "9f0e444c69f77a49bd0be89db92c38fe713e0963165cca12faf5712d7657120f"
-    )
-
-
-def test_generate_mnemonic() -> None:
-    assert len(npy.generate_mnemonic(strength=256, language="english").split()) == 24
-
-
-def test_mnemonic_key() -> None:
-    assert (
-        npy.mnemonic_key(
-            "edge defense waste choose enrich upon flee junk siren film clown finish luggage leader kid quick brick print evidence swap drill paddle truly occur",
-            i=0,
-            passphrase="some password",
-            language="english",
+class TestModuleLevel(unittest.TestCase):
+    def test_deterministic_key(self) -> None:
+        assert (
+            npy.deterministic_key(Z64, 0)
+            == "9f0e444c69f77a49bd0be89db92c38fe713e0963165cca12faf5712d7657120f"
         )
-        == "3be4fc2ef3f3b7374e6fc4fb6e7bb153f8a2998b3b3dab50853eabe128024143"
-    )
+
+    def test_generate_mnemonic(self) -> None:
+        assert (
+            len(npy.generate_mnemonic(strength=256, language="english").split()) == 24
+        )
+
+    def test_mnemonic_key(self) -> None:
+        assert (
+            npy.mnemonic_key(
+                "edge defense waste choose enrich upon flee junk siren film clown finish luggage leader kid quick brick print evidence swap drill paddle truly occur",
+                i=0,
+                passphrase="some password",
+                language="english",
+            )
+            == "3be4fc2ef3f3b7374e6fc4fb6e7bb153f8a2998b3b3dab50853eabe128024143"
+        )
 
 
-class TestAccount:
+class TestAccount(unittest.TestCase):
     def test_init(self) -> None:
         acc = npy.Account(addr=PACC0)
         assert str(acc) == PACC0
@@ -90,25 +91,27 @@ class TestAccount:
 
     def test_raw_bal(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with pytest.raises(ValueError, match="Balance cannot be < 0"):
+        with self.assertRaisesRegex(ValueError, "Balance cannot be < 0"):
             acc.raw_bal = -1
-        with pytest.raises(ValueError, match=re.escape("Balance cannot be >= 2^128")):
+        with self.assertRaisesRegex(
+            ValueError, re.escape("Balance cannot be >= 2^128")
+        ):
             acc.raw_bal = 1 << 128
         acc.raw_bal = 1
         assert acc.raw_bal == 1
 
     def test_frontier(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with pytest.raises(ValueError):
+        with self.assertRaises(ValueError):
             acc.frontier = "x" * 64
-        with pytest.raises(AssertionError):
+        with self.assertRaises(AssertionError):
             acc.frontier = "ff"
         acc.frontier = "f" * 64
         assert acc.frontier == "f" * 64
 
     def test_rep(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with pytest.raises(ValueError, match="Representative is not initialised"):
+        with self.assertRaisesRegex(ValueError, "Representative is not initialised"):
             acc.rep = npy.Account()
         rep = npy.Account(addr=PACC1)
         acc.rep = rep
@@ -122,7 +125,9 @@ class TestAccount:
 
     def test_change_rep(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with pytest.raises(NotImplementedError, match="This method needs private key"):
+        with self.assertRaisesRegex(
+            NotImplementedError, "This method needs private key"
+        ):
             acc.change_rep(acc)
         TESTNET = npy.Network()
         TESTNET.send_difficulty = "fffffe0000000000"
@@ -135,14 +140,16 @@ class TestAccount:
 
     def test_receive(self) -> None:
         acc = npy.Account()
-        with pytest.raises(NotImplementedError, match="This method needs private key"):
+        with self.assertRaisesRegex(
+            NotImplementedError, "This method needs private key"
+        ):
             acc.change_rep(acc)
         acc.sk = Z64
-        with pytest.raises(ValueError, match="Amount must be a positive integer"):
+        with self.assertRaisesRegex(ValueError, "Amount must be a positive integer"):
             acc.receive(Z64, -1)
-        with pytest.raises(
+        with self.assertRaisesRegex(
             ValueError,
-            match=re.escape("raw balance after receive cannot be >= 2^128"),
+            re.escape("raw balance after receive cannot be >= 2^128"),
         ):
             acc.receive(Z64, 1 << 128)
         acc.receive(Z64, 1, work="f" * 16)
@@ -156,16 +163,18 @@ class TestAccount:
 
     def test_send(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with pytest.raises(NotImplementedError, match="This method needs private key"):
+        with self.assertRaisesRegex(
+            NotImplementedError, "This method needs private key"
+        ):
             acc.change_rep(acc)
         TESTNET = npy.Network()
         TESTNET.send_difficulty = "fffffe0000000000"
         acc = npy.Account(TESTNET)
         acc.sk = Z64
         to = npy.Account(addr=PACC0)
-        with pytest.raises(ValueError, match="Amount must be a positive integer"):
+        with self.assertRaisesRegex(ValueError, "Amount must be a positive integer"):
             acc.send(to, -1)
-        with pytest.raises(ValueError, match="raw balance after send cannot be < 0"):
+        with self.assertRaisesRegex(ValueError, "raw balance after send cannot be < 0"):
             acc.send(to, 1)
         acc.raw_bal = 2
         acc.send(to, 1, work="f" * 16)
@@ -177,28 +186,28 @@ class TestAccount:
         assert acc.rep == to
 
 
-class TestNetwork:
+class TestNetwork(unittest.TestCase):
     def test_from_multiplier(self) -> None:
         assert "fffffe0000000000" == npy.NANO.from_multiplier(1 / 8)
 
     def test_to_multiplier(self) -> None:
-        with pytest.raises(ValueError, match="Difficulty should be 16 hex char"):
+        with self.assertRaisesRegex(ValueError, "Difficulty should be 16 hex char"):
             npy.NANO.to_multiplier("0")
         assert 0.125 == npy.NANO.to_multiplier("fffffe0000000000")
 
     def test_from_pk(self) -> None:
-        with pytest.raises(ValueError, match="Public key should be 64 hex char"):
+        with self.assertRaisesRegex(ValueError, "Public key should be 64 hex char"):
             npy.NANO.from_pk("0")
         assert PACC0 == npy.NANO.from_pk(Z64)
 
     def test_to_pk(self) -> None:
-        with pytest.raises(ValueError, match="Invalid address"):
+        with self.assertRaisesRegex(ValueError, "Invalid address"):
             npy.NANO.to_pk("nano_wrong_address")
-        with pytest.raises(ValueError, match="Invalid address"):
+        with self.assertRaisesRegex(ValueError, "Invalid address"):
             npy.NANO.to_pk(
                 "xxxx_111111111111111111111111111111111111111111111111111111111111"
             )
-        with pytest.raises(ValueError, match="Invalid address"):
+        with self.assertRaisesRegex(ValueError, "Invalid address"):
             npy.NANO.to_pk(
                 "nano_1111111111111111111111111111111111111111111111111111hifc8npr"
             )
@@ -215,7 +224,7 @@ class TestNetwork:
         assert 1234567890000000000000000000000 == npy.NANO.to_raw("1.23456789")
 
 
-class TestStateBlock:
+class TestStateBlock(unittest.TestCase):
     acc = npy.Account()
     acc.sk = Z64
     b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
@@ -252,3 +261,7 @@ class TestStateBlock:
         assert not self.b.work_validate(npy.NANO.receive_difficulty)
         self.b.work = "e1c6427755027448"
         assert self.b.work_validate(npy.NANO.receive_difficulty)
+
+
+if __name__ == "__main__":
+    unittest.main()
