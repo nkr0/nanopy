@@ -47,6 +47,8 @@ if ED25519_IMPL:
 
 if os.environ.get("USE_OCL"):
     e_args["define_macros"] += [("USE_OCL", None)]
+    if os.environ.get("CI"):
+        e_args["define_macros"] += [("USE_OCL_CPU", None)]
     if k == "Darwin":
         e_args["extra_link_args"] += ["-framework", "OpenCL"]
     else:
