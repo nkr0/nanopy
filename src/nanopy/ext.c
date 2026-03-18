@@ -97,7 +97,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   cl_program program;
   cl_kernel kernel;
 
-#ifdef OCL_USE_CPU
+#ifdef USE_OCL_CPU
   err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
 #else
   err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
