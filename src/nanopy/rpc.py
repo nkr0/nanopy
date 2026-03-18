@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 """
 nanopy.rpc
 ##########
@@ -23,7 +24,7 @@ except ModuleNotFoundError:
     ENABLE_WS = False
 
 
-class RPC(ABC):
+class RPC(ABC):  # pylint: disable=too-many-public-methods
     "RPC base class"
 
     @abstractmethod
@@ -59,7 +60,7 @@ class RPC(ABC):
         data["key"] = key
         return self.request(data)
 
-    def account_history(
+    def account_history(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         account: str,
         count: int = 1,
@@ -89,7 +90,7 @@ class RPC(ABC):
             data["account_filter"] = account_filter
         return self.request(data)
 
-    def account_info(
+    def account_info(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         account: str,
         include_confirmed: bool = False,
@@ -150,7 +151,7 @@ class RPC(ABC):
         data["accounts"] = accounts
         return self.request(data)
 
-    def accounts_receivable(
+    def accounts_receivable(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         accounts: list[str],
         count: int = 1,
@@ -212,7 +213,7 @@ class RPC(ABC):
             data["include_cemented"] = False
         return self.request(data)
 
-    def block_create(
+    def block_create(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         balance: str,
         representative: str,
@@ -288,7 +289,7 @@ class RPC(ABC):
             data["json_block"] = True
         return self.request(data)
 
-    def blocks_info(
+    def blocks_info(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         hashes: list[str],
         include_linked_account: bool = False,
@@ -533,7 +534,7 @@ class RPC(ABC):
         data["key"] = key
         return self.request(data)
 
-    def ledger(
+    def ledger(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         account: str,
         count: int = 1,
@@ -589,7 +590,7 @@ class RPC(ABC):
         data["action"] = "populate_backlog"
         return self.request(data)
 
-    def process(
+    def process(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         block: str | dict[str, str],
         force: bool = False,
@@ -614,7 +615,7 @@ class RPC(ABC):
             data["async"] = True
         return self.request(data)
 
-    def receivable(
+    def receivable(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         account: str,
         count: int = 0,
@@ -697,7 +698,7 @@ class RPC(ABC):
             data["count"] = count
         return self.request(data)
 
-    def sign(
+    def sign(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         key: str = "",
         wallet: str = "",
@@ -841,7 +842,7 @@ class RPC(ABC):
         data["hash"] = _hash
         return self.request(data)
 
-    def work_generate(
+    def work_generate(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         _hash: str,
         use_peers: bool = False,
@@ -1031,7 +1032,7 @@ class RPC(ABC):
         data["action"] = "search_receivable_all"
         return self.request(data)
 
-    def send(
+    def send(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         wallet: str,
         source: str,
@@ -1143,7 +1144,7 @@ class RPC(ABC):
         data["wallet"] = wallet
         return self.request(data)
 
-    def wallet_ledger(
+    def wallet_ledger(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         wallet: str,
         representative: bool = False,
@@ -1179,7 +1180,7 @@ class RPC(ABC):
         data["wallet"] = wallet
         return self.request(data)
 
-    def wallet_receivable(
+    def wallet_receivable(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         wallet: str,
         count: int = 1,

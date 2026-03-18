@@ -18,7 +18,7 @@ jobs:
     - run: black --check *.py */*.py */*/*.py nanopy-wallet
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
-    - run: pylint src
+    - run: pylint --extension-pkg-allow-list=nanopy.ext src
     - run: sphinx-build -W docs _site
     - run: sudo apt update
     - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo

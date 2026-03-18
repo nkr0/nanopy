@@ -77,7 +77,7 @@ except ModuleNotFoundError:  # pragma: no cover
 
 
 @dataclasses.dataclass
-class Network:
+class Network:  # pylint: disable=too-many-instance-attributes
     """Network
 
     :arg name: name of the network
@@ -183,7 +183,7 @@ class Network:
 NANO = Network()
 
 
-class Account:
+class Account:  # pylint: disable=too-many-instance-attributes
     """Account
 
     :arg network: network of this account
