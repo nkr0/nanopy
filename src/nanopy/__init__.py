@@ -12,6 +12,7 @@ import hmac
 import json
 import os
 from typing import Optional
+
 from . import ext  # type: ignore
 
 decimal.setcontext(decimal.BasicContext)

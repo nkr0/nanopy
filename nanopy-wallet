@@ -2,11 +2,13 @@
 
 import argparse
 import configparser
-import gi  # type: ignore
-import nanopy as npy
 import os
-from nanopy.rpc import HTTP
 from typing import Callable
+
+import gi  # type: ignore
+
+import nanopy as npy
+from nanopy.rpc import HTTP
 
 gi.require_version("Secret", "1")
 from gi.repository import Secret  # type: ignore
