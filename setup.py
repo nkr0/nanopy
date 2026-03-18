@@ -1,7 +1,8 @@
 import os
 import platform
-import setuptools
 import sysconfig
+
+import setuptools
 
 k, _, _, _, m, _ = platform.uname()
 cc = os.getenv("CC", sysconfig.get_config_var("CC"))

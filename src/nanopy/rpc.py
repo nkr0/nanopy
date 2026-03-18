@@ -5,9 +5,9 @@ nanopy.rpc
 A wrapper to make RPC requests to a node.
 """
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any
-import json
 
 try:
     import requests

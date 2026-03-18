@@ -1,6 +1,7 @@
 import csv
-from nanopy import ext  # type: ignore
 import unittest
+
+from nanopy import ext  # type: ignore
 
 
 class TestModuleLevel(unittest.TestCase):

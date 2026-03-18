@@ -8,14 +8,11 @@ jobs:
       with:
         python-version: '3.x'
     - run: pipx run build -s
-    - uses: actions/upload-artifact@v7
-      with:
-        name: dist
-        path: dist
     - run: pip install -ve .[dev]
     - run: coverage run -m unittest
     - run: coverage report
     - run: black --check *.py */*.py */*/*.py nanopy-wallet
+    - run: isort -c .
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
     - run: pylint --extension-pkg-allow-list=nanopy.ext src
@@ -27,6 +24,10 @@ jobs:
     - run: clinfo
     - run: CFLAGS="-DCLDEBUG -DOCL_USE_CPU" USE_OCL=1 pip install -ve .
     - run: python -m unittest
+    - uses: actions/upload-artifact@v7
+      with:
+        name: dist
+        path: dist
     - uses: actions/upload-pages-artifact@v4
   platforms:
     needs: base
