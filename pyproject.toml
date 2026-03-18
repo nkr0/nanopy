@@ -10,8 +10,7 @@ version = "28.0.1-12"
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-cibasic = ["mnemonic", "pytest"]
-cifull = ["black", "coverage", "mnemonic", "mypy", "pylint[spelling]", "pytest", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
+dev = ["black", "coverage", "mnemonic", "mypy", "pylint[spelling]", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
 
 [project.urls]
 Repository = "https://github.com/nkr0/nanopy"

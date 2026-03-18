@@ -12,8 +12,8 @@ jobs:
       with:
         name: dist
         path: dist
-    - run: pip install -ve .[cifull]
-    - run: coverage run -m pytest
+    - run: pip install -ve .[dev]
+    - run: coverage run -m unittest
     - run: coverage report
     - run: black --check *.py */*.py */*/*.py nanopy-wallet
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
@@ -23,10 +23,10 @@ jobs:
     - run: sudo apt update
     - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo
     - run: CC=clang pip install -ve .
-    - run: pytest
+    - run: python -m unittest
     - run: clinfo
     - run: CFLAGS="-DCLDEBUG -DOCL_USE_CPU" USE_OCL=1 pip install -ve .
-    - run: pytest
+    - run: python -m unittest
     - uses: actions/upload-pages-artifact@v4
   platforms:
     needs: base
@@ -39,11 +39,12 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.x
+    - run: pip install mnemonic
     - if: runner.os != 'macOS'
-      run: pip install -ve .[cibasic]
+      run: pip install -ve .
     - if: runner.os == 'macOS'
-      run: CC=gcc-15 pip install -ve .[cibasic]
-    - run: pytest
+      run: CC=gcc-15 pip install -ve .
+    - run: python -m unittest
   versions:
     needs: base
     strategy:
@@ -55,8 +56,9 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.py }}
-    - run: pip install -ve .[cibasic]
-    - run: pytest
+    - run: pip install mnemonic
+    - run: pip install -ve .
+    - run: python -m unittest
   deploy:
     if: github.ref_type == 'tag'
     needs: [platforms, versions]
