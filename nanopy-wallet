@@ -2,11 +2,14 @@
 
 import argparse
 import configparser
-import keyring
+import gi  # type: ignore
 import nanopy as npy
 import os
 from nanopy.rpc import HTTP
 from typing import Callable
+
+gi.require_version("Secret", "1")
+from gi.repository import Secret  # type: ignore
 
 
 def log_amt(l: str, a: str, c: Callable[[str], str]) -> None:
@@ -93,6 +96,15 @@ green: Callable[[str], str] = lambda s: f"\x1b[32m{s}\x1b[0m"
 red: Callable[[str], str] = lambda s: f"\x1b[31m{s}\x1b[0m"
 get_account: Callable[[str], "npy.Account"] = lambda address: npy.Account(addr=address)
 n = npy.NANO
+schema = Secret.Schema.new(
+    "org.freedesktop.Secret.Generic",
+    Secret.SchemaFlags.NONE,
+    {
+        "address": Secret.SchemaAttributeType.STRING,
+        "label": Secret.SchemaAttributeType.STRING,
+        "service": Secret.SchemaAttributeType.STRING,
+    },
+)
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -129,9 +141,13 @@ if args.sub:
         seed = os.urandom(32).hex()
         acci.sk = npy.deterministic_key(seed, 0)
         log_status(args.k, acci.addr)
-        keyring.set_password("nanopy", args.k, seed)
+        attributes = {"address": acci.addr, "label": args.k, "service": "nanopy"}
+        Secret.password_store_sync(
+            schema, attributes, Secret.COLLECTION_DEFAULT, args.k, seed
+        )
     else:
-        seed = keyring.get_password("nanopy", args.k) or ""
+        attributes = {"label": args.k, "service": "nanopy"}
+        seed = Secret.password_lookup_sync(schema, attributes, None)
         assert seed
         if args.audit:
             addrs = []
