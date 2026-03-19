@@ -17,7 +17,7 @@ Repository = "https://github.com/nkr0/nanopy"
 Documentation = "https://nkr0.github.io/nanopy"
 
 [tool.coverage.run]
-omit = ["src/nanopy/rpc.py", "tests/*"]
+omit = ["src/nanopy/rpc.py"]
 
 [tool.coverage.report]
 fail_under = 100

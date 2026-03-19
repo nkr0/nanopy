@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import hashlib
 import json
 import os
@@ -19,9 +20,7 @@ def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
     w.reverse()
     b2b_h = bytearray(hashlib.blake2b(w + h, digest_size=8).digest())
     b2b_h.reverse()
-    if b2b_h >= bytes.fromhex(difficulty):
-        return True
-    return False
+    return b2b_h >= bytes.fromhex(difficulty)
 
 
 class TestModuleLevel(unittest.TestCase):
@@ -39,7 +38,8 @@ class TestModuleLevel(unittest.TestCase):
     def test_mnemonic_key(self) -> None:
         assert (
             npy.mnemonic_key(
-                "edge defense waste choose enrich upon flee junk siren film clown finish luggage leader kid quick brick print evidence swap drill paddle truly occur",
+                "edge defense waste choose enrich upon flee junk siren film clown finish luggage "
+                "leader kid quick brick print evidence swap drill paddle truly occur",
                 i=0,
                 passphrase="some password",
                 language="english",
@@ -130,9 +130,9 @@ class TestAccount(unittest.TestCase):
             NotImplementedError, "This method needs private key"
         ):
             acc.change_rep(acc)
-        TESTNET = npy.Network()
-        TESTNET.send_difficulty = "fffffe0000000000"
-        acc = npy.Account(TESTNET)
+        test_net = npy.Network()
+        test_net.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(test_net)
         acc.sk = Z64
         acc.change_rep(acc)
         b = acc.change_rep(acc, work="f" * 16)
@@ -168,9 +168,9 @@ class TestAccount(unittest.TestCase):
             NotImplementedError, "This method needs private key"
         ):
             acc.change_rep(acc)
-        TESTNET = npy.Network()
-        TESTNET.send_difficulty = "fffffe0000000000"
-        acc = npy.Account(TESTNET)
+        test_net = npy.Network()
+        test_net.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(test_net)
         acc.sk = Z64
         to = npy.Account(addr=PACC0)
         with self.assertRaisesRegex(ValueError, "Amount must be a positive integer"):
@@ -250,7 +250,10 @@ class TestStateBlock(unittest.TestCase):
         assert self.b.json == json.dumps(d)
 
     def test_verify_signature(self) -> None:
-        self.b.sig = "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c055242169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
+        self.b.sig = (
+            "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c0552"
+            "42169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
+        )
         assert self.b.verify_signature()
 
     def test_work_generate(self) -> None:
@@ -262,7 +265,3 @@ class TestStateBlock(unittest.TestCase):
         assert not self.b.work_validate(npy.NANO.receive_difficulty)
         self.b.work = "e1c6427755027448"
         assert self.b.work_validate(npy.NANO.receive_difficulty)
-
-
-if __name__ == "__main__":
-    unittest.main()
