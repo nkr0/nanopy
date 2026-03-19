@@ -15,7 +15,7 @@ jobs:
     - run: isort -c .
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
-    - run: pylint --extension-pkg-allow-list=nanopy.ext src
+    - run: pylint --extension-pkg-allow-list=nanopy.ext src tests
     - run: sphinx-build -W docs _site
     - run: sudo apt update
     - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo
