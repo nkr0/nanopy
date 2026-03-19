@@ -11,7 +11,7 @@ jobs:
     - run: pip install -ve .[dev]
     - run: coverage run -m unittest
     - run: coverage report
-    - run: black --check *.py */*.py */*/*.py nanopy-wallet
+    - run: black --check . nanopy-wallet
     - run: isort -c .
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
