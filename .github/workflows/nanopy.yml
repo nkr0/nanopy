@@ -11,7 +11,7 @@ jobs:
     - run: pip install -ve .[dev]
     - run: coverage run -m unittest
     - run: coverage report
-    - run: black --check . nanopy-wallet
+    - run: black --check .
     - run: isort -c .
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
@@ -19,10 +19,10 @@ jobs:
     - run: sphinx-build -W docs _site
     - run: sudo apt update
     - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo
-    - run: CC=clang pip install -ve .
+    - run: CC=clang pip install -ve .[test]
     - run: python -m unittest
     - run: clinfo
-    - run: USE_OCL=1 pip install -ve .
+    - run: USE_OCL=1 pip install -ve .[test]
     - run: python -m unittest
     - uses: actions/upload-artifact@v7
       with:
@@ -40,11 +40,10 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: 3.x
-    - run: pip install mnemonic
     - if: runner.os != 'macOS'
-      run: pip install -ve .
+      run: pip install -ve .[test]
     - if: runner.os == 'macOS'
-      run: CC=gcc-15 pip install -ve .
+      run: CC=gcc-15 pip install -ve .[test]
     - run: python -m unittest
   versions:
     needs: base
@@ -57,8 +56,7 @@ jobs:
     - uses: actions/setup-python@v6
       with:
         python-version: ${{ matrix.py }}
-    - run: pip install mnemonic
-    - run: pip install -ve .
+    - run: pip install -ve .[test]
     - run: python -m unittest
   deploy:
     if: github.ref_type == 'tag'

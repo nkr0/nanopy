@@ -10,7 +10,11 @@ dynamic = ["version"]
 requires-python = ">=3.10"
 
 [project.optional-dependencies]
-dev = ["black", "coverage", "mnemonic", "mypy", "pylint[spelling]", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
+dev = ["black", "coverage", "mnemonic", "mypy", "pykeepass", "pylint[spelling]", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
+test = ["mnemonic", "platformdirs", "pykeepass"]
+
+[project.scripts]
+nanopy = "nanopy.cli:main"
 
 [project.urls]
 Repository = "https://github.com/nkr0/nanopy"
@@ -23,5 +27,5 @@ omit = ["src/nanopy/rpc.py"]
 fail_under = 100
 
 [tool.mypy]
-files = "src, tests, nanopy-wallet"
+files = "src, tests"
 strict = true

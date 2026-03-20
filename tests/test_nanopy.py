@@ -56,6 +56,46 @@ class TestAccount(unittest.TestCase):
         assert acc.pk == Z64
         assert not acc.sk
 
+        acc = npy.Account(pk=Z64)
+        assert str(acc) == PACC0
+        assert acc.addr == PACC0
+        assert acc.pk == Z64
+        assert not acc.sk
+
+        acc = npy.Account(sk=Z64)
+        assert str(acc) == SACC0
+        assert acc.addr == SACC0
+        assert (
+            acc.pk == "19d3d919475deed4696b5d13018151d1af88b2bd3bcff048b45031c1f36d1858"
+        )
+        assert acc.sk == Z64
+
+    def test_set_network(self) -> None:
+        npy.Account.set_network()
+        assert npy.Account.network == npy.Network()
+        npy.Account.set_network("nano")
+        assert npy.Account.network == npy.Network()
+
+        npy.Account.set_network("banano")
+        n = npy.Network()
+        n.name = "banano"
+        n.prefix = "ban_"
+        n.send_difficulty = "fffffe0000000000"
+        n.exp = 29
+        n.rpc_url = "http://localhost:7072"
+        n.std_unit = "BAN"
+        assert npy.Account.network == n
+
+        npy.Account.set_network("beta")
+        n = npy.Network()
+        n.name = "beta"
+        n.prefix = "xrb_"
+        n.rpc_url = "http://localhost:55000"
+        n.std_unit = "β"
+        assert npy.Account.network == n
+
+        npy.Account.set_network()
+
     def test_addr(self) -> None:
         acc = npy.Account()
         acc.addr = PACC0
@@ -130,14 +170,13 @@ class TestAccount(unittest.TestCase):
             NotImplementedError, "This method needs private key"
         ):
             acc.change_rep(acc)
-        test_net = npy.Network()
-        test_net.send_difficulty = "fffffe0000000000"
-        acc = npy.Account(test_net)
-        acc.sk = Z64
+        acc.network.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(sk=Z64)
         acc.change_rep(acc)
         b = acc.change_rep(acc, work="f" * 16)
         assert b.verify_signature()
         assert acc.frontier == b.digest
+        acc.network = npy.Network()
 
     def test_receive(self) -> None:
         acc = npy.Account()
@@ -168,10 +207,8 @@ class TestAccount(unittest.TestCase):
             NotImplementedError, "This method needs private key"
         ):
             acc.change_rep(acc)
-        test_net = npy.Network()
-        test_net.send_difficulty = "fffffe0000000000"
-        acc = npy.Account(test_net)
-        acc.sk = Z64
+        acc.network.send_difficulty = "fffffe0000000000"
+        acc = npy.Account(sk=Z64)
         to = npy.Account(addr=PACC0)
         with self.assertRaisesRegex(ValueError, "Amount must be a positive integer"):
             acc.send(to, -1)
@@ -185,49 +222,51 @@ class TestAccount(unittest.TestCase):
         assert acc.raw_bal == b.bal
         assert acc.raw_bal == 0
         assert acc.rep == to
+        acc.network = npy.Network()
 
 
 class TestNetwork(unittest.TestCase):
+    n = npy.Account.network
+
     def test_from_multiplier(self) -> None:
-        assert "fffffe0000000000" == npy.NANO.from_multiplier(1 / 8)
+        assert "fffffe0000000000" == self.n.from_multiplier(1 / 8)
 
     def test_to_multiplier(self) -> None:
         with self.assertRaisesRegex(ValueError, "Difficulty should be 16 hex char"):
-            npy.NANO.to_multiplier("0")
-        assert 0.125 == npy.NANO.to_multiplier("fffffe0000000000")
+            self.n.to_multiplier("0")
+        assert 0.125 == self.n.to_multiplier("fffffe0000000000")
 
     def test_from_pk(self) -> None:
         with self.assertRaisesRegex(ValueError, "Public key should be 64 hex char"):
-            npy.NANO.from_pk("0")
-        assert PACC0 == npy.NANO.from_pk(Z64)
+            self.n.from_pk("0")
+        assert PACC0 == self.n.from_pk(Z64)
 
     def test_to_pk(self) -> None:
         with self.assertRaisesRegex(ValueError, "Invalid address"):
-            npy.NANO.to_pk("nano_wrong_address")
+            self.n.to_pk("nano_wrong_address")
         with self.assertRaisesRegex(ValueError, "Invalid address"):
-            npy.NANO.to_pk(
+            self.n.to_pk(
                 "xxxx_111111111111111111111111111111111111111111111111111111111111"
             )
         with self.assertRaisesRegex(ValueError, "Invalid address"):
-            npy.NANO.to_pk(
+            self.n.to_pk(
                 "nano_1111111111111111111111111111111111111111111111111111hifc8npr"
             )
-        assert Z64 == npy.NANO.to_pk(PACC0)
+        assert Z64 == self.n.to_pk(PACC0)
 
     def test_from_raw(self) -> None:
-        assert "0.000000000000000000000123456789" == npy.NANO.from_raw(123456789)
-        assert "1.234567890000000000000000000000" == npy.NANO.from_raw(
+        assert "0.000000000000000000000123456789" == self.n.from_raw(123456789)
+        assert "1.234567890000000000000000000000" == self.n.from_raw(
             1234567890000000000000000000000
         )
 
     def test_to_raw(self) -> None:
-        assert 123456789 == npy.NANO.to_raw("0.000000000000000000000123456789")
-        assert 1234567890000000000000000000000 == npy.NANO.to_raw("1.23456789")
+        assert 123456789 == self.n.to_raw("0.000000000000000000000123456789")
+        assert 1234567890000000000000000000000 == self.n.to_raw("1.23456789")
 
 
 class TestStateBlock(unittest.TestCase):
-    acc = npy.Account()
-    acc.sk = Z64
+    acc = npy.Account(sk=Z64)
     b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
 
     def test_digest(self) -> None:
@@ -257,11 +296,11 @@ class TestStateBlock(unittest.TestCase):
         assert self.b.verify_signature()
 
     def test_work_generate(self) -> None:
-        self.b.work_generate(npy.NANO.receive_difficulty)
-        assert work_validate(self.b, npy.NANO.receive_difficulty)
+        self.b.work_generate(self.acc.network.receive_difficulty)
+        assert work_validate(self.b, self.acc.network.receive_difficulty)
 
     def test_work_validate(self) -> None:
         self.b.work = "0" * 16
-        assert not self.b.work_validate(npy.NANO.receive_difficulty)
+        assert not self.b.work_validate(self.acc.network.receive_difficulty)
         self.b.work = "e1c6427755027448"
-        assert self.b.work_validate(npy.NANO.receive_difficulty)
+        assert self.b.work_validate(self.acc.network.receive_difficulty)
