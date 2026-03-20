@@ -15,9 +15,6 @@ from typing import Optional
 
 from . import ext  # type: ignore
 
-decimal.setcontext(decimal.BasicContext)
-decimal.getcontext().traps[decimal.Inexact] = True
-decimal.getcontext().traps[decimal.Subnormal] = True
 decimal.getcontext().prec = 40
 
 
@@ -181,32 +178,52 @@ class Network:  # pylint: disable=too-many-instance-attributes
         return int((d(val) * d(d(10) ** exp)).quantize(d(1)))
 
 
-NANO = Network()
-
-
 class Account:  # pylint: disable=too-many-instance-attributes
     """Account
 
-    :arg network: network of this account
     :arg addr: address of this account
+    :arg pk: public key of this account (overrides addr)
+    :arg sk: secret key of this account (overrides addr and pk)
     """
 
-    def __init__(self, network: "Network" = NANO, addr: str = "") -> None:
+    network = Network()
+
+    def __init__(self, addr: str = "", pk: str = "", sk: str = "") -> None:
         self._frontier = "0" * 64
-        self.network = network
         self._pk = self.network.to_pk(addr) if addr else ""
+        if pk:
+            self.pk = pk
         self._raw_bal = 0
         self._rep = self
         self._sk = ""
+        if sk:
+            self.sk = sk
 
     def __repr__(self) -> str:
         return self.addr
 
     def __bool__(self) -> bool:
-        try:
-            return self.addr != ""
-        except ValueError:
-            return False
+        return bool(self._pk)
+
+    @classmethod
+    def set_network(cls, network: str = "nano") -> None:
+        """Set the network for all accounts
+
+        :arg network: Network label. One of banano, beta, nano
+        """
+        cls.network = Network()
+        if network == "banano":
+            cls.network.name = "banano"
+            cls.network.prefix = "ban_"
+            cls.network.send_difficulty = "fffffe0000000000"
+            cls.network.exp = 29
+            cls.network.rpc_url = "http://localhost:7072"
+            cls.network.std_unit = "BAN"
+        elif network == "beta":
+            cls.network.name = "beta"
+            cls.network.prefix = "xrb_"
+            cls.network.rpc_url = "http://localhost:55000"
+            cls.network.std_unit = "β"
 
     @property
     def addr(self) -> str:
