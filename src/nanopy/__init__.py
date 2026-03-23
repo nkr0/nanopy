@@ -206,20 +206,21 @@ class Account:  # pylint: disable=too-many-instance-attributes
         return bool(self._pk)
 
     @classmethod
-    def set_network(cls, network: str = "nano") -> None:
+    def set_network(cls, network: Optional[Network] = None, name: str = "nano") -> None:
         """Set the network for all accounts
 
-        :arg network: Network label. One of banano, beta, nano
+        :arg network: Generic Network
+        :arg name: Network name. One of banano, beta, nano
         """
-        cls.network = Network()
-        if network == "banano":
+        cls.network = network if network else Network()
+        if name == "banano":
             cls.network.name = "banano"
             cls.network.prefix = "ban_"
             cls.network.send_difficulty = "fffffe0000000000"
             cls.network.exp = 29
             cls.network.rpc_url = "http://localhost:7072"
             cls.network.std_unit = "BAN"
-        elif network == "beta":
+        elif name == "beta":
             cls.network.name = "beta"
             cls.network.prefix = "xrb_"
             cls.network.rpc_url = "http://localhost:55000"

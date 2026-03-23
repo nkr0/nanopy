@@ -73,10 +73,10 @@ class TestAccount(unittest.TestCase):
     def test_set_network(self) -> None:
         npy.Account.set_network()
         assert npy.Account.network == npy.Network()
-        npy.Account.set_network("nano")
+        npy.Account.set_network(name="nano")
         assert npy.Account.network == npy.Network()
 
-        npy.Account.set_network("banano")
+        npy.Account.set_network(name="banano")
         n = npy.Network()
         n.name = "banano"
         n.prefix = "ban_"
@@ -86,7 +86,7 @@ class TestAccount(unittest.TestCase):
         n.std_unit = "BAN"
         assert npy.Account.network == n
 
-        npy.Account.set_network("beta")
+        npy.Account.set_network(name="beta")
         n = npy.Network()
         n.name = "beta"
         n.prefix = "xrb_"

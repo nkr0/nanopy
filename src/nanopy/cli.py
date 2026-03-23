@@ -142,7 +142,7 @@ def main() -> None:
     config = configparser.ConfigParser(allow_no_value=True)
     config.read(user_config_dir("nanopy.ini"))
 
-    npy.Account.set_network(args.network)
+    npy.Account.set_network(name=args.network)
     n = npy.Account.network
     s = Session(HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url))))
 
