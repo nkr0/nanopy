@@ -270,7 +270,7 @@ class TestModuleLevel(unittest.TestCase):
         s.get_addresses.side_effect = [[ZACC0], [ZACC0, ZACC1]]
         s.rpc.receivable.return_value = {"blocks": [Z64, R64]}
 
-        with captured_output():
+        with captured_output(), patch("nanopy.cli.HTTP"):
             sys.argv = ["nanopy"]
             cli.main()
 
