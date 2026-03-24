@@ -38,42 +38,24 @@ class TestSession(unittest.TestCase):
     s = cli.Session(Mock())
 
     def test_check_status(self) -> None:
-        self.s.check_status([])
-
-        with captured_output() as out:
-            r = {
+        r = [
+            {
                 "balances": {
                     PACC0: {
                         "balance": "1",
                         "receivable": "0",
                     },
                 }
-            }
-            with patch.object(self.s.rpc, "accounts_balances", return_value=r):
-                self.s.check_status([PACC0])
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"Acc : {PACC0}\nBal : {OR}\n"
-            )
-
-        with captured_output() as out:
-            r = {
+            },
+            {
                 "balances": {
                     PACC0: {
                         "balance": "1",
                         "receivable": "2",
                     },
                 }
-            }
-            with patch.object(self.s.rpc, "accounts_balances", return_value=r):
-                self.s.check_status([PACC0])
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"Acc : {PACC0}\nBal : {OR}\nRec : {TR}\n"
-            )
-
-        with captured_output() as out:
-            r = {
+            },
+            {
                 "balances": {
                     PACC0: {
                         "balance": "1",
@@ -84,15 +66,21 @@ class TestSession(unittest.TestCase):
                         "receivable": "1",
                     },
                 }
-            }
-            with patch.object(self.s.rpc, "accounts_balances", return_value=r):
-                self.s.check_status([PACC0, PACC1])
+            },
+        ]
+        with (
+            captured_output() as out,
+            patch.object(self.s.rpc, "accounts_balances", side_effect=r),
+        ):
+            self.s.check_status([])
+            self.s.check_status([PACC0])
+            self.s.check_status([PACC0])
+            self.s.check_status([PACC0, PACC1])
             assert out.getvalue() == (  # pylint: disable=no-member
-                f"Acc : {PACC0}\n"
-                f"Bal : {OR}\n"
-                f"Acc : {PACC1}\n"
-                f"Bal : {TR}\n"
-                f"Rec : {OR}\n"
+                f"Acc : {PACC0}\nBal : {OR}\n"
+                f"Acc : {PACC0}\nBal : {OR}\nRec : {TR}\n"
+                f"Acc : {PACC0}\nBal : {OR}\n"
+                f"Acc : {PACC1}\nBal : {TR}\nRec : {OR}\n"
             )
 
     @patch("pykeepass.PyKeePass")
@@ -104,25 +92,21 @@ class TestSession(unittest.TestCase):
         mock_urandom.return_value = bytes.fromhex(Z64)
         with captured_output() as out:
             self.s.create_new_key("f", "k")
-            assert out.getvalue() == f"k {ZACC0}\n"  # pylint: disable=no-member
-        mock_urandom.assert_called_once_with(32)
-        mock_getpass.assert_called_once()
-        mock_kp.assert_called_once_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.add_entry.assert_called_once_with(
-            mock_kp.return_value.root_group, "k", ZACC0, Z64
-        )
-        mock_kp.return_value.save.assert_called_once()
-
-        with captured_output() as out:
             self.s.create_new_key("f", "k", "g")
-            assert out.getvalue() == f"k {ZACC0}\n"  # pylint: disable=no-member
-        mock_urandom.assert_called_with(32)
-        mock_kp.assert_called_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.find_groups.assert_called_once_with(name="g", first=True)
-        mock_kp.return_value.add_entry.assert_called_with(
-            mock_kp.return_value.find_groups(), "k", ZACC0, Z64
+            # pylint: disable=no-member
+            assert out.getvalue() == f"k {ZACC0}\nk {ZACC0}\n"
+        assert mock_urandom.call_args_list == [call(32), call(32)]
+        assert mock_getpass.call_count == 2
+        assert (
+            mock_kp.call_args_list
+            == [call("f", password=mock_getpass.return_value)] * 2
         )
-        mock_kp.return_value.save.assert_called()
+        mock_kp.return_value.find_groups.assert_called_once_with(name="g", first=True)
+        assert mock_kp.return_value.add_entry.call_args_list == [
+            call(mock_kp.return_value.root_group, "k", ZACC0, Z64),
+            call(mock_kp.return_value.find_groups(), "k", ZACC0, Z64),
+        ]
+        assert mock_kp.return_value.save.call_count == 2
 
     @patch("pykeepass.PyKeePass")
     @patch("getpass.getpass")
@@ -130,48 +114,34 @@ class TestSession(unittest.TestCase):
         mock_kp.return_value.find_entries().password = "p"
         with self.assertRaisesRegex(ValueError, "Failed to retrieve key"):
             self.s.get_key("f", "k")
-        mock_getpass.assert_called_once()
-        mock_kp.assert_called_once_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.find_entries.assert_called_with(
-            title="k",
-            group=mock_kp.return_value.root_group,
-            recursive=False,
-            first=True,
-        )
-
         mock_kp.return_value.find_entries().password = "1234"
         with self.assertRaisesRegex(ValueError, "Failed to retrieve key"):
             self.s.get_key("f", "k")
-        mock_getpass.assert_called()
-        mock_kp.assert_called_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.find_entries.assert_called_with(
-            title="k",
-            group=mock_kp.return_value.root_group,
-            recursive=False,
-            first=True,
-        )
-
         mock_kp.return_value.find_entries().password = R64
         assert self.s.get_key("f", "k") == R64
-        mock_getpass.assert_called()
-        mock_kp.assert_called_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.find_entries.assert_called_with(
-            title="k",
-            group=mock_kp.return_value.root_group,
-            recursive=False,
-            first=True,
-        )
-
         assert self.s.get_key("f", "k", "g") == R64
-        mock_getpass.assert_called()
-        mock_kp.assert_called_with("f", password=mock_getpass.return_value)
-        mock_kp.return_value.find_groups.assert_called_once_with(name="g", first=True)
-        mock_kp.return_value.find_entries.assert_called_with(
-            title="k",
-            group=mock_kp.return_value.find_groups(),
-            recursive=False,
-            first=True,
+        assert mock_getpass.call_count == 4
+        assert (
+            mock_kp.call_args_list
+            == [call("f", password=mock_getpass.return_value)] * 4
         )
+        mock_kp.return_value.find_groups.assert_called_once_with(name="g", first=True)
+        assert mock_kp.return_value.find_entries.call_args_list == [
+            call(),
+            call(
+                title="k",
+                group=mock_kp.return_value.root_group,
+                recursive=False,
+                first=True,
+            ),
+        ] * 3 + [
+            call(
+                title="k",
+                group=mock_kp.return_value.find_groups(),
+                recursive=False,
+                first=True,
+            )
+        ]
 
     def test_get_addresses(self) -> None:
         assert self.s.get_addresses(Z64) == [ZACC0]
@@ -179,22 +149,18 @@ class TestSession(unittest.TestCase):
 
     def test_get_account_info(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with captured_output() as out:
-            with patch.object(self.s.rpc, "account_info"):
-                self.s.get_account_info(acc)
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"Acc : {PACC0}\nBal : {ZR}\nRep : {PACC0}\n"
+        r = [{}, {"balance": "1", "frontier": R64, "representative": PACC0}]
+        with (
+            captured_output() as out,
+            patch.object(self.s.rpc, "account_info", side_effect=r),
+        ):
+            self.s.get_account_info(acc)
+            self.s.get_account_info(acc)
+            assert out.getvalue() == (  # pylint: disable=no-member
+                f"Acc : {PACC0}\nBal : {ZR}\nRep : {PACC0}\n"
+                f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC0}\n"
             )
 
-        r = {"balance": "1", "frontier": R64, "representative": PACC0}
-        with captured_output() as out:
-            with patch.object(self.s.rpc, "account_info", return_value=r):
-                self.s.get_account_info(acc)
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC0}\n"
-            )
         assert acc.frontier == R64
         assert acc.raw_bal == 1
         assert acc.rep == PACC0
@@ -222,9 +188,9 @@ class TestSession(unittest.TestCase):
             with patch.object(self.s.rpc, "block_info", return_value=r):
                 b0 = self.s.receive(acc, O64)
                 b1 = self.s.receive(acc, R64, npy.Account(PACC1))
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"From: {PACC0}\nAmt : {OR}\nFrom: {PACC0}\nAmt : {OR}\nRep : {PACC1}\n"
+            assert out.getvalue() == (  # pylint: disable=no-member
+                f"From: {PACC0}\nAmt : {OR}\n"
+                f"From: {PACC0}\nAmt : {OR}\nRep : {PACC1}\n"
             )
         assert acc.raw_bal == 2
         assert acc.frontier == b1.digest
@@ -243,9 +209,9 @@ class TestSession(unittest.TestCase):
         with captured_output() as out:
             b0 = self.s.send(acc, npy.Account(PACC1), ONER)
             b1 = self.s.send(acc, npy.Account(PACC1), ONER, npy.Account(PACC0))
-            assert (
-                out.getvalue()  # pylint: disable=no-member
-                == f"To  : {PACC1}\nAmt : {OR}\nTo  : {PACC1}\nAmt : {OR}\nRep : {PACC0}\n"
+            assert out.getvalue() == (  # pylint: disable=no-member
+                f"To  : {PACC1}\nAmt : {OR}\n"
+                f"To  : {PACC1}\nAmt : {OR}\nRep : {PACC0}\n"
             )
         assert acc.raw_bal == 0
         assert acc.frontier == b1.digest
