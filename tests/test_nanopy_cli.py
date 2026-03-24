@@ -1,4 +1,4 @@
-# pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-many-statements
+# pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import os
 import sys
 import unittest
@@ -271,41 +271,22 @@ class TestModuleLevel(unittest.TestCase):
         s.rpc.receivable.return_value = {"blocks": [Z64, R64]}
 
         with captured_output(), patch("nanopy.cli.HTTP"):
-            sys.argv = ["nanopy"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-g", "g"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-n"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-g", "g", "-n"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "--audit"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "--audit", "-i", "1"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-a", ONER]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-e", "--rep", PACC1]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-r", R64]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "-R"]
-            cli.main()
-
-            sys.argv = ["nanopy", "open", "f", "k", "--rep", PACC0]
-            cli.main()
+            cases = [
+                ["nanopy"],
+                ["nanopy", "open", "f", "k"],
+                ["nanopy", "open", "f", "k", "-g", "g"],
+                ["nanopy", "open", "f", "k", "-n"],
+                ["nanopy", "open", "f", "k", "-g", "g", "-n"],
+                ["nanopy", "open", "f", "k", "--audit"],
+                ["nanopy", "open", "f", "k", "--audit", "-i", "1"],
+                ["nanopy", "open", "f", "k", "-s", PACC0, "-a", ONER],
+                ["nanopy", "open", "f", "k", "-s", PACC0, "-e", "--rep", PACC1],
+                ["nanopy", "open", "f", "k", "-r", R64],
+                ["nanopy", "open", "f", "k", "-R"],
+                ["nanopy", "open", "f", "k", "--rep", PACC0],
+            ]
+            for sys.argv in cases:
+                cli.main()
 
         assert s.check_status.call_args_list == [
             call([PACC0, PACC1]),
