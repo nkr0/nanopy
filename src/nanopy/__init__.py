@@ -328,8 +328,8 @@ class Account:  # pylint: disable=too-many-instance-attributes
             b.work = work
         else:
             b.work_generate(self.network.send_difficulty)
-        self.rep = rep
         self.frontier = b.digest
+        self.rep = b.rep
         return b
 
     def receive(
@@ -357,10 +357,9 @@ class Account:  # pylint: disable=too-many-instance-attributes
             b.work = work
         else:
             b.work_generate(self.network.receive_difficulty)
-        if rep:
-            self.rep = rep
-        self.raw_bal = final_raw_bal
         self.frontier = b.digest
+        self.raw_bal = b.bal
+        self.rep = b.rep
         return b
 
     def send(
@@ -391,10 +390,9 @@ class Account:  # pylint: disable=too-many-instance-attributes
             b.work = work
         else:
             b.work_generate(self.network.send_difficulty)
-        if rep:
-            self.rep = rep
-        self.raw_bal = final_raw_bal
         self.frontier = b.digest
+        self.raw_bal = b.bal
+        self.rep = b.rep
         return b
 
     def _sign(self, b: "StateBlock") -> None:

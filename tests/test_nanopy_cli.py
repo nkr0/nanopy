@@ -21,6 +21,7 @@ ONER = "0.000000000000000000000000000001"
 PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
 PACC1 = "nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c"
 SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
+SACC1 = "nano_3d78japo7ziqqcsptk47eonzwzwjyaydcywq5ebzowjpxgyehynnjc9pd5zj"
 ZACC0 = "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
 ZACC1 = "nano_3rrf6cus8pye6o1kzi5n6wwjof8bjb7ff4xcgesi3njxid6x64pms6onw1f9"
 
@@ -178,7 +179,7 @@ class TestSession(unittest.TestCase):
         assert b.link == Z64
         assert len(bytes.fromhex(b.sig)) == 64
         assert len(bytes.fromhex(b.work)) == 8
-        acc.network = npy.Network()
+        acc.set_network()
 
     def test_receive(self) -> None:
         acc = npy.Account(sk=Z64)
@@ -221,7 +222,7 @@ class TestSession(unittest.TestCase):
         assert b1.link == O64
         assert len(bytes.fromhex(b1.sig)) == 64
         assert len(bytes.fromhex(b1.work)) == 8
-        acc.network = npy.Network()
+        acc.set_network()
 
 
 class TestModuleLevel(unittest.TestCase):
