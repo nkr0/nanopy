@@ -182,7 +182,7 @@ class TestAccount(unittest.TestCase):
         b = acc.change_rep(acc, work="f" * 16)
         assert b.verify_signature()
         assert acc.frontier == b.digest
-        acc.network = npy.Network()
+        acc.set_network()
 
     def test_receive(self) -> None:
         acc = npy.Account()
@@ -228,7 +228,7 @@ class TestAccount(unittest.TestCase):
         assert acc.raw_bal == b.bal
         assert acc.raw_bal == 0
         assert acc.rep == to
-        acc.network = npy.Network()
+        acc.set_network()
 
 
 class TestNetwork(unittest.TestCase):
