@@ -79,8 +79,7 @@ class TestSession(unittest.TestCase):
             assert out.getvalue() == (  # pylint: disable=no-member
                 f"Acc : {PACC0}\nBal : {OR}\n"
                 f"Acc : {PACC0}\nBal : {OR}\nRec : {TR}\n"
-                f"Acc : {PACC0}\nBal : {OR}\n"
-                f"Acc : {PACC1}\nBal : {TR}\nRec : {OR}\n"
+                f"Acc : {PACC0}\nBal : {OR}\nAcc : {PACC1}\nBal : {TR}\nRec : {OR}\n"
             )
 
     @patch("pykeepass.PyKeePass")
@@ -149,7 +148,7 @@ class TestSession(unittest.TestCase):
 
     def test_get_account_info(self) -> None:
         acc = npy.Account(addr=PACC0)
-        r = [{}, {"balance": "1", "frontier": R64, "representative": PACC0}]
+        r = [{}, {"balance": "1", "frontier": R64, "representative": PACC1}]
         with (
             captured_output() as out,
             patch.object(self.s.rpc, "account_info", side_effect=r),
@@ -158,12 +157,12 @@ class TestSession(unittest.TestCase):
             self.s.get_account_info(acc)
             assert out.getvalue() == (  # pylint: disable=no-member
                 f"Acc : {PACC0}\nBal : {ZR}\nRep : {PACC0}\n"
-                f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC0}\n"
+                f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC1}\n"
             )
 
         assert acc.frontier == R64
         assert acc.raw_bal == 1
-        assert acc.rep == PACC0
+        assert acc.rep == PACC1
 
     def test_change_rep(self) -> None:
         acc = npy.Account(sk=Z64)
