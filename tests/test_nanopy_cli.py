@@ -1,15 +1,11 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring,too-many-statements
-import configparser  # pylint: disable=unused-import
-import getpass  # pylint: disable=unused-import
 import os
 import sys
 import unittest
 from contextlib import contextmanager
 from io import StringIO
 from typing import Iterator
-from unittest.mock import Mock, patch
-
-import pykeepass  # type: ignore # pylint: disable=unused-import
+from unittest.mock import Mock, call, patch
 
 import nanopy as npy
 from nanopy import cli
@@ -201,7 +197,7 @@ class TestSession(unittest.TestCase):
             )
         assert acc.frontier == R64
         assert acc.raw_bal == 1
-        assert acc.rep.addr == PACC0
+        assert acc.rep == PACC0
 
     def test_change_rep(self) -> None:
         acc = npy.Account(sk=Z64)
@@ -209,9 +205,9 @@ class TestSession(unittest.TestCase):
         with captured_output() as out:
             b = self.s.change_rep(acc, npy.Account(PACC1))
             assert out.getvalue() == f"Rep : {PACC1}\n"  # pylint: disable=no-member
-        assert acc.rep.addr == PACC1
-        assert b.acc.addr == SACC0
-        assert b.rep.addr == PACC1
+        assert acc.rep == PACC1
+        assert b.acc == SACC0
+        assert b.rep == PACC1
         assert b.bal == 0
         assert b.prev == Z64
         assert b.link == Z64
@@ -232,8 +228,8 @@ class TestSession(unittest.TestCase):
             )
         assert acc.raw_bal == 2
         assert acc.frontier == b1.digest
-        assert b1.acc.addr == SACC0
-        assert b1.rep.addr == PACC1
+        assert b1.acc == SACC0
+        assert b1.rep == PACC1
         assert b1.bal == 2
         assert b1.prev == b0.digest
         assert b1.link == R64
@@ -253,8 +249,8 @@ class TestSession(unittest.TestCase):
             )
         assert acc.raw_bal == 0
         assert acc.frontier == b1.digest
-        assert b1.acc.addr == SACC0
-        assert b1.rep.addr == PACC0
+        assert b1.acc == SACC0
+        assert b1.rep == PACC0
         assert b1.bal == 0
         assert b1.prev == b0.digest
         assert b1.link == O64
@@ -264,305 +260,74 @@ class TestSession(unittest.TestCase):
 
 
 class TestModuleLevel(unittest.TestCase):
-    def test_parse_args(self) -> None:
-        assert vars(cli.parse_args([])) == {"network": "nano", "sub": None}
-        assert vars(cli.parse_args(["-n", "beta"])) == {"network": "beta", "sub": None}
-        assert vars(cli.parse_args(["open", "f", "k"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "amount": None,
-            "empty": False,
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-a", "0.1"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": "0.1",
-            "empty": False,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-e"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": True,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-g", "g"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": "g",
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-i", "1"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 1,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert str(vars(cli.parse_args(["open", "f", "k", "--rep", PACC0]))) == str(
-            {
-                "network": "nano",
-                "sub": "open",
-                "f": "f",
-                "k": "k",
-                "group": None,
-                "index": 0,
-                "rep": npy.Account(PACC0),
-                "audit": False,
-                "new": False,
-                "receive": None,
-                "receive_all": False,
-                "send": None,
-                "amount": None,
-                "empty": False,
-            }
-        )
-        assert vars(cli.parse_args(["open", "f", "k", "--audit"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": True,
-            "new": False,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-n"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": True,
-            "receive": None,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-r", R64])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": R64,
-            "receive_all": False,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert vars(cli.parse_args(["open", "f", "k", "-R"])) == {
-            "network": "nano",
-            "sub": "open",
-            "f": "f",
-            "k": "k",
-            "group": None,
-            "index": 0,
-            "rep": None,
-            "audit": False,
-            "new": False,
-            "receive": None,
-            "receive_all": True,
-            "send": None,
-            "amount": None,
-            "empty": False,
-        }
-        assert str(vars(cli.parse_args(["open", "f", "k", "-s", PACC0]))) == str(
-            {
-                "network": "nano",
-                "sub": "open",
-                "f": "f",
-                "k": "k",
-                "group": None,
-                "index": 0,
-                "rep": None,
-                "audit": False,
-                "new": False,
-                "receive": None,
-                "receive_all": False,
-                "send": npy.Account(PACC0),
-                "amount": None,
-                "empty": False,
-            }
-        )
-
-    @patch("nanopy.cli.HTTP")
+    @patch("nanopy.cli.Session")
     @patch("configparser.ConfigParser")
     @patch.object(sys, "argv", [])
-    def test_main(self, mock_cp: Mock, mock_http: Mock) -> None:
+    def test_main(self, mock_cp: Mock, mock_session: Mock) -> None:
         mock_cp.return_value.options.return_value = ["x", PACC0, PACC1]
-        mock_http.return_value.receivable.return_value = {"blocks": [Z64, R64]}
-        sys.argv = ["nanopy"]
-        with patch.object(cli.Session, "check_status") as f:
-            cli.main()
-            f.assert_called_once_with([PACC0, PACC1])
+        s = mock_session.return_value
+        s.get_key.return_value = Z64
+        s.get_addresses.side_effect = [[ZACC0], [ZACC0, ZACC1]]
+        s.rpc.receivable.return_value = {"blocks": [Z64, R64]}
 
-        sys.argv = ["nanopy", "open", "f", "k"]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64) as f,
-            patch.object(cli.Session, "get_account_info") as g,
-        ):
+        with captured_output():
+            sys.argv = ["nanopy"]
             cli.main()
-            f.assert_called_once_with("f", "k", None)
-            assert str(g.call_args.args[0]) == ZACC0
 
-        sys.argv = ["nanopy", "open", "f", "k", "-g", "g"]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64) as f,
-            patch.object(cli.Session, "get_account_info"),
-        ):
+            sys.argv = ["nanopy", "open", "f", "k"]
             cli.main()
-            f.assert_called_once_with("f", "k", "g")
 
-        sys.argv = ["nanopy", "open", "f", "k", "-n"]
-        with patch.object(cli.Session, "create_new_key") as f:
+            sys.argv = ["nanopy", "open", "f", "k", "-g", "g"]
             cli.main()
-            f.assert_called_once_with("f", "k", None)
 
-        sys.argv = ["nanopy", "open", "f", "k", "-g", "g", "-n"]
-        with patch.object(cli.Session, "create_new_key") as f:
+            sys.argv = ["nanopy", "open", "f", "k", "-n"]
             cli.main()
-            f.assert_called_once_with("f", "k", "g")
 
-        sys.argv = ["nanopy", "open", "f", "k", "--audit"]
-        with (
-            patch.object(cli.Session, "get_key", return_value=Z64) as f,
-            patch.object(cli.Session, "check_status") as g,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "-g", "g", "-n"]
             cli.main()
-            f.assert_called_once_with("f", "k", None)
-            g.assert_called_once_with([ZACC0])
 
-        sys.argv = ["nanopy", "open", "f", "k", "--audit", "-i", "1"]
-        with (
-            patch.object(cli.Session, "get_key", return_value=Z64) as f,
-            patch.object(cli.Session, "check_status") as g,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "--audit"]
             cli.main()
-            f.assert_called_once_with("f", "k", None)
-            g.assert_called_once_with([ZACC0, ZACC1])
 
-        sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-a", ONER]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64),
-            patch.object(cli.Session, "get_account_info"),
-            patch.object(cli.Session, "send") as f,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "--audit", "-i", "1"]
             cli.main()
-            assert str(f.call_args.args[0]) == ZACC0
-            assert str(f.call_args.args[1]) == PACC0
-            assert f.call_args.args[2] == ONER
-            assert f.call_args.args[3] is None
 
-        sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-e", "--rep", PACC1]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64),
-            patch.object(cli.Session, "get_account_info"),
-            patch.object(cli.Session, "send") as f,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-a", ONER]
             cli.main()
-            assert str(f.call_args.args[0]) == ZACC0
-            assert str(f.call_args.args[1]) == PACC0
-            assert f.call_args.args[2] == ZEROR
-            assert str(f.call_args.args[3]) == PACC1
 
-        sys.argv = ["nanopy", "open", "f", "k", "-r", R64]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64),
-            patch.object(cli.Session, "get_account_info"),
-            patch.object(cli.Session, "receive") as f,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "-s", PACC0, "-e", "--rep", PACC1]
             cli.main()
-            assert str(f.call_args.args[0]) == ZACC0
-            assert f.call_args.args[1] == R64
-            assert f.call_args.args[2] is None
 
-        sys.argv = ["nanopy", "open", "f", "k", "-R"]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64),
-            patch.object(cli.Session, "get_account_info"),
-            patch.object(cli.Session, "receive") as f,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "-r", R64]
             cli.main()
-            assert str(f.call_args.args[0]) == ZACC0
-            assert f.call_args.args[1] == R64
-            assert f.call_args.args[2] is None
 
-        sys.argv = ["nanopy", "open", "f", "k", "--rep", PACC0]
-        with (
-            captured_output(),
-            patch.object(cli.Session, "get_key", return_value=Z64),
-            patch.object(cli.Session, "get_account_info"),
-            patch.object(cli.Session, "change_rep") as f,
-        ):
+            sys.argv = ["nanopy", "open", "f", "k", "-R"]
             cli.main()
-            assert str(f.call_args.args[0]) == ZACC0
-            assert str(f.call_args.args[1]) == PACC0
+
+            sys.argv = ["nanopy", "open", "f", "k", "--rep", PACC0]
+            cli.main()
+
+        assert s.check_status.call_args_list == [
+            call([PACC0, PACC1]),
+            call([ZACC0]),
+            call([ZACC0, ZACC1]),
+        ]
+        assert (
+            s.get_key.call_args_list
+            == [call("f", "k", None), call("f", "k", "g")] + [call("f", "k", None)] * 7
+        )
+        assert s.get_account_info.call_args_list == [call(ZACC0)] * 7
+        assert s.create_new_key.call_args_list == [
+            call("f", "k", None),
+            call("f", "k", "g"),
+        ]
+        assert s.send.call_args_list == [
+            call(ZACC0, PACC0, ONER, None),
+            call(ZACC0, PACC0, ZEROR, PACC1),
+        ]
+        assert s.receive.call_args_list == [
+            call(ZACC0, R64, None),
+            call(ZACC0, Z64, None),
+            call(ZACC0, R64, None),
+        ]
+        assert s.change_rep.call_args_list == [call(ZACC0, PACC0)]

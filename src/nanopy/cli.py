@@ -3,8 +3,7 @@ import argparse
 import configparser
 import getpass
 import os
-import sys
-from typing import Any, Callable, Optional
+from typing import Callable, Optional
 
 import pykeepass  # type: ignore
 from platformdirs import user_config_dir
@@ -103,7 +102,7 @@ class Session:
         return acc.send(to, raw_amt, rep)
 
 
-def parse_args(args: list[str]) -> Any:
+def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-n",
@@ -134,11 +133,8 @@ def parse_args(args: list[str]) -> Any:
     sx = o.add_mutually_exclusive_group()
     sx.add_argument("-a", "--amount", type=str, help="Amount to send")
     sx.add_argument("-e", "--empty", action="store_true", help="Empty account")
-    return parser.parse_args(args)
+    args = parser.parse_args()
 
-
-def main() -> None:
-    args = parse_args(sys.argv[1:])
     config = configparser.ConfigParser(allow_no_value=True)
     config.read(user_config_dir("nanopy.ini"))
 
