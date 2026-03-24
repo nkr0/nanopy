@@ -45,9 +45,17 @@ rpc.process(sb.json)
 ```
 
 ## Wallet
-A light wallet is included with the library
+A cli wallet is included with the library
 
 * Configuration is in `~/.config/nanopy.ini`
+
+```ini
+[nano]
+nano_1111111111111111111111111111111111111111111111111111hifc8npp
+nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c
+rpc = http://localhost:7076
+```
+
 * `-n`, `--network`. Choose the network to interact with - *nano*, *banano*, or *beta*. The default network is *nano*.
 * Checks state of accounts in `~/.config/nanopy.ini` by default.
 * Open a wallet, `nanopy-wallet open FILE KEY`. `KEY` is a seed in a KDBX `FILE`. See `nanopy-wallet open -h` for options.
