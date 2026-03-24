@@ -205,6 +205,9 @@ class Account:  # pylint: disable=too-many-instance-attributes
     def __bool__(self) -> bool:
         return bool(self._pk)
 
+    def __eq__(self, other: object) -> bool:
+        return str(other) == str(self)
+
     @classmethod
     def set_network(cls, network: Optional[Network] = None, name: str = "nano") -> None:
         """Set the network for all accounts

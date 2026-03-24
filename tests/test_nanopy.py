@@ -51,18 +51,21 @@ class TestModuleLevel(unittest.TestCase):
 class TestAccount(unittest.TestCase):
     def test_init(self) -> None:
         acc = npy.Account(addr=PACC0)
+        assert acc == PACC0
         assert str(acc) == PACC0
         assert acc.addr == PACC0
         assert acc.pk == Z64
         assert not acc.sk
 
         acc = npy.Account(pk=Z64)
+        assert acc == PACC0
         assert str(acc) == PACC0
         assert acc.addr == PACC0
         assert acc.pk == Z64
         assert not acc.sk
 
         acc = npy.Account(sk=Z64)
+        assert acc == SACC0
         assert str(acc) == SACC0
         assert acc.addr == SACC0
         assert (
@@ -99,6 +102,7 @@ class TestAccount(unittest.TestCase):
     def test_addr(self) -> None:
         acc = npy.Account()
         acc.addr = PACC0
+        assert acc == PACC0
         assert str(acc) == PACC0
         assert acc.addr == PACC0
         assert acc.pk == Z64
@@ -107,6 +111,7 @@ class TestAccount(unittest.TestCase):
     def test_pk(self) -> None:
         acc = npy.Account()
         acc.pk = Z64
+        assert acc == PACC0
         assert str(acc) == PACC0
         assert acc.addr == PACC0
         assert acc.pk == Z64
@@ -115,6 +120,7 @@ class TestAccount(unittest.TestCase):
     def test_sk(self) -> None:
         acc = npy.Account()
         acc.sk = Z64
+        assert acc == SACC0
         assert str(acc) == SACC0
         assert acc.addr == SACC0
         assert (
