@@ -4,7 +4,6 @@ nanopy
 """
 
 import base64
-import binascii
 import dataclasses
 import decimal
 import hashlib
