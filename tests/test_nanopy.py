@@ -138,10 +138,12 @@ class TestAccount(unittest.TestCase):
 
     def test_raw_bal(self) -> None:
         acc = npy.Account(addr=PACC0)
-        with self.assertRaisesRegex(ValueError, "Balance cannot be < 0"):
+        with self.assertRaisesRegex(
+            ValueError, re.escape("Balance must be within [0, 2^128)")
+        ):
             acc.raw_bal = -1
         with self.assertRaisesRegex(
-            ValueError, re.escape("Balance cannot be >= 2^128")
+            ValueError, re.escape("Balance must be within [0, 2^128)")
         ):
             acc.raw_bal = 1 << 128
         acc.raw_bal = 1
@@ -195,7 +197,7 @@ class TestAccount(unittest.TestCase):
             acc.receive(Z64, -1)
         with self.assertRaisesRegex(
             ValueError,
-            re.escape("raw balance after receive cannot be >= 2^128"),
+            re.escape("Raw balance after receive cannot be >= 2^128"),
         ):
             acc.receive(Z64, 1 << 128)
         acc.receive(Z64, 1, work="f" * 16)
@@ -218,7 +220,7 @@ class TestAccount(unittest.TestCase):
         to = npy.Account(addr=PACC0)
         with self.assertRaisesRegex(ValueError, "Amount must be a positive integer"):
             acc.send(to, -1)
-        with self.assertRaisesRegex(ValueError, "raw balance after send cannot be < 0"):
+        with self.assertRaisesRegex(ValueError, "Raw balance after send cannot be < 0"):
             acc.send(to, 1)
         acc.raw_bal = 2
         acc.send(to, 1, work="f" * 16)
