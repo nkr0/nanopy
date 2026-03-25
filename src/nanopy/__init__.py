@@ -12,7 +12,7 @@ import json
 import os
 from typing import Optional
 
-from . import ext  # type: ignore
+from nanopy import ext  # type: ignore
 
 decimal.getcontext().prec = 40
 
@@ -21,11 +21,11 @@ def deterministic_key(seed: str, i: int = 0) -> str:
     """Derive deterministic private key from seed based on index i
 
     :arg seed: 64 hex char seed
-    :arg i: index number, 0 to 2^32 - 1
+    :arg i: index number, [0, 2^32)
     :return: 64 hex char private key
     """
     assert len(bytes.fromhex(seed)) == 32
-    assert 0 <= i <= 1 << 32
+    assert 0 <= i < 1 << 32
     return hashlib.blake2b(
         bytes.fromhex(seed) + i.to_bytes(4, byteorder="big"), digest_size=32
     ).hexdigest()
@@ -271,15 +271,13 @@ class Account:  # pylint: disable=too-many-instance-attributes
 
     @property
     def raw_bal(self) -> int:
-        "Account raw balance"
+        "Account raw balance [0, 2^128)"
         return self._raw_bal
 
     @raw_bal.setter
     def raw_bal(self, val: int) -> None:
-        if val < 0:
-            raise ValueError("Balance cannot be < 0")
-        if val >= 1 << 128:
-            raise ValueError("Balance cannot be >= 2^128")
+        if not 0 <= val < 1 << 128:
+            raise ValueError("Balance must be within [0, 2^128)")
         self._raw_bal = val
 
     @property
@@ -348,7 +346,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Amount must be a positive integer")
         final_raw_bal = self.raw_bal + raw_amt
         if final_raw_bal >= 1 << 128:
-            raise ValueError("raw balance after receive cannot be >= 2^128")
+            raise ValueError("Raw balance after receive cannot be >= 2^128")
         brep = rep if rep else self.rep
         b = StateBlock(self, brep, final_raw_bal, self.frontier, digest)
         self._sign(b)
@@ -381,7 +379,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
             raise ValueError("Amount must be a positive integer")
         final_raw_bal = self.raw_bal - raw_amt
         if final_raw_bal < 0:
-            raise ValueError("raw balance after send cannot be < 0")
+            raise ValueError("Raw balance after send cannot be < 0")
         brep = rep if rep else self.rep
         b = StateBlock(self, brep, final_raw_bal, self.frontier, to.pk)
         self._sign(b)
