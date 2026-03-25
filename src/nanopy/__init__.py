@@ -12,7 +12,7 @@ import json
 import os
 from typing import Optional
 
-from nanopy import ext  # type: ignore
+from . import ext  # type: ignore
 
 decimal.getcontext().prec = 40
 

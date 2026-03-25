@@ -3,7 +3,7 @@ import hashlib
 import json
 import os
 import re
-import unittest
+from unittest import TestCase
 
 import nanopy as npy
 
@@ -23,7 +23,7 @@ def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
     return b2b_h >= bytes.fromhex(difficulty)
 
 
-class TestModuleLevel(unittest.TestCase):
+class TestModuleLevel(TestCase):
     def test_deterministic_key(self) -> None:
         assert (
             npy.deterministic_key(Z64, 0)
@@ -48,7 +48,7 @@ class TestModuleLevel(unittest.TestCase):
         )
 
 
-class TestAccount(unittest.TestCase):
+class TestAccount(TestCase):
     def test_init(self) -> None:
         acc = npy.Account(addr=PACC0)
         assert acc == PACC0
@@ -233,7 +233,7 @@ class TestAccount(unittest.TestCase):
         acc.set_network()
 
 
-class TestNetwork(unittest.TestCase):
+class TestNetwork(TestCase):
     n = npy.Account.network
 
     def test_from_multiplier(self) -> None:
@@ -273,7 +273,7 @@ class TestNetwork(unittest.TestCase):
         assert 1234567890000000000000000000000 == self.n.to_raw("1.23456789")
 
 
-class TestStateBlock(unittest.TestCase):
+class TestStateBlock(TestCase):
     acc = npy.Account(sk=Z64)
     b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
 

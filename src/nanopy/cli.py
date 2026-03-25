@@ -8,8 +8,8 @@ from typing import Callable, Optional
 import pykeepass  # type: ignore
 from platformdirs import user_config_dir
 
-import nanopy as npy
-from nanopy.rpc import HTTP
+from . import Account, StateBlock, deterministic_key
+from .rpc import HTTP
 
 
 class Session:
@@ -20,7 +20,7 @@ class Session:
     def check_status(self, accounts: list[str]) -> None:
         if not accounts:
             return
-        n = npy.Account.network
+        n = Account.network
         info = self.rpc.accounts_balances(accounts)
         for account in accounts:
             accinfo = info["balances"][account]
@@ -32,9 +32,9 @@ class Session:
                 )
 
     def create_new_key(self, f: str, k: str, g: str = "") -> None:
-        acc = npy.Account()
+        acc = Account()
         seed = os.urandom(32).hex()
-        acc.sk = npy.deterministic_key(seed, 0)
+        acc.sk = deterministic_key(seed, 0)
         kp = pykeepass.PyKeePass(f, password=getpass.getpass())
         g = kp.find_groups(name=g, first=True) if g else kp.root_group
         kp.add_entry(g, k, acc.addr, seed)
@@ -53,32 +53,32 @@ class Session:
         return str(seed)
 
     def get_addresses(self, seed: str, index: int = 0) -> list[str]:
-        a = npy.Account()
+        a = Account()
         addresses = []
         for i in range(index + 1):
-            a.sk = npy.deterministic_key(seed, i)
+            a.sk = deterministic_key(seed, i)
             addresses.append(a.addr)
         return addresses
 
-    def get_account_info(self, acc: "npy.Account") -> None:
+    def get_account_info(self, acc: "Account") -> None:
         info = self.rpc.account_info(acc.addr, representative=True)
         if "frontier" in info:
             acc.state = (
                 info["frontier"],
                 int(info["balance"]),
-                npy.Account(addr=info["representative"]),
+                Account(addr=info["representative"]),
             )
         print(f"Acc : {acc}")
         print(f"Bal : {acc.bal:>40} {acc.network.std_unit}")
         print(f"Rep : {acc.rep}")
 
-    def change_rep(self, acc: "npy.Account", rep: "npy.Account") -> "npy.StateBlock":
+    def change_rep(self, acc: "Account", rep: "Account") -> "StateBlock":
         print(f"Rep : {rep}")
         return acc.change_rep(rep)
 
     def receive(
-        self, acc: "npy.Account", _hash: str, rep: Optional["npy.Account"] = None
-    ) -> "npy.StateBlock":
+        self, acc: "Account", _hash: str, rep: Optional["Account"] = None
+    ) -> "StateBlock":
         info = self.rpc.block_info(_hash)
         raw_amt = int(info["amount"])
         print(f"From: {info['block_account']}")
@@ -88,12 +88,8 @@ class Session:
         return acc.receive(_hash, raw_amt, rep)
 
     def send(
-        self,
-        acc: "npy.Account",
-        to: "npy.Account",
-        amt: str,
-        rep: Optional["npy.Account"] = None,
-    ) -> "npy.StateBlock":
+        self, acc: "Account", to: "Account", amt: str, rep: Optional["Account"] = None
+    ) -> "StateBlock":
         raw_amt = acc.network.to_raw(amt)
         print(f"To  : {to}")
         print(f"Amt : {acc.network.from_raw(raw_amt):>40} {acc.network.std_unit}")
@@ -119,7 +115,7 @@ def main() -> None:
     o.add_argument("k", metavar="KEY", help="Key label.")
     o.add_argument("-g", "--group", help="Key group. (root)", type=str)
     o.add_argument("-i", "--index", default=0, help="Account index. (0)", type=int)
-    o.add_argument("--rep", help="Change rep", metavar="ADDRESS", type=npy.Account)
+    o.add_argument("--rep", help="Change rep", metavar="ADDRESS", type=Account)
 
     ox = o.add_mutually_exclusive_group()
     ox.add_argument("--audit", action="store_true", help="Audit key")
@@ -128,7 +124,7 @@ def main() -> None:
     ox.add_argument(
         "-R", "--receive-all", action="store_true", help="Receive all pending blocks."
     )
-    ox.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=npy.Account)
+    ox.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=Account)
 
     sx = o.add_mutually_exclusive_group()
     sx.add_argument("-a", "--amount", type=str, help="Amount to send")
@@ -138,14 +134,14 @@ def main() -> None:
     config = configparser.ConfigParser(allow_no_value=True)
     config.read(user_config_dir("nanopy.ini"))
 
-    npy.Account.set_network(name=args.network)
-    n = npy.Account.network
+    Account.set_network(name=args.network)
+    n = Account.network
     s = Session(HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url))))
 
-    receivable: Callable[["npy.Account"], list[str]] = lambda acc: s.rpc.receivable(
+    receivable: Callable[["Account"], list[str]] = lambda acc: s.rpc.receivable(
         str(acc)
     )["blocks"]
-    process: Callable[["npy.StateBlock"], str] = lambda b: s.rpc.process(b.json)["hash"]
+    process: Callable[["StateBlock"], str] = lambda b: s.rpc.process(b.json)["hash"]
 
     if not args.sub:
         s.check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
@@ -161,7 +157,7 @@ def main() -> None:
         s.check_status(s.get_addresses(seed, args.index))
         return
 
-    acc = npy.Account(sk=npy.deterministic_key(seed, args.index))
+    acc = Account(sk=deterministic_key(seed, args.index))
     s.get_account_info(acc)
     if args.send:
         if args.empty:

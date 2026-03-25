@@ -1,10 +1,10 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import os
 import sys
-import unittest
 from contextlib import contextmanager
 from io import StringIO
 from typing import Iterator
+from unittest import TestCase
 from unittest.mock import Mock, call, patch
 
 import nanopy as npy
@@ -27,7 +27,7 @@ ZACC1 = "nano_3rrf6cus8pye6o1kzi5n6wwjof8bjb7ff4xcgesi3njxid6x64pms6onw1f9"
 
 
 @contextmanager
-def captured_output() -> Iterator[StringIO]:
+def stdout() -> Iterator[StringIO]:
     try:
         sys.stdout = StringIO()
         yield sys.stdout
@@ -35,7 +35,7 @@ def captured_output() -> Iterator[StringIO]:
         sys.stdout = sys.__stdout__
 
 
-class TestSession(unittest.TestCase):
+class TestSession(TestCase):
     s = cli.Session(Mock())
 
     def test_check_status(self) -> None:
@@ -70,18 +70,18 @@ class TestSession(unittest.TestCase):
             },
         ]
         with (
-            captured_output() as out,
+            stdout() as out,
             patch.object(self.s.rpc, "accounts_balances", side_effect=r),
         ):
             self.s.check_status([])
             self.s.check_status([PACC0])
             self.s.check_status([PACC0])
             self.s.check_status([PACC0, PACC1])
-            assert out.getvalue() == (  # pylint: disable=no-member
-                f"Acc : {PACC0}\nBal : {OR}\n"
-                f"Acc : {PACC0}\nBal : {OR}\nRec : {TR}\n"
-                f"Acc : {PACC0}\nBal : {OR}\nAcc : {PACC1}\nBal : {TR}\nRec : {OR}\n"
-            )
+        assert out.getvalue() == (  # pylint: disable=no-member
+            f"Acc : {PACC0}\nBal : {OR}\n"
+            f"Acc : {PACC0}\nBal : {OR}\nRec : {TR}\n"
+            f"Acc : {PACC0}\nBal : {OR}\nAcc : {PACC1}\nBal : {TR}\nRec : {OR}\n"
+        )
 
     @patch("pykeepass.PyKeePass")
     @patch("getpass.getpass")
@@ -90,11 +90,10 @@ class TestSession(unittest.TestCase):
         self, mock_urandom: Mock, mock_getpass: Mock, mock_kp: Mock
     ) -> None:
         mock_urandom.return_value = bytes.fromhex(Z64)
-        with captured_output() as out:
+        with stdout() as out:
             self.s.create_new_key("f", "k")
             self.s.create_new_key("f", "k", "g")
-            # pylint: disable=no-member
-            assert out.getvalue() == f"k {ZACC0}\nk {ZACC0}\n"
+        assert out.getvalue() == f"k {ZACC0}\nk {ZACC0}\n"  # pylint: disable=no-member
         assert mock_urandom.call_args_list == [call(32), call(32)]
         assert mock_getpass.call_count == 2
         assert (
@@ -150,16 +149,13 @@ class TestSession(unittest.TestCase):
     def test_get_account_info(self) -> None:
         acc = npy.Account(addr=PACC0)
         r = [{}, {"balance": "1", "frontier": R64, "representative": PACC1}]
-        with (
-            captured_output() as out,
-            patch.object(self.s.rpc, "account_info", side_effect=r),
-        ):
+        with stdout() as out, patch.object(self.s.rpc, "account_info", side_effect=r):
             self.s.get_account_info(acc)
             self.s.get_account_info(acc)
-            assert out.getvalue() == (  # pylint: disable=no-member
-                f"Acc : {PACC0}\nBal : {ZR}\nRep : {PACC0}\n"
-                f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC1}\n"
-            )
+        assert out.getvalue() == (  # pylint: disable=no-member
+            f"Acc : {PACC0}\nBal : {ZR}\nRep : {PACC0}\n"
+            f"Acc : {PACC0}\nBal : {OR}\nRep : {PACC1}\n"
+        )
 
         assert acc.frontier == R64
         assert acc.raw_bal == 1
@@ -168,9 +164,9 @@ class TestSession(unittest.TestCase):
     def test_change_rep(self) -> None:
         acc = npy.Account(sk=Z64)
         acc.network.send_difficulty = acc.network.receive_difficulty
-        with captured_output() as out:
+        with stdout() as out:
             b = self.s.change_rep(acc, npy.Account(PACC1))
-            assert out.getvalue() == f"Rep : {PACC1}\n"  # pylint: disable=no-member
+        assert out.getvalue() == f"Rep : {PACC1}\n"  # pylint: disable=no-member
         assert acc.rep == PACC1
         assert b.acc == SACC0
         assert b.rep == PACC1
@@ -184,14 +180,12 @@ class TestSession(unittest.TestCase):
     def test_receive(self) -> None:
         acc = npy.Account(sk=Z64)
         r = {"amount": "1", "block_account": PACC0}
-        with captured_output() as out:
-            with patch.object(self.s.rpc, "block_info", return_value=r):
-                b0 = self.s.receive(acc, O64)
-                b1 = self.s.receive(acc, R64, npy.Account(PACC1))
-            assert out.getvalue() == (  # pylint: disable=no-member
-                f"From: {PACC0}\nAmt : {OR}\n"
-                f"From: {PACC0}\nAmt : {OR}\nRep : {PACC1}\n"
-            )
+        with stdout() as out, patch.object(self.s.rpc, "block_info", return_value=r):
+            b0 = self.s.receive(acc, O64)
+            b1 = self.s.receive(acc, R64, npy.Account(PACC1))
+        assert out.getvalue() == (  # pylint: disable=no-member
+            f"From: {PACC0}\nAmt : {OR}\n" f"From: {PACC0}\nAmt : {OR}\nRep : {PACC1}\n"
+        )
         assert acc.raw_bal == 2
         assert acc.frontier == b1.digest
         assert b1.acc == SACC0
@@ -206,13 +200,12 @@ class TestSession(unittest.TestCase):
         acc = npy.Account(sk=Z64)
         acc.network.send_difficulty = acc.network.receive_difficulty
         acc.raw_bal = 2
-        with captured_output() as out:
+        with stdout() as out:
             b0 = self.s.send(acc, npy.Account(PACC1), ONER)
             b1 = self.s.send(acc, npy.Account(PACC1), ONER, npy.Account(PACC0))
-            assert out.getvalue() == (  # pylint: disable=no-member
-                f"To  : {PACC1}\nAmt : {OR}\n"
-                f"To  : {PACC1}\nAmt : {OR}\nRep : {PACC0}\n"
-            )
+        assert out.getvalue() == (  # pylint: disable=no-member
+            f"To  : {PACC1}\nAmt : {OR}\n" f"To  : {PACC1}\nAmt : {OR}\nRep : {PACC0}\n"
+        )
         assert acc.raw_bal == 0
         assert acc.frontier == b1.digest
         assert b1.acc == SACC0
@@ -225,7 +218,7 @@ class TestSession(unittest.TestCase):
         acc.set_network()
 
 
-class TestModuleLevel(unittest.TestCase):
+class TestModuleLevel(TestCase):
     @patch("nanopy.cli.Session")
     @patch("configparser.ConfigParser")
     @patch.object(sys, "argv", [])
@@ -236,7 +229,7 @@ class TestModuleLevel(unittest.TestCase):
         s.get_addresses.side_effect = [[ZACC0], [ZACC0, ZACC1]]
         s.rpc.receivable.return_value = {"blocks": [Z64, R64]}
 
-        with captured_output(), patch("nanopy.cli.HTTP"):
+        with stdout(), patch("nanopy.cli.HTTP"):
             cases = [
                 ["nanopy"],
                 ["nanopy", "open", "f", "k"],

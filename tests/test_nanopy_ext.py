@@ -1,11 +1,11 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import csv
-import unittest
+from unittest import TestCase
 
 from nanopy import ext  # type: ignore
 
 
-class TestModuleLevel(unittest.TestCase):
+class TestModuleLevel(TestCase):
     def test_work_validate(self) -> None:
         with self.assertRaisesRegex(ValueError, "Hash must be 32 bytes"):
             ext.work_validate(0, b"", 0)
