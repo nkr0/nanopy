@@ -8,10 +8,10 @@ description = "Python implementation of NANO currency related functions"
 readme = "README.md"
 dynamic = ["version"]
 requires-python = ">=3.10"
+dependencies = ["jsonschema", "mnemonic", "platformdirs", "pykeepass", "requests", "websocket-client"]
 
 [project.optional-dependencies]
-dev = ["black", "coverage", "mnemonic", "mypy", "pykeepass", "pylint[spelling]", "requests", "sphinx-autodoc-typehints", "types-requests", "websocket-client"]
-test = ["mnemonic", "platformdirs", "pykeepass"]
+dev = ["black", "coverage", "mypy", "pylint", "sphinx-autodoc-typehints", "types-jsonschema", "types-requests"]
 
 [project.scripts]
 nanopy = "nanopy.cli:main"
@@ -25,6 +25,9 @@ omit = ["src/nanopy/rpc.py"]
 
 [tool.coverage.report]
 fail_under = 100
+
+[tool.isort]
+profile = "black"
 
 [tool.mypy]
 files = "src, tests"

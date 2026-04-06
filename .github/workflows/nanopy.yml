@@ -9,20 +9,20 @@ jobs:
         python-version: '3.x'
     - run: pipx run build -s
     - run: pip install -ve .[dev]
-    - run: coverage run -m unittest
-    - run: coverage report
     - run: black --check .
     - run: isort -c .
     - run: clang-format --dry-run -Werror src/nanopy/ext.c
     - run: mypy
     - run: pylint --extension-pkg-allow-list=nanopy.ext src tests
+    - run: coverage run -m unittest
+    - run: coverage report
     - run: sphinx-build -W docs _site
     - run: sudo apt update
     - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo
-    - run: CC=clang pip install -ve .[test]
+    - run: CC=clang pip install -ve .
     - run: python -m unittest
     - run: clinfo
-    - run: USE_OCL=1 pip install -ve .[test]
+    - run: USE_OCL=1 pip install -ve .
     - run: python -m unittest
     - uses: actions/upload-artifact@v7
       with:
@@ -41,26 +41,23 @@ jobs:
       with:
         python-version: 3.x
     - if: runner.os != 'macOS'
-      run: pip install -ve .[test]
+      run: pip install -ve .
     - if: runner.os == 'macOS'
-      run: CC=gcc-15 pip install -ve .[test]
+      run: CC=gcc-15 pip install -ve .
     - run: python -m unittest
-  versions:
+  oldest:
     needs: base
-    strategy:
-      matrix:
-        py: ['3.14.x', '3.13.x', '3.12.x', '3.11.x', '3.10.x']
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
     - uses: actions/setup-python@v6
       with:
-        python-version: ${{ matrix.py }}
-    - run: pip install -ve .[test]
+        python-version: 3.10.x
+    - run: pip install -ve .
     - run: python -m unittest
   deploy:
     if: github.ref_type == 'tag'
-    needs: [platforms, versions]
+    needs: [platforms, oldest]
     permissions:
       pages: write
       id-token: write

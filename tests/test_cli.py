@@ -1,5 +1,4 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
-import os
 import sys
 from contextlib import contextmanager
 from io import StringIO
@@ -10,20 +9,7 @@ from unittest.mock import Mock, call, patch
 import nanopy as npy
 from nanopy import cli
 
-Z64 = "0" * 64
-O64 = "1" * 64
-R64 = os.urandom(32).hex()
-ZR = "        0.000000000000000000000000000000 Ӿ"
-OR = "        0.000000000000000000000000000001 Ӿ"
-TR = "        0.000000000000000000000000000002 Ӿ"
-ZEROR = "0.000000000000000000000000000000"
-ONER = "0.000000000000000000000000000001"
-PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
-PACC1 = "nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c"
-SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
-SACC1 = "nano_3d78japo7ziqqcsptk47eonzwzwjyaydcywq5ebzowjpxgyehynnjc9pd5zj"
-ZACC0 = "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
-ZACC1 = "nano_3rrf6cus8pye6o1kzi5n6wwjof8bjb7ff4xcgesi3njxid6x64pms6onw1f9"
+from . import O64, ONER, OR, PACC0, PACC1, R64, SACC0, TR, Z64, ZACC0, ZACC1, ZEROR, ZR
 
 
 @contextmanager
