@@ -12,6 +12,8 @@ import json
 import os
 from typing import Optional
 
+import mnemonic
+
 from . import ext  # type: ignore
 
 decimal.getcontext().prec = 40
@@ -31,46 +33,41 @@ def deterministic_key(seed: str, i: int = 0) -> str:
     ).hexdigest()
 
 
-try:
-    import mnemonic
+def generate_mnemonic(strength: int = 256, language: str = "english") -> str:
+    """Generate a BIP39 type mnemonic. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
-    def generate_mnemonic(strength: int = 256, language: str = "english") -> str:
-        """Generate a BIP39 type mnemonic. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
+    :arg strength: choose from 128, 160, 192, 224, 256
+    :arg language: one of the installed word list languages
+    :return: word list
+    """
+    m = mnemonic.Mnemonic(language)
+    return m.generate(strength=strength)
 
-        :arg strength: choose from 128, 160, 192, 224, 256
-        :arg language: one of the installed word list languages
-        :return: word list
-        """
-        m = mnemonic.Mnemonic(language)
-        return m.generate(strength=strength)
 
-    def mnemonic_key(
-        words: str, i: int = 0, passphrase: str = "", language: str = "english"
-    ) -> str:
-        """Derive deterministic private key from mnemonic based on index i.
-           Requires `mnemonic <https://pypi.org/project/mnemonic>`_
+def mnemonic_key(
+    words: str, i: int = 0, passphrase: str = "", language: str = "english"
+) -> str:
+    """Derive deterministic private key from mnemonic based on index i.
+       Requires `mnemonic <https://pypi.org/project/mnemonic>`_
 
-        :arg words: word list
-        :arg i: account index
-        :arg passphrase: passphrase to generate seed
-        :arg language: word list language
-        :return: 64 hex char private key
-        """
-        m = mnemonic.Mnemonic(language)
-        assert m.check(words)
-        key = b"ed25519 seed"
-        msg = m.to_seed(words, passphrase)
+    :arg words: word list
+    :arg i: account index
+    :arg passphrase: passphrase to generate seed
+    :arg language: word list language
+    :return: 64 hex char private key
+    """
+    m = mnemonic.Mnemonic(language)
+    assert m.check(words)
+    key = b"ed25519 seed"
+    msg = m.to_seed(words, passphrase)
+    h = hmac.new(key, msg, hashlib.sha512).digest()
+    sk, key = h[:32], h[32:]
+    for j in [44, 165, i]:
+        j = j | 0x80000000
+        msg = b"\x00" + sk + j.to_bytes(4, byteorder="big")
         h = hmac.new(key, msg, hashlib.sha512).digest()
         sk, key = h[:32], h[32:]
-        for j in [44, 165, i]:
-            j = j | 0x80000000
-            msg = b"\x00" + sk + j.to_bytes(4, byteorder="big")
-            h = hmac.new(key, msg, hashlib.sha512).digest()
-            sk, key = h[:32], h[32:]
-        return sk.hex()
-
-except ModuleNotFoundError:  # pragma: no cover
-    pass  # pragma: no cover
+    return sk.hex()
 
 
 @dataclasses.dataclass

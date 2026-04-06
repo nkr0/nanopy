@@ -2,16 +2,44 @@
 import hashlib
 import json
 import os
+import random
 import re
 from unittest import TestCase
 
 import nanopy as npy
 
+Z64 = "0" * 64
+O64 = "1" * 64
+R16 = os.urandom(8).hex()
+R64 = os.urandom(32).hex()
+R128 = os.urandom(64).hex()
+RI = str(random.randint(0, 2**32))
+RD = "1.0123456789"
+ZR = "        0.000000000000000000000000000000 Ӿ"
+OR = "        0.000000000000000000000000000001 Ӿ"
+TR = "        0.000000000000000000000000000002 Ӿ"
+ZEROR = "0.000000000000000000000000000000"
+ONER = "0.000000000000000000000000000001"
 PACC0 = "nano_1111111111111111111111111111111111111111111111111111hifc8npp"
 PACC1 = "nano_16aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46aj46ajbtsyew7c"
 SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
-Z64 = "0" * 64
-R64 = os.urandom(32).hex()
+SACC1 = "nano_3d78japo7ziqqcsptk47eonzwzwjyaydcywq5ebzowjpxgyehynnjc9pd5zj"
+ZACC0 = "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
+ZACC1 = "nano_3rrf6cus8pye6o1kzi5n6wwjof8bjb7ff4xcgesi3njxid6x64pms6onw1f9"
+RB = {
+    "type": "state",
+    "account": SACC0,
+    "previous": Z64,
+    "representative": SACC0,
+    "balance": "0",
+    "link": Z64,
+    "link_as_account": PACC0,
+    "work": R16,
+    "signature": (
+        "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c0552"
+        "42169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
+    ),
+}
 
 
 def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
