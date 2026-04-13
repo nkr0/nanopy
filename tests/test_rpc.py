@@ -27,7 +27,7 @@ R: dict[str, list[Any]] = {
                     "local_timestamp": RI,
                     "height": RI,
                     "hash": R64,
-                    "confirmed": True,
+                    "confirmed": "true",
                 }
             ],
             "previous": R64,
@@ -81,7 +81,7 @@ R: dict[str, list[Any]] = {
             "height": RI,
             "local_timestamp": RI,
             "successor": R64,
-            "confirmed": True,
+            "confirmed": "true",
             "subtype": "send",
             "contents": RB,
         }
@@ -97,7 +97,7 @@ R: dict[str, list[Any]] = {
                     "height": RI,
                     "local_timestamp": RI,
                     "successor": R64,
-                    "confirmed": True,
+                    "confirmed": "true",
                     "subtype": "send",
                     "contents": RB,
                     "pending": "1",
