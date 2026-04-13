@@ -29,6 +29,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
     _H128 = {"type": "string", "pattern": _H128P}
     _UInt = {"type": "string", "pattern": "^[0-9]{1,39}$"}
     _UDbl = {"type": "string", "pattern": "^[0-9.]{1,39}$"}
+    _Bool = {"type": "string", "pattern": "^true|false$"}
     _Type = {"type": "string", "pattern": "^change|epoch|receive|send|state$"}
     _ZO = {"type": "string", "pattern": "^[01]?$"}
     _IPP = "^[][0-9a-fA-F:.]{1,53}$"
@@ -164,7 +165,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
                             "local_timestamp": RPC._UInt,
                             "height": RPC._UInt,
                             "hash": RPC._H64,
-                            "confirmed": {"type": "boolean"},
+                            "confirmed": RPC._Bool,
                         }
                     )
                 ),
@@ -400,7 +401,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         link: str = "",
         work: str = "",
         version: str = "work_1",
-        json_block: bool = False,
         difficulty: str = "",
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_create"
@@ -428,20 +428,18 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["difficulty"] = difficulty
         if version in ["work_1"]:
             data["version"] = version
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict(
             {"hash": RPC._H64, "difficulty": RPC._H16, "block": RPC._Blk}
         ) | RPC._Req(["hash", "difficulty", "block"])
         return self._request(data, s)
 
-    def block_hash(self, block: dict[str, str], json_block: bool = False) -> Any:
+    def block_hash(self, block: dict[str, str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_hash"
         data: dict[str, Any] = {}
         data["action"] = "block_hash"
         data["block"] = block
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict({"hash": RPC._H64}) | RPC._Req(["hash"])
         return self._request(data, s)
 
@@ -456,22 +454,19 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             block["signature"],
             block["work"],
         )
-        assert b.digest == _hash
+        assert b.digest == _hash.lower()
         assert b.verify_signature()
 
     def _validate_block_info(self, _hash: str, r: Any) -> None:
         "validate the response of block_info"
         self._validate_block(_hash, r["contents"])
 
-    def block_info(
-        self, _hash: str, json_block: bool = False, include_linked_account: bool = False
-    ) -> Any:
+    def block_info(self, _hash: str, include_linked_account: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_info"
         data: dict[str, Any] = {}
         data["action"] = "block_info"
         data["hash"] = _hash
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         if include_linked_account:
             data["include_linked_account"] = True
         s = RPC._Dict(
@@ -482,7 +477,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
                 "height": RPC._UInt,
                 "local_timestamp": RPC._UInt,
                 "successor": RPC._H64,
-                "confirmed": {"type": "boolean"},
+                "confirmed": RPC._Bool,
                 "contents": RPC._Blk,
                 "subtype": RPC._Type,
             }
@@ -508,13 +503,12 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         for h in hashes:
             self._validate_block(h, r["blocks"][h])
 
-    def blocks(self, hashes: list[str], json_block: bool = False) -> Any:
+    def blocks(self, hashes: list[str]) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#blocks"
         data: dict[str, Any] = {}
         data["action"] = "blocks"
         data["hashes"] = hashes
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict({"blocks": RPC._DictP({RPC._H64P: RPC._Blk})}) | RPC._Req(
             ["blocks"]
         )
@@ -534,7 +528,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         pending: bool = False,
         source: bool = False,
         receive_hash: bool = False,
-        json_block: bool = False,
         include_not_found: bool = False,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#blocks_info"
@@ -549,8 +542,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["source"] = True
         if receive_hash:
             data["receive_hash"] = True
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         if include_not_found:
             data["include_not_found"] = True
         s = RPC._Dict(
@@ -565,7 +557,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
                                 "height": RPC._UInt,
                                 "local_timestamp": RPC._UInt,
                                 "successor": RPC._H64,
-                                "confirmed": {"type": "boolean"},
+                                "confirmed": RPC._Bool,
                                 "contents": RPC._Blk,
                                 "subtype": RPC._Type,
                                 "pending": RPC._ZO,
@@ -690,7 +682,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         root: str,
         contents: bool = True,
         representatives: bool = False,
-        json_block: bool = False,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_info"
         data: dict[str, Any] = {}
@@ -700,8 +691,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["contents"] = False
         if representatives:
             data["representatives"] = True
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict(
             {
                 "announcements": RPC._UInt,
@@ -980,7 +970,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         block: str | dict[str, str],
         force: bool = False,
         subtype: str = "",
-        json_block: bool = False,
         watch_work: bool = True,
         _async: bool = False,
     ) -> Any:
@@ -992,8 +981,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["force"] = True
         if subtype:
             data["subtype"] = subtype
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         if not watch_work:
             data["watch_work"] = False
         if _async:
@@ -1136,7 +1124,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         account: str = "",
         block: str = "",
         _hash: str = "",
-        json_block: bool = False,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#sign"
         data: dict[str, Any] = {}
@@ -1153,8 +1140,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["block"] = json.dumps(block)
         if _hash:
             data["_hash"] = _hash
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict({"signature": RPC._H128, "block": RPC._Blk}) | RPC._Req(
             ["signature"]
         )
@@ -1244,12 +1230,11 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         )
         return self._request(data, s)
 
-    def unchecked(self, json_block: bool = False, count: int = 1) -> Any:
+    def unchecked(self, count: int = 1) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked"
         data: dict[str, Any] = {}
         data["action"] = "unchecked"
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         data["count"] = count
         s = RPC._Dict({"blocks": RPC._DictP({RPC._H64P: RPC._Blk})}) | RPC._Req(
             ["blocks"]
@@ -1263,13 +1248,12 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
         return self._request(data, s)
 
-    def unchecked_get(self, _hash: str, json_block: bool = False) -> Any:
+    def unchecked_get(self, _hash: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_get"
         data: dict[str, Any] = {}
         data["action"] = "unchecked_get"
         data["hash"] = _hash
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict(
             {
                 "modified_timestamp": RPC._UInt,
@@ -1278,14 +1262,13 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         ) | RPC._Req(["modified_timestamp", "contents"])
         return self._request(data, s)
 
-    def unchecked_keys(self, key: str, count: int = 1, json_block: bool = False) -> Any:
+    def unchecked_keys(self, key: str, count: int = 1) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_keys"
         data: dict[str, Any] = {}
         data["action"] = "unchecked_keys"
         data["key"] = key
         data["count"] = count
-        if json_block:
-            data["json_block"] = True
+        data["json_block"] = True
         s = RPC._Dict(
             {
                 "key": RPC._H64,
@@ -1335,7 +1318,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         account: str = "",
         version: str = "work_1",
         block: str = "",
-        json_block: bool = False,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_generate"
         data: dict[str, Any] = {}
@@ -1353,8 +1335,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["version"] = version
         if block:
             data["block"] = block
-        if json_block:
-            data["json_block"] = json_block
+        data["json_block"] = True
         s = RPC._Dict(
             {
                 "work": RPC._H16,
