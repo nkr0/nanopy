@@ -71,7 +71,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
 
     @abstractmethod
     def request(self, data: dict[str, Any]) -> Any:
-        """Make RPC request. Override in derived class.
+        """Make RPC request
 
         :arg data: dict like object
         :return: JSON reponse as dict
@@ -1912,7 +1912,7 @@ class HTTP(RPC):
 
 
 class WS(RPC):
-    """WS RPC class
+    """WebSocket RPC class
 
     :arg url: URL of the nano node
     """
