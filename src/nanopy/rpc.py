@@ -21,11 +21,11 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
 
     _AccP = "^[a-z]{3,4}_[0-9a-z]{60}$"
     _Acc = {"type": "string", "pattern": _AccP}
-    _H16P = "^[0-9a-zA-Z]{16}$"
+    _H16P = "^[0-9a-fA-F]{16}$"
     _H16 = {"type": "string", "pattern": _H16P}
-    _H64P = "^[0-9a-zA-Z]{64}$"
+    _H64P = "^[0-9a-fA-F]{64}$"
     _H64 = {"type": "string", "pattern": _H64P}
-    _H128P = "^[0-9a-zA-Z]{128}$"
+    _H128P = "^[0-9a-fA-F]{128}$"
     _H128 = {"type": "string", "pattern": _H128P}
     _UInt = {"type": "string", "pattern": "^[0-9]{1,39}$"}
     _UDbl = {"type": "string", "pattern": "^[0-9.]{1,39}$"}
