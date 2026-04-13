@@ -77,15 +77,15 @@ class Session:
         return acc.change_rep(rep)
 
     def receive(
-        self, acc: "Account", _hash: str, rep: Optional["Account"] = None
+        self, acc: "Account", hash_: str, rep: Optional["Account"] = None
     ) -> "StateBlock":
-        info = self.rpc.block_info(_hash)
+        info = self.rpc.block_info(hash_)
         raw_amt = int(info["amount"])
         print(f"From: {info['block_account']}")
         print(f"Amt : {acc.network.from_raw(raw_amt):>40} {acc.network.std_unit}")
         if rep:
             print(f"Rep : {rep}")
-        return acc.receive(_hash, raw_amt, rep)
+        return acc.receive(hash_, raw_amt, rep)
 
     def send(
         self, acc: "Account", to: "Account", amt: str, rep: Optional["Account"] = None

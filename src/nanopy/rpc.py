@@ -27,11 +27,10 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
     _H64 = {"type": "string", "pattern": _H64P}
     _H128P = "^[0-9a-fA-F]{128}$"
     _H128 = {"type": "string", "pattern": _H128P}
+    _Bool = {"enum": ["true", "false", "0", "1", ""]}
     _UInt = {"type": "string", "pattern": "^[0-9]{1,39}$"}
     _UDbl = {"type": "string", "pattern": "^[0-9.]{1,39}$"}
-    _Bool = {"type": "string", "pattern": "^true|false$"}
-    _Type = {"type": "string", "pattern": "^change|epoch|receive|send|state$"}
-    _ZO = {"type": "string", "pattern": "^[01]?$"}
+    _Type = {"enum": ["change", "epoch", "receive", "send", "state"]}
     _IPP = "^[][0-9a-fA-F:.]{1,53}$"
     _IP = {"type": "string", "pattern": _IPP}
     _List: Callable[[dict[str, Any]], dict[str, Any]] = lambda x: {
@@ -361,20 +360,20 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         s = RPC._Dict({"available": RPC._UInt}) | RPC._Req(["available"])
         return self._request(data, s)
 
-    def block_account(self, _hash: str) -> Any:
+    def block_account(self, hash_: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_account"
         data: dict[str, Any] = {}
         data["action"] = "block_account"
-        data["hash"] = _hash
+        data["hash"] = hash_
         s = RPC._Dict({"account": RPC._Acc}) | RPC._Req(["account"])
         return self._request(data, s)
 
-    def block_confirm(self, _hash: str) -> Any:
+    def block_confirm(self, hash_: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_confirm"
         data: dict[str, Any] = {}
         data["action"] = "block_confirm"
-        data["hash"] = _hash
-        s = RPC._Dict({"started": RPC._ZO}) | RPC._Req(["started"])
+        data["hash"] = hash_
+        s = RPC._Dict({"started": RPC._Bool}) | RPC._Req(["started"])
         return self._request(data, s)
 
     def block_count(self, include_cemented: bool = True) -> Any:
@@ -443,7 +442,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         s = RPC._Dict({"hash": RPC._H64}) | RPC._Req(["hash"])
         return self._request(data, s)
 
-    def _validate_block(self, _hash: str, block: Any) -> None:
+    def _validate_block(self, hash_: str, block: Any) -> None:
         "validate block content"
         b = npy.StateBlock(
             npy.Account(block["account"]),
@@ -454,18 +453,18 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             block["signature"],
             block["work"],
         )
-        assert b.digest == _hash.lower()
+        assert b.digest == hash_.lower()
         assert b.verify_signature()
 
-    def _validate_block_info(self, _hash: str, r: Any) -> None:
+    def _validate_block_info(self, hash_: str, r: Any) -> None:
         "validate the response of block_info"
-        self._validate_block(_hash, r["contents"])
+        self._validate_block(hash_, r["contents"])
 
-    def block_info(self, _hash: str, include_linked_account: bool = False) -> Any:
+    def block_info(self, hash_: str, include_linked_account: bool = False) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#block_info"
         data: dict[str, Any] = {}
         data["action"] = "block_info"
-        data["hash"] = _hash
+        data["hash"] = hash_
         data["json_block"] = True
         if include_linked_account:
             data["include_linked_account"] = True
@@ -495,7 +494,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             ]
         )
         r = self._request(data, s)
-        self._validate_block_info(_hash, r)
+        self._validate_block_info(hash_, r)
         return r
 
     def _validate_blocks(self, hashes: list[str], r: Any) -> None:
@@ -560,7 +559,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
                                 "confirmed": RPC._Bool,
                                 "contents": RPC._Blk,
                                 "subtype": RPC._Type,
-                                "pending": RPC._ZO,
+                                "pending": RPC._Bool,
                                 "source_account": RPC._Acc,
                                 "receive_hash": RPC._H64,
                             }
@@ -579,45 +578,45 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         address: str,
         port: str,
         bypass_frontier_confirmation: bool = False,
-        _id: str = "",
+        id_: str = "",
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap"
         data: dict[str, Any] = {}
         data["action"] = "bootstrap"
         data["address"] = address
         data["port"] = port
-        if _id:
-            data["id"] = _id
+        if id_:
+            data["id"] = id_
         if bypass_frontier_confirmation:
             data["bypass_frontier_confirmation"] = True
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def bootstrap_any(
-        self, force: bool = False, _id: str = "", account: str = ""
+        self, force: bool = False, id_: str = "", account: str = ""
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap_any"
         data: dict[str, Any] = {}
         data["action"] = "bootstrap_any"
         if force:
             data["force"] = True
-        if _id:
-            data["id"] = _id
+        if id_:
+            data["id"] = id_
         if account:
             data["account"] = account
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
-    def bootstrap_lazy(self, hash_: str, force: bool = False, _id: str = "") -> Any:
+    def bootstrap_lazy(self, hash_: str, force: bool = False, id_: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#bootstrap_lazy"
         data: dict[str, Any] = {}
         data["action"] = "bootstrap_lazy"
         data["hash"] = hash_
         if force:
             data["force"] = True
-        if _id:
-            data["id"] = _id
-        s = RPC._Dict({"started": RPC._ZO}) | RPC._Req(["started"])
+        if id_:
+            data["id"] = id_
+        s = RPC._Dict({"started": RPC._Bool}) | RPC._Req(["started"])
         return self._request(data, s)
 
     def bootstrap_priorities(self) -> Any:
@@ -668,12 +667,12 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         ) | RPC._Req(["confirmations", "unconfirmed", "confirmed"])
         return self._request(data, s)
 
-    def confirmation_history(self, _hash: str = "") -> Any:
+    def confirmation_history(self, hash_: str = "") -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#confirmation_history"
         data: dict[str, Any] = {}
         data["action"] = "confirmation_history"
-        if _hash:
-            data["hash"] = _hash
+        if hash_:
+            data["hash"] = hash_
         s = RPC._Dict({}) | RPC._Req(["confirmation_stats", "confirmations"])
         return self._request(data, s)
 
@@ -815,7 +814,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["count"] = count
         if threads:
             data["threads"] = threads
-        s = RPC._Dict({"started": RPC._ZO}) | RPC._Req(["started"])
+        s = RPC._Dict({"started": RPC._Bool}) | RPC._Req(["started"])
         return self._request(data, s)
 
     def frontier_count(self) -> Any:
@@ -842,7 +841,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "keepalive"
         data["address"] = address
         data["port"] = port
-        s = RPC._Dict({"started": RPC._ZO}) | RPC._Req(["started"])
+        s = RPC._Dict({"started": RPC._Bool}) | RPC._Req(["started"])
         return self._request(data, s)
 
     def key_create(self) -> Any:
@@ -947,7 +946,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
                                     {
                                         "protocol_version": RPC._UInt,
                                         "node_id": RPC._Acc,
-                                        "type": {"type": "string", "pattern": "^tcp$"},
+                                        "type": {"const": "tcp"},
                                     }
                                 )
                             }
@@ -962,7 +961,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         "https://docs.nano.org/commands/rpc-protocol/#populate_backlog"
         data: dict[str, Any] = {}
         data["action"] = "populate_backlog"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def process(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -971,7 +970,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         force: bool = False,
         subtype: str = "",
         watch_work: bool = True,
-        _async: bool = False,
+        async_: bool = False,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#process"
         data: dict[str, Any] = {}
@@ -984,7 +983,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["json_block"] = True
         if not watch_work:
             data["watch_work"] = False
-        if _async:
+        if async_:
             data["async"] = True
         s = RPC._Dict({"hash": RPC._H64}) | RPC._Req(["hash"])
         return self._request(data, s)
@@ -1050,19 +1049,19 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
 
     def receivable_exists(
         self,
-        _hash: str,
+        hash_: str,
         include_active: bool = False,
         include_only_confirmed: bool = True,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#receivable_exists"
         data: dict[str, Any] = {}
         data["action"] = "receivable_exists"
-        data["hash"] = _hash
+        data["hash"] = hash_
         if include_active:
             data["include_active"] = True
         if not include_only_confirmed:
             data["include_only_confirmed"] = False
-        s = RPC._Dict({"exists": RPC._ZO}) | RPC._Req(["exists"])
+        s = RPC._Dict({"exists": RPC._Bool}) | RPC._Req(["exists"])
         return self._request(data, s)
 
     def representatives(self, count: int = 1, sorting: bool = False) -> Any:
@@ -1100,19 +1099,19 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         return self._request(data, s)
 
     def republish(
-        self, _hash: str, count: int = 1, sources: int = 0, destinations: int = 0
+        self, hash_: str, count: int = 1, sources: int = 0, destinations: int = 0
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#republish"
         data: dict[str, Any] = {}
         data["action"] = "republish"
-        data["hash"] = _hash
+        data["hash"] = hash_
         if sources:
             data["sources"] = sources
             data["count"] = count
         if destinations:
             data["destinations"] = destinations
             data["count"] = count
-        s = RPC._Dict({"success": RPC._ZO, "blocks": RPC._List(RPC._H64)}) | RPC._Req(
+        s = RPC._Dict({"success": RPC._Bool, "blocks": RPC._List(RPC._H64)}) | RPC._Req(
             ["blocks"]
         )
         return self._request(data, s)
@@ -1123,7 +1122,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         wallet: str = "",
         account: str = "",
         block: str = "",
-        _hash: str = "",
+        hash_: str = "",
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#sign"
         data: dict[str, Any] = {}
@@ -1138,33 +1137,33 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["block"] = block
         else:
             data["block"] = json.dumps(block)
-        if _hash:
-            data["_hash"] = _hash
+        if hash_:
+            data["hash"] = hash_
         data["json_block"] = True
         s = RPC._Dict({"signature": RPC._H128, "block": RPC._Blk}) | RPC._Req(
             ["signature"]
         )
         return self._request(data, s)
 
-    def stats(self, _type: str) -> Any:
+    def stats(self, type_: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stats"
         data: dict[str, Any] = {}
         data["action"] = "stats"
-        data["type"] = _type
+        data["type"] = type_
         return self._request(data)
 
     def stats_clear(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stats_clear"
         data: dict[str, Any] = {}
         data["action"] = "stats_clear"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def stop(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#stop"
         data: dict[str, Any] = {}
         data["action"] = "stop"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def successors(
@@ -1198,7 +1197,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "validate_account_number"
         data["account"] = account
-        s = RPC._Dict({"valid": RPC._ZO}) | RPC._Req(["valid"])
+        s = RPC._Dict({"valid": RPC._Bool}) | RPC._Req(["valid"])
         return self._request(data, s)
 
     def version(self) -> Any:
@@ -1245,14 +1244,14 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_clear"
         data: dict[str, Any] = {}
         data["action"] = "unchecked_clear"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
-    def unchecked_get(self, _hash: str) -> Any:
+    def unchecked_get(self, hash_: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#unchecked_get"
         data: dict[str, Any] = {}
         data["action"] = "unchecked_get"
-        data["hash"] = _hash
+        data["hash"] = hash_
         data["json_block"] = True
         s = RPC._Dict(
             {
@@ -1301,17 +1300,17 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         s = RPC._Dict({"seconds": RPC._UInt}) | RPC._Req(["seconds"])
         return self._request(data, s)
 
-    def work_cancel(self, _hash: str) -> Any:
+    def work_cancel(self, hash_: str) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_cancel"
         data: dict[str, Any] = {}
         data["action"] = "work_cancel"
-        data["hash"] = _hash
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        data["hash"] = hash_
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def work_generate(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        _hash: str,
+        hash_: str,
         use_peers: bool = False,
         difficulty: str = "",
         multiplier: int = 0,
@@ -1322,7 +1321,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         "https://docs.nano.org/commands/rpc-protocol/#work_generate"
         data: dict[str, Any] = {}
         data["action"] = "work_generate"
-        data["hash"] = _hash
+        data["hash"] = hash_
         if use_peers:
             data["use_peers"] = True
         if multiplier:
@@ -1352,7 +1351,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "work_peer_add"
         data["address"] = address
         data["port"] = port
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def work_peers(self) -> Any:
@@ -1366,13 +1365,13 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         "https://docs.nano.org/commands/rpc-protocol/#work_peers_clear"
         data: dict[str, Any] = {}
         data["action"] = "work_peers_clear"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
-    def work_validate(
+    def work_validate(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
         work: str,
-        _hash: str,
+        hash_: str,
         difficulty: str = "",
         multiplier: int = 0,
         version: str = "work_1",
@@ -1381,7 +1380,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "work_validate"
         data["work"] = work
-        data["hash"] = _hash
+        data["hash"] = hash_
         if multiplier:
             data["multiplier"] = multiplier
         elif difficulty:
@@ -1390,8 +1389,8 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["version"] = version
         s = RPC._Dict(
             {
-                "valid_all": RPC._ZO,
-                "valid_receive": RPC._ZO,
+                "valid_all": RPC._Bool,
+                "valid_receive": RPC._Bool,
                 "difficulty": RPC._H16,
                 "multiplier": RPC._UDbl,
             }
@@ -1425,7 +1424,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["wallet"] = wallet
         data["source"] = source
         data["accounts"] = accounts
-        s = RPC._Dict({"moved": RPC._ZO}) | RPC._Req(["moved"])
+        s = RPC._Dict({"moved": RPC._Bool}) | RPC._Req(["moved"])
         return self._request(data, s)
 
     def account_remove(self, wallet: str, account: str) -> Any:
@@ -1434,7 +1433,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "account_remove"
         data["wallet"] = wallet
         data["account"] = account
-        s = RPC._Dict({"removed": RPC._ZO}) | RPC._Req(["removed"])
+        s = RPC._Dict({"removed": RPC._Bool}) | RPC._Req(["removed"])
         return self._request(data, s)
 
     def account_representative_set(
@@ -1468,7 +1467,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "password_change"
         data["wallet"] = wallet
         data["password"] = password
-        s = RPC._Dict({"changed": RPC._ZO}) | RPC._Req(["changed"])
+        s = RPC._Dict({"changed": RPC._Bool}) | RPC._Req(["changed"])
         return self._request(data, s)
 
     def password_enter(self, wallet: str, password: str) -> Any:
@@ -1477,7 +1476,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "password_enter"
         data["wallet"] = wallet
         data["password"] = password
-        s = RPC._Dict({"valid": RPC._ZO}) | RPC._Req(["valid"])
+        s = RPC._Dict({"valid": RPC._Bool}) | RPC._Req(["valid"])
         return self._request(data, s)
 
     def password_valid(self, wallet: str) -> Any:
@@ -1485,7 +1484,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "password_valid"
         data["wallet"] = wallet
-        s = RPC._Dict({"valid": RPC._ZO}) | RPC._Req(["valid"])
+        s = RPC._Dict({"valid": RPC._Bool}) | RPC._Req(["valid"])
         return self._request(data, s)
 
     def receive(self, wallet: str, account: str, block: str, work: str = "") -> Any:
@@ -1512,7 +1511,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "receive_minimum_set"
         data["amount"] = amount
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def search_receivable(self, wallet: str) -> Any:
@@ -1520,14 +1519,14 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "search_receivable"
         data["wallet"] = wallet
-        s = RPC._Dict({"started": RPC._ZO}) | RPC._Req(["started"])
+        s = RPC._Dict({"started": RPC._Bool}) | RPC._Req(["started"])
         return self._request(data, s)
 
     def search_receivable_all(self) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#search_receivable_all"
         data: dict[str, Any] = {}
         data["action"] = "search_receivable_all"
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def send(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -1536,7 +1535,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         source: str,
         destination: str,
         amount: str,
-        _id: str = "",
+        id_: str = "",
         work: str = "",
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#send"
@@ -1546,8 +1545,8 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["source"] = source
         data["destination"] = destination
         data["amount"] = amount
-        if _id:
-            data["id"] = _id
+        if id_:
+            data["id"] = id_
         if work:
             data["work"] = work
         s = RPC._Dict({"block": RPC._H64}) | RPC._Req(["block"])
@@ -1570,7 +1569,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "wallet_add_watch"
         data["wallet"] = wallet
         data["accounts"] = accounts
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def wallet_balances(self, wallet: str, threshold: int = 0) -> Any:
@@ -1605,7 +1604,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["seed"] = seed
         if count:
             data["count"] = count
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def wallet_contains(self, wallet: str, account: str) -> Any:
@@ -1614,7 +1613,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["action"] = "wallet_contains"
         data["wallet"] = wallet
         data["account"] = account
-        s = RPC._Dict({"exists": RPC._ZO}) | RPC._Req(["exists"])
+        s = RPC._Dict({"exists": RPC._Bool}) | RPC._Req(["exists"])
         return self._request(data, s)
 
     def wallet_create(self, seed: str = "") -> Any:
@@ -1631,7 +1630,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "wallet_destroy"
         data["wallet"] = wallet
-        s = RPC._Dict({"destroyed": RPC._ZO}) | RPC._Req(["destroyed"])
+        s = RPC._Dict({"destroyed": RPC._Bool}) | RPC._Req(["destroyed"])
         return self._request(data, s)
 
     def wallet_export(self, wallet: str) -> Any:
@@ -1753,7 +1752,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "wallet_lock"
         data["wallet"] = wallet
-        s = RPC._Dict({"locked": RPC._ZO}) | RPC._Req(["locked"])
+        s = RPC._Dict({"locked": RPC._Bool}) | RPC._Req(["locked"])
         return self._request(data, s)
 
     def wallet_locked(self, wallet: str) -> Any:
@@ -1761,7 +1760,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data: dict[str, Any] = {}
         data["action"] = "wallet_locked"
         data["wallet"] = wallet
-        s = RPC._Dict({"locked": RPC._ZO}) | RPC._Req(["locked"])
+        s = RPC._Dict({"locked": RPC._Bool}) | RPC._Req(["locked"])
         return self._request(data, s)
 
     def wallet_receivable(  # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -1837,7 +1836,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["representative"] = representative
         if update_existing_accounts:
             data["update_existing_accounts"] = True
-        s = RPC._Dict({"set": RPC._ZO}) | RPC._Req(["set"])
+        s = RPC._Dict({"set": RPC._Bool}) | RPC._Req(["set"])
         return self._request(data, s)
 
     def wallet_republish(self, wallet: str, count: int = 1) -> Any:
@@ -1875,7 +1874,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         data["wallet"] = wallet
         data["account"] = account
         data["work"] = work
-        s = RPC._Dict({"success": RPC._ZO}) | RPC._Req(["success"])
+        s = RPC._Dict({"success": RPC._Bool}) | RPC._Req(["success"])
         return self._request(data, s)
 
     def nano_to_raw(self, amount: str) -> Any:
