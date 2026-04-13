@@ -9,7 +9,7 @@ from jsonschema.exceptions import ValidationError
 
 import nanopy.rpc
 
-from . import PACC0, PACC1, R16, R64, R128, RB, RD, RI, Z64
+from . import PACC0, PACC1, R16, R64, R128, RB, RD, RI, RIP, Z64
 
 rpc = nanopy.rpc.HTTP()
 R: dict[str, list[Any]] = {
@@ -179,8 +179,8 @@ R: dict[str, list[Any]] = {
     ],
     "node_id": [{"private": R64, "public": R64, "as_account": PACC0, "node_id": PACC0}],
     "peers": [
-        {"peers": {"ip": RI}},
-        {"peers": {"ip": {"protocol_version": RI, "node_id": PACC0, "type": "tcp"}}},
+        {"peers": {RIP: RI}},
+        {"peers": {RIP: {"protocol_version": RI, "node_id": PACC0, "type": "tcp"}}},
     ],
     "populate_backlog": [{"success": ""}],
     "process": [{"hash": R64}],
@@ -226,7 +226,7 @@ R: dict[str, list[Any]] = {
     "work_cancel": [{"success": ""}],
     "work_generate": [{"work": R16, "difficulty": R16, "multiplier": RD, "hash": R64}],
     "work_peer_add": [{"success": ""}],
-    "work_peers": [{"work_peers": ["ip"]}],
+    "work_peers": [{"work_peers": [RIP]}],
     "work_peers_clear": [{"success": ""}],
     "work_validate": [
         {"valid_all": "1", "valid_receive": "1", "difficulty": R16, "multiplier": RD}

@@ -31,7 +31,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
     _UDbl = {"type": "string", "pattern": "^[0-9.]{1,39}$"}
     _Type = {"type": "string", "pattern": "^change|epoch|receive|send|state$"}
     _ZO = {"type": "string", "pattern": "^[01]?$"}
-    _IPP = "^.{1,53}$"
+    _IPP = "^[][0-9a-fA-F:.]{1,53}$"
     _IP = {"type": "string", "pattern": _IPP}
     _List: Callable[[dict[str, Any]], dict[str, Any]] = lambda x: {
         "type": "array",
