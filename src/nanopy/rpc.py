@@ -453,7 +453,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             block["signature"],
             block["work"],
         )
-        assert b.digest == hash_.lower()
+        assert b.hash_ == hash_.lower()
         assert b.verify_signature()
 
     def _validate_block_info(self, hash_: str, r: Any) -> None:

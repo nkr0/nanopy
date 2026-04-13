@@ -20,28 +20,25 @@ USE_OCL=1 pip install nanopy
 
 ## Usage
 ```py
+from nanopy import Account, deterministic_key
+from nanopy.rpc import HTTP
+
 # create an account (defaults to NANO network) and set secret key
-seed = "0000000...."
-acc = npy.Account()
-acc.sk = npy.deterministic_key(seed)
+acc = Account(sk=deterministic_key(seed="0000000...."))
 
 # if it is not a new account, set the current state of the account (frontier, raw bal, rep)
-acc.state = ("1234....", 1200000000000000, npy.Account(addr="nano_repaddress..."))
+acc.state = ("1234....", 1200000000000000, Account(addr="nano_repaddress..."))
 
 # create a receive block and optionally, change rep along with it
-_hash = "5678...."
-raw_amt = acc.network.to_raw("10")
-rep = npy.Account(addr="nano_newrepaddress...")
-rb = acc.receive(_hash, raw_amt, rep)
+rb = acc.receive(hash_="5678....", raw_amt=acc.network.to_raw("10"), rep=Account(addr="nano_newrepaddress..."))
 
 # create a send block
-to = npy.Account(addr="nano_sendaddress...")
-raw_amt = acc.network.to_raw("1")
-sb = acc.send(to, raw_amt)
+sb = acc.send(Account(addr="nano_sendaddress..."), acc.network.to_raw("1"))
 
 # broadcast
-rpc.process(rb.json)
-rpc.process(sb.json)
+r = HTTP(url="http://localhost:7076")
+r.process(rb.json)
+r.process(sb.json)
 ```
 
 ## Wallet

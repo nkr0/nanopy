@@ -10,6 +10,7 @@ import nanopy as npy
 
 Z64 = "0" * 64
 O64 = "1" * 64
+PZ64 = "19d3d919475deed4696b5d13018151d1af88b2bd3bcff048b45031c1f36d1858"
 R16 = os.urandom(8).hex()
 R64 = os.urandom(32).hex()
 R128 = os.urandom(64).hex()
@@ -27,6 +28,10 @@ SACC0 = "nano_18gmu6engqhgtjnppqam181o5nfhj4sdtgyhy36dan3jr9spt84rzwmktafc"
 SACC1 = "nano_3d78japo7ziqqcsptk47eonzwzwjyaydcywq5ebzowjpxgyehynnjc9pd5zj"
 ZACC0 = "nano_3i1aq1cchnmbn9x5rsbap8b15akfh7wj7pwskuzi7ahz8oq6cobd99d4r3b7"
 ZACC1 = "nano_3rrf6cus8pye6o1kzi5n6wwjof8bjb7ff4xcgesi3njxid6x64pms6onw1f9"
+SIG = (
+    "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c0552"
+    "42169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
+)
 RB = {
     "type": "state",
     "account": SACC0,
@@ -36,10 +41,7 @@ RB = {
     "link": Z64,
     "link_as_account": PACC0,
     "work": R16,
-    "signature": (
-        "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c0552"
-        "42169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
-    ),
+    "signature": SIG,
 }
 
 
@@ -54,10 +56,8 @@ def work_validate(b: npy.StateBlock, difficulty: str) -> bool:
 
 class TestModuleLevel(TestCase):
     def test_deterministic_key(self) -> None:
-        assert (
-            npy.deterministic_key(Z64, 0)
-            == "9f0e444c69f77a49bd0be89db92c38fe713e0963165cca12faf5712d7657120f"
-        )
+        sk = "9f0e444c69f77a49bd0be89db92c38fe713e0963165cca12faf5712d7657120f"
+        assert npy.deterministic_key(Z64, 0) == sk
 
     def test_generate_mnemonic(self) -> None:
         assert (
@@ -97,9 +97,7 @@ class TestAccount(TestCase):
         assert acc == SACC0
         assert str(acc) == SACC0
         assert acc.addr == SACC0
-        assert (
-            acc.pk == "19d3d919475deed4696b5d13018151d1af88b2bd3bcff048b45031c1f36d1858"
-        )
+        assert acc.pk == PZ64
         assert acc.sk == Z64
 
     def test_set_network(self) -> None:
@@ -152,9 +150,7 @@ class TestAccount(TestCase):
         assert acc == SACC0
         assert str(acc) == SACC0
         assert acc.addr == SACC0
-        assert (
-            acc.pk == "19d3d919475deed4696b5d13018151d1af88b2bd3bcff048b45031c1f36d1858"
-        )
+        assert acc.pk == PZ64
         assert acc.sk == Z64
 
     def test_bal(self) -> None:
@@ -212,7 +208,7 @@ class TestAccount(TestCase):
         acc.change_rep(acc)
         b = acc.change_rep(acc, work="f" * 16)
         assert b.verify_signature()
-        assert acc.frontier == b.digest
+        assert acc.frontier == b.hash_
         acc.set_network()
 
     def test_receive(self) -> None:
@@ -233,7 +229,7 @@ class TestAccount(TestCase):
         rep = npy.Account(addr=PACC0)
         b = acc.receive(Z64, 1, rep)
         assert b.verify_signature()
-        assert acc.frontier == b.digest
+        assert acc.frontier == b.hash_
         assert acc.raw_bal == b.bal
         assert acc.raw_bal == 2
         assert acc.rep == rep
@@ -255,7 +251,7 @@ class TestAccount(TestCase):
         acc.send(to, 1, work="f" * 16)
         b = acc.send(to, 1, to)
         assert b.verify_signature()
-        assert acc.frontier == b.digest
+        assert acc.frontier == b.hash_
         assert acc.raw_bal == b.bal
         assert acc.raw_bal == 0
         assert acc.rep == to
@@ -306,9 +302,9 @@ class TestStateBlock(TestCase):
     acc = npy.Account(sk=Z64)
     b = npy.StateBlock(acc, acc, acc.raw_bal, acc.frontier, Z64)
 
-    def test_digest(self) -> None:
+    def test_hash(self) -> None:
         assert (
-            self.b.digest
+            self.b.hash_
             == "1f5bc8e8c4b862fdc5d01857325dade3561349505f4a4d478610e3394d2105f3"
         )
 
@@ -326,10 +322,7 @@ class TestStateBlock(TestCase):
         assert self.b.json == json.dumps(d)
 
     def test_verify_signature(self) -> None:
-        self.b.sig = (
-            "c55eaa93631bcb701ca1d1f080b73d279c501a24e743566cd3f78c74de7c0552"
-            "42169d28cc171a468d1f85f93e441b75081699e210d941aa320f041ebd2fcb03"
-        )
+        self.b.sig = SIG
         assert self.b.verify_signature()
 
     def test_work_generate(self) -> None:
