@@ -173,11 +173,11 @@ class TestSession(TestCase):
             f"From: {PACC0}\nAmt : {OR}\n" f"From: {PACC0}\nAmt : {OR}\nRep : {PACC1}\n"
         )
         assert acc.raw_bal == 2
-        assert acc.frontier == b1.digest
+        assert acc.frontier == b1.hash_
         assert b1.acc == SACC0
         assert b1.rep == PACC1
         assert b1.bal == 2
-        assert b1.prev == b0.digest
+        assert b1.prev == b0.hash_
         assert b1.link == R64
         assert len(bytes.fromhex(b1.sig)) == 64
         assert len(bytes.fromhex(b1.work)) == 8
@@ -193,11 +193,11 @@ class TestSession(TestCase):
             f"To  : {PACC1}\nAmt : {OR}\n" f"To  : {PACC1}\nAmt : {OR}\nRep : {PACC0}\n"
         )
         assert acc.raw_bal == 0
-        assert acc.frontier == b1.digest
+        assert acc.frontier == b1.hash_
         assert b1.acc == SACC0
         assert b1.rep == PACC0
         assert b1.bal == 0
-        assert b1.prev == b0.digest
+        assert b1.prev == b0.hash_
         assert b1.link == O64
         assert len(bytes.fromhex(b1.sig)) == 64
         assert len(bytes.fromhex(b1.work)) == 8

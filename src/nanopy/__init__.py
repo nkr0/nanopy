@@ -300,7 +300,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
 
     @property
     def state(self) -> tuple[str, int, "Account"]:
-        "State of the account (frontier block digest, raw balance, representative)"
+        "State of the account (frontier block hash, raw balance, representative)"
         return self.frontier, self.raw_bal, self.rep
 
     @state.setter
@@ -323,36 +323,36 @@ class Account:  # pylint: disable=too-many-instance-attributes
             b.work = work
         else:
             b.work_generate(self.network.send_difficulty)
-        self.frontier = b.digest
+        self.frontier = b.hash_
         self.rep = b.rep
         return b
 
     def receive(
-        self, digest: str, raw_amt: int, rep: Optional["Account"] = None, work: str = ""
+        self, hash_: str, raw_amt: int, rep: Optional["Account"] = None, work: str = ""
     ) -> "StateBlock":
         """Construct a signed receive StateBlock with work
 
-        :arg digest: 64 hex char hash digest of the receive block
+        :arg hash_: 64 hex char receive block hash
         :arg raw_amt: raw amount to receive
         :arg rep: representative account
         :arg work: 16 hex char work for the block
         :return: a signed receive StateBlock
         """
-        assert len(bytes.fromhex(digest)) == 32
+        assert len(bytes.fromhex(hash_)) == 32
         if raw_amt <= 0:
             raise ValueError("Amount must be a positive integer")
         final_raw_bal = self.raw_bal + raw_amt
         if final_raw_bal >= 1 << 128:
             raise ValueError("Raw balance after receive cannot be >= 2^128")
         brep = rep if rep else self.rep
-        b = StateBlock(self, brep, final_raw_bal, self.frontier, digest)
+        b = StateBlock(self, brep, final_raw_bal, self.frontier, hash_)
         self._sign(b)
         if work:
             assert len(bytes.fromhex(work)) == 8
             b.work = work
         else:
             b.work_generate(self.network.receive_difficulty)
-        self.frontier = b.digest
+        self.frontier = b.hash_
         self.raw_bal = b.bal
         self.rep = b.rep
         return b
@@ -385,7 +385,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
             b.work = work
         else:
             b.work_generate(self.network.send_difficulty)
-        self.frontier = b.digest
+        self.frontier = b.hash_
         self.raw_bal = b.bal
         self.rep = b.rep
         return b
@@ -397,7 +397,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
         """
         if not self._sk:
             raise NotImplementedError("This method needs private key")
-        h = bytes.fromhex(b.digest)
+        h = bytes.fromhex(b.hash_)
         s = bytes.fromhex(self._sk)
         b.sig = str(ext.sign(s, h, os.urandom(32)).hex())
 
@@ -409,7 +409,7 @@ class StateBlock:
     :arg acc: account of the block
     :arg rep: account representative
     :arg bal: account balance
-    :arg prev: 64 hex char hash digest of the previous block
+    :arg prev: 64 hex char previous block hash
     :arg link: 64 hex char block link
     :arg sig: 128 hex char block signature
     :arg work: 16 hex char block work
@@ -424,8 +424,8 @@ class StateBlock:
     work: str = ""
 
     @property
-    def digest(self) -> str:
-        "64 hex char hash digest of block"
+    def hash_(self) -> str:
+        "64 hex char block hash"
         h = f"{'0' * 63}6{self.acc.pk}{self.prev}{self.rep.pk}{self.bal:032x}{self.link}"
         return hashlib.blake2b(bytes.fromhex(h), digest_size=32).hexdigest()
 
@@ -451,7 +451,7 @@ class StateBlock:
         """
         s = bytes.fromhex(self.sig)
         p = bytes.fromhex(self.acc.pk)
-        h = bytes.fromhex(self.digest)
+        h = bytes.fromhex(self.hash_)
         return bool(ext.verify_signature(s, p, h))
 
     def work_generate(self, difficulty: str) -> None:
