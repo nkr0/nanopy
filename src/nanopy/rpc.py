@@ -9,9 +9,9 @@ import json
 from abc import ABC, abstractmethod
 from typing import Any, Callable
 
+import jsonschema
 import requests
 import websocket
-from jsonschema import validate
 
 import nanopy as npy
 
@@ -78,7 +78,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         raise NotImplementedError("Implement in a derived class")
 
     def _request(
-        self, data: dict[str, Any], schema: None | dict[str, Any] = None
+        self, data: dict[str, Any], schema: dict[str, Any] | None = None
     ) -> Any:
         """Make a request and validate response with JSON schema
 
@@ -89,7 +89,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         r = self.request(data)
         if schema:
             schema.pop("additionalProperties", None)
-            validate(r, schema)
+            jsonschema.validate(r, schema)
         return r
 
     def account_balance(self, account: str, include_only_confirmed: bool = True) -> Any:
@@ -442,7 +442,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         s = RPC._Dict({"hash": RPC._H64}) | RPC._Req(["hash"])
         return self._request(data, s)
 
-    def _validate_block(self, hash_: str, block: Any) -> None:
+    def _validate_block(self, hash_: str, block: dict[str, str]) -> None:
         "validate block content"
         b = npy.StateBlock(
             npy.Account(block["account"]),
@@ -966,7 +966,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
 
     def process(  # pylint: disable=too-many-arguments,too-many-positional-arguments
         self,
-        block: str | dict[str, str],
+        block: dict[str, str],
         force: bool = False,
         subtype: str = "",
         watch_work: bool = True,
@@ -1019,30 +1019,26 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["include_only_confirmed"] = False
         s = RPC._Dict(
             {
-                "blocks": RPC._DictP(
-                    {
-                        RPC._AccP: {
-                            "anyOf": [
-                                RPC._List(RPC._H64),
-                                RPC._DictP(
-                                    {
-                                        RPC._H64P: {
-                                            "anyOf": [
-                                                RPC._UInt,
-                                                RPC._Dict(
-                                                    {
-                                                        "amount": RPC._UInt,
-                                                        "source": RPC._Acc,
-                                                    }
-                                                ),
-                                            ]
-                                        }
-                                    }
-                                ),
-                            ]
-                        }
-                    }
-                )
+                "blocks": {
+                    "anyOf": [
+                        RPC._List(RPC._H64),
+                        RPC._DictP(
+                            {
+                                RPC._H64P: {
+                                    "anyOf": [
+                                        RPC._UInt,
+                                        RPC._Dict(
+                                            {
+                                                "amount": RPC._UInt,
+                                                "source": RPC._Acc,
+                                            }
+                                        ),
+                                    ]
+                                }
+                            }
+                        ),
+                    ]
+                }
             }
         ) | RPC._Req(["blocks"])
         return self._request(data, s)
@@ -1121,7 +1117,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         key: str = "",
         wallet: str = "",
         account: str = "",
-        block: str = "",
+        block: dict[str, str] | None = None,
         hash_: str = "",
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#sign"
@@ -1133,11 +1129,9 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
             data["wallet"] = wallet
         if account:
             data["account"] = account
-        if isinstance(block, str):
+        if block:
             data["block"] = block
-        else:
-            data["block"] = json.dumps(block)
-        if hash_:
+        elif hash_:
             data["hash"] = hash_
         data["json_block"] = True
         s = RPC._Dict({"signature": RPC._H128, "block": RPC._Blk}) | RPC._Req(
@@ -1316,7 +1310,7 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         multiplier: int = 0,
         account: str = "",
         version: str = "work_1",
-        block: str = "",
+        block: dict[str, str] | None = None,
     ) -> Any:
         "https://docs.nano.org/commands/rpc-protocol/#work_generate"
         data: dict[str, Any] = {}

@@ -185,9 +185,9 @@ R: dict[str, list[Any]] = {
     "populate_backlog": [{"success": ""}],
     "process": [{"hash": R64}],
     "receivable": [
-        {"blocks": {PACC0: [R64]}},
-        {"blocks": {PACC0: {R64: RI}}},
-        {"blocks": {PACC0: {R64: {"amount": RI, "source": PACC0}}}},
+        {"blocks": [R64]},
+        {"blocks": {R64: RI}},
+        {"blocks": {R64: {"amount": RI, "source": PACC0}}},
     ],
     "receivable_exists": [{"exists": "1"}],
     "representatives": [{"representatives": {PACC0: RI}}],
