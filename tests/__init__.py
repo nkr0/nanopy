@@ -308,7 +308,7 @@ class TestStateBlock(TestCase):
             == "1f5bc8e8c4b862fdc5d01857325dade3561349505f4a4d478610e3394d2105f3"
         )
 
-    def test_json(self) -> None:
+    def test_dict(self) -> None:
         d = {
             "type": "state",
             "account": SACC0,
@@ -319,7 +319,7 @@ class TestStateBlock(TestCase):
             "work": "",
             "signature": "",
         }
-        assert json.dumps(self.b.dict_) == json.dumps(d)
+        assert self.b.dict_ == d
 
     def test_verify_signature(self) -> None:
         self.b.sig = SIG
