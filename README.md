@@ -37,8 +37,8 @@ sb = acc.send(Account(addr="nano_sendaddress..."), acc.network.to_raw("1"))
 
 # broadcast
 r = HTTP(url="http://localhost:7076")
-r.process(rb.json)
-r.process(sb.json)
+r.process(rb.dict_)
+r.process(sb.dict_)
 ```
 
 ## Wallet
