@@ -408,7 +408,7 @@ class StateBlock:
 
     :arg acc: account of the block
     :arg rep: account representative
-    :arg bal: account balance
+    :arg bal: account raw balance
     :arg prev: 64 hex char previous block hash
     :arg link: 64 hex char block link
     :arg sig: 128 hex char block signature
@@ -430,19 +430,18 @@ class StateBlock:
         return hashlib.blake2b(bytes.fromhex(h), digest_size=32).hexdigest()
 
     @property
-    def json(self) -> str:
-        "block as JSON string"
-        d = {
+    def dict_(self) -> dict[str, str]:
+        "block as dict"
+        return {
             "type": "state",
             "account": self.acc.addr,
             "previous": self.prev,
             "representative": self.rep.addr,
-            "balance": self.bal,
+            "balance": str(self.bal),
             "link": self.link,
             "work": self.work,
             "signature": self.sig,
         }
-        return json.dumps(d)
 
     def verify_signature(self) -> bool:
         """Verify signature for block

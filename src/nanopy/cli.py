@@ -141,7 +141,7 @@ def main() -> None:
     receivable: Callable[["Account"], list[str]] = lambda acc: s.rpc.receivable(
         str(acc)
     )["blocks"]
-    process: Callable[["StateBlock"], str] = lambda b: s.rpc.process(b.json)["hash"]
+    process: Callable[["StateBlock"], str] = lambda b: s.rpc.process(b.dict_)["hash"]
 
     if not args.sub:
         s.check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])

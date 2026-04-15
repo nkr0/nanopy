@@ -314,12 +314,12 @@ class TestStateBlock(TestCase):
             "account": SACC0,
             "previous": Z64,
             "representative": SACC0,
-            "balance": 0,
+            "balance": "0",
             "link": Z64,
             "work": "",
             "signature": "",
         }
-        assert self.b.json == json.dumps(d)
+        assert json.dumps(self.b.dict_) == json.dumps(d)
 
     def test_verify_signature(self) -> None:
         self.b.sig = SIG
