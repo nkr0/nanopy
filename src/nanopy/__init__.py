@@ -205,7 +205,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
         return str(other) == str(self)
 
     @classmethod
-    def set_network(cls, network: Optional[Network] = None, name: str = "nano") -> None:
+    def set_network(cls, network: Network | None = None, name: str = "nano") -> None:
         """Set the network for all accounts
 
         :arg network: Generic Network

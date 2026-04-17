@@ -3,10 +3,10 @@ import argparse
 import configparser
 import getpass
 import os
-from typing import Callable, Optional
+from typing import Callable
 
+import platformdirs
 import pykeepass  # type: ignore
-from platformdirs import user_config_dir
 
 from . import Account, StateBlock, deterministic_key
 from .rpc import HTTP
@@ -77,7 +77,7 @@ class Session:
         return acc.change_rep(rep)
 
     def receive(
-        self, acc: "Account", hash_: str, rep: Optional["Account"] = None
+        self, acc: "Account", hash_: str, rep: Account | None = None
     ) -> "StateBlock":
         info = self.rpc.block_info(hash_)
         raw_amt = int(info["amount"])
@@ -88,7 +88,7 @@ class Session:
         return acc.receive(hash_, raw_amt, rep)
 
     def send(
-        self, acc: "Account", to: "Account", amt: str, rep: Optional["Account"] = None
+        self, acc: "Account", to: "Account", amt: str, rep: Account | None = None
     ) -> "StateBlock":
         raw_amt = acc.network.to_raw(amt)
         print(f"To  : {to}")
@@ -132,7 +132,7 @@ def main() -> None:
     args = parser.parse_args()
 
     config = configparser.ConfigParser(allow_no_value=True)
-    config.read(user_config_dir("nanopy.ini"))
+    config.read(platformdirs.user_config_dir("nanopy.ini"))
 
     Account.set_network(name=args.network)
     n = Account.network
