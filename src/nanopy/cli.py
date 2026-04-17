@@ -60,7 +60,7 @@ class Session:
             addresses.append(a.addr)
         return addresses
 
-    def get_account_info(self, acc: "Account") -> None:
+    def get_account_info(self, acc: Account) -> None:
         info = self.rpc.account_info(acc.addr, representative=True)
         if "frontier" in info:
             acc.state = (
@@ -72,13 +72,13 @@ class Session:
         print(f"Bal : {acc.bal:>40} {acc.network.std_unit}")
         print(f"Rep : {acc.rep}")
 
-    def change_rep(self, acc: "Account", rep: "Account") -> "StateBlock":
+    def change_rep(self, acc: Account, rep: Account) -> StateBlock:
         print(f"Rep : {rep}")
         return acc.change_rep(rep)
 
     def receive(
-        self, acc: "Account", hash_: str, rep: Account | None = None
-    ) -> "StateBlock":
+        self, acc: Account, hash_: str, rep: Account | None = None
+    ) -> StateBlock:
         info = self.rpc.block_info(hash_)
         raw_amt = int(info["amount"])
         print(f"From: {info['block_account']}")
@@ -88,8 +88,8 @@ class Session:
         return acc.receive(hash_, raw_amt, rep)
 
     def send(
-        self, acc: "Account", to: "Account", amt: str, rep: Account | None = None
-    ) -> "StateBlock":
+        self, acc: Account, to: Account, amt: str, rep: Account | None = None
+    ) -> StateBlock:
         raw_amt = acc.network.to_raw(amt)
         print(f"To  : {to}")
         print(f"Amt : {acc.network.from_raw(raw_amt):>40} {acc.network.std_unit}")
@@ -138,10 +138,10 @@ def main() -> None:
     n = Account.network
     s = Session(HTTP(url=str(config[n.name].get("rpc", fallback=n.rpc_url))))
 
-    receivable: Callable[["Account"], list[str]] = lambda acc: s.rpc.receivable(
-        str(acc)
-    )["blocks"]
-    process: Callable[["StateBlock"], str] = lambda b: s.rpc.process(b.dict_)["hash"]
+    receivable: Callable[[Account], list[str]] = lambda acc: s.rpc.receivable(str(acc))[
+        "blocks"
+    ]
+    process: Callable[[StateBlock], str] = lambda b: s.rpc.process(b.dict_)["hash"]
 
     if not args.sub:
         s.check_status([a for a in config.options(n.name) if a.startswith(n.prefix)])
