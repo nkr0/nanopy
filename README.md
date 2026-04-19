@@ -15,9 +15,6 @@ sudo apt install gcc python3-dev ocl-icd-opencl-dev intel/mesa/nvidia/pocl/rocm-
 USE_OCL=1 pip install nanopy
 ```
 
-* Install `mnemonic` to generate mnemonic wallets.
-* Install `requests` or `websocket-client` to use *http* or *websocket* *RPC*, respectively.
-
 ## Usage
 ```py
 from nanopy import Account, deterministic_key
