@@ -34,7 +34,7 @@ def deterministic_key(seed: str, i: int = 0) -> str:
 
 
 def generate_mnemonic(strength: int = 256, language: str = "english") -> str:
-    """Generate a BIP39 type mnemonic. Requires `mnemonic <https://pypi.org/project/mnemonic>`_
+    """Generate a BIP39 type mnemonic
 
     :arg strength: choose from 128, 160, 192, 224, 256
     :arg language: one of the installed word list languages
