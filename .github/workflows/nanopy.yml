@@ -33,12 +33,17 @@ jobs:
     needs: base
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, macos-15, macos-15-intel, windows-latest, windows-11-arm]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, macos-15, macos-15-intel, macos-14, windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
     - if: runner.os != 'macOS'
       run: pipx run cibuildwheel
+    - if: matrix.os == 'macos-14'
+      run: pipx run cibuildwheel
+      env:
+        CC: gcc-15
+        MACOSX_DEPLOYMENT_TARGET: 14.0
     - if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
       run: pipx run cibuildwheel
       env:
