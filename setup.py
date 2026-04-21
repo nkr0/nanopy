@@ -11,11 +11,14 @@ BLAKE2B_DIR = "src/nanopy/blake2b"
 ED25519_DIR = "src/nanopy/ed25519-donna"
 ED25519_SRC = ED25519_DIR + "/ed25519.c"
 ED25519_IMPL = None
+ARCH_FLAG = None
 if m.lower() in ["x86_64", "amd64"]:
     BLAKE2B_DIR += "/sse"
     ED25519_IMPL = "ED25519_SSE2"
+    ARCH_FLAG = "/arch:AVX2" if k == "Windows" else "-march=x86-64-v3"
 elif m.lower().startswith("arm64") or m.lower().startswith("aarch64"):
     BLAKE2B_DIR += "/neon"
+    ARCH_FLAG = "/arch:armv8.0" if k == "Windows" else "-march=armv8-a"
 else:
     BLAKE2B_DIR += "/ref"
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
@@ -32,15 +35,15 @@ e_args = {
 }
 
 if k == "Windows":
-    e_args["extra_compile_args"] += ["/arch:SSE2", "/arch:AVX", "/arch:AVX2"]
+    e_args["extra_compile_args"] += [ARCH_FLAG]
 else:
     if os.environ.get("DBG"):
         e_args["extra_compile_args"] += ["-g", "-O0"]
         e_args["extra_link_args"] += ["-g", "-O0"]
         e_args["undef_macros"] += ["NDEBUG"]
     else:
-        e_args["extra_compile_args"] += ["-O3", "-flto", "-march=native"]
-        e_args["extra_link_args"] += ["-O3", "-flto", "-march=native", "-s"]
+        e_args["extra_compile_args"] += ["-O3", "-flto", ARCH_FLAG]
+        e_args["extra_link_args"] += ["-O3", "-flto", ARCH_FLAG]
 
 if ED25519_IMPL:
     e_args["define_macros"] += [(ED25519_IMPL, None)]
