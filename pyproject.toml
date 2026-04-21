@@ -20,6 +20,10 @@ nanopy = "nanopy.cli:main"
 Repository = "https://github.com/nkr0/nanopy"
 Documentation = "https://nkr0.github.io/nanopy"
 
+[tool.cibuildwheel]
+test-command = "python -m unittest"
+test-sources = ["tests"]
+
 [tool.coverage.report]
 fail_under = 100
 

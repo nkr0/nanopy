@@ -26,38 +26,36 @@ jobs:
     - run: python -m unittest
     - uses: actions/upload-artifact@v7
       with:
-        name: dist
+        name: nanopy-sdist
         path: dist
     - uses: actions/upload-pages-artifact@v5
-  platforms:
+  wheels:
     needs: base
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, windows-latest, windows-11-arm]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-26, macos-26-intel, macos-15, macos-15-intel, windows-latest, windows-11-arm]
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
-      with:
-        python-version: 3.x
     - if: runner.os != 'macOS'
-      run: pip install -ve .
-    - if: runner.os == 'macOS'
-      run: CC=gcc-15 pip install -ve .
-    - run: python -m unittest
-  oldest:
-    needs: base
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v6
-    - uses: actions/setup-python@v6
+      run: pipx run cibuildwheel
+    - if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
+      run: pipx run cibuildwheel
+      env:
+        CC: gcc-15
+        MACOSX_DEPLOYMENT_TARGET: 15.0
+    - if: matrix.os == 'macos-26' || matrix.os == 'macos-26-intel'
+      run: pipx run cibuildwheel
+      env:
+        CC: gcc-15
+        MACOSX_DEPLOYMENT_TARGET: 26.0
+    - uses: actions/upload-artifact@v7
       with:
-        python-version: 3.10.x
-    - run: pip install -ve .
-    - run: python -m unittest
+        name: nanopy-${{ matrix.os }}
+        path: wheelhouse/*.whl
   deploy:
     if: github.ref_type == 'tag'
-    needs: [platforms, oldest]
+    needs: wheels
     permissions:
       pages: write
       id-token: write
@@ -66,7 +64,8 @@ jobs:
     steps:
     - uses: actions/download-artifact@v8
       with:
-        name: dist
+        pattern: nanopy-*
         path: dist
+        merge-multiple: true
     - uses: pypa/gh-action-pypi-publish@release/v1
     - uses: actions/deploy-pages@v4
