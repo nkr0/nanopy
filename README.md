@@ -1,18 +1,15 @@
 # nanopy
-*nanopy* includes *C* extensions for work generation and signing, and therefore needs a compiler to install.
-
 ```sh
-sudo apt install gcc python3-dev
 pip install nanopy
 ```
 
-When needed, use the environment variables `CC`, `LDSHARED`, `CFLAGS`, and `LDFLAGS` to tweak build options. See [*setuptools* documentation](https://setuptools.pypa.io/) for further info.
+When needed, install from source and use the environment variables `CC`, `LDSHARED`, `CFLAGS`, and `LDFLAGS` to tweak build options of the *C* extension for work generation and signing. See [*setuptools* documentation](https://setuptools.pypa.io/) for further info.
 
-GPU support can be enabled with ``USE_OCL=1`` and appropriate *OpenCL* dependencies.
+For e.g., GPU support can be enabled with ``USE_OCL=1`` and appropriate *OpenCL* dependencies.
 
 ```sh
 sudo apt install gcc python3-dev ocl-icd-opencl-dev intel/mesa/nvidia/pocl/rocm-opencl-icd
-USE_OCL=1 pip install nanopy
+USE_OCL=1 pip install --no-binary=nanopy nanopy
 ```
 
 ## Usage
