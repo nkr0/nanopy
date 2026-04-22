@@ -459,7 +459,9 @@ class StateBlock:
         :arg difficulty: 16 hex char difficulty
         """
         assert len(bytes.fromhex(difficulty)) == 8
-        w = ext.work_generate(bytes.fromhex(self.prev), int(difficulty, 16))
+        w = ext.work_generate(
+            bytes.fromhex(self.prev), int(difficulty, 16), os.urandom(128)
+        )
         self.work = f"{w:016x}"
 
     def work_validate(self, difficulty: str) -> bool:

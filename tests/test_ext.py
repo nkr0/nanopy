@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import csv
+import os
 from unittest import TestCase
 
 from nanopy import ext  # type: ignore
@@ -19,8 +20,10 @@ class TestModuleLevel(TestCase):
 
     def test_work_generate(self) -> None:
         with self.assertRaisesRegex(ValueError, "Hash must be 32 bytes"):
-            ext.work_generate(b"", 0)
-        ext.work_generate(b"0" * 32, 0)
+            ext.work_generate(b"", 0, b"")
+        with self.assertRaisesRegex(ValueError, "Random seed must be 128 bytes"):
+            ext.work_generate(b"0" * 32, 0, b"")
+        ext.work_generate(b"0" * 32, 0, os.urandom(128))
 
     def test_publickey(self) -> None:
         with self.assertRaisesRegex(ValueError, "Secret key must be 32 bytes"):

@@ -15,11 +15,13 @@ jobs:
     - run: coverage report
     - run: sphinx-build -W docs _site
     - run: sudo apt update
-    - run: sudo apt install libomp-dev ocl-icd-opencl-dev pocl-opencl-icd clinfo
-    - run: CC=clang pip install -ve .
+    - run: sudo apt install bear clinfo libomp-dev ocl-icd-opencl-dev pocl-opencl-icd
+    - run: CC=clang bear -- pip install -ve .
+    - run: clang-tidy src/nanopy/ext.c
     - run: python -m unittest
     - run: clinfo
-    - run: USE_OCL=1 pip install -ve .
+    - run: USE_OCL=1 bear -- pip install -ve .
+    - run: clang-tidy src/nanopy/ext.c
     - run: python -m unittest
     - uses: actions/upload-artifact@v7
       with:
