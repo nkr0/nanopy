@@ -1,0 +1,2 @@
+Checks: '*,-altera*,-google*,-llvm*,-readability*,-hicpp*,-misc*,-cppcoreguidelines*,-bugprone*'
+WarningsAsErrors: '*'

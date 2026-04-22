@@ -4,7 +4,6 @@
 #include <ed25519-hash-custom.h>
 #include <ed25519.h>
 #include <stdbool.h>
-#include <time.h>
 
 #ifdef USE_OCL
 #include "opencl_program.h"
@@ -17,18 +16,16 @@
 #include <omp.h>
 #endif
 
-typedef struct {
-  uint64_t s[16];
-  uint8_t p;
-} nonce_state;
+static uint64_t s[16];
+static int p;
 
-static uint64_t xorshift1024star(nonce_state *n) {
-  const uint64_t s0 = n->s[n->p++];
-  uint64_t s1 = n->s[n->p &= 15];
-  s1 ^= s1 << 31;        // a
-  s1 ^= s1 >> 11;        // b
-  s1 ^= s0 ^ (s0 >> 30); // c
-  n->s[n->p] = s1;
+static uint64_t xorshift1024star() {
+  const uint64_t s0 = s[p++];
+  uint64_t s1 = s[p &= 15];
+  s1 ^= s1 << 31;
+  s1 ^= s1 >> 11;
+  s1 ^= s0 ^ (s0 >> 30);
+  s[p] = s1;
   return s1 * 1181783497276652981ull;
 }
 
@@ -42,7 +39,7 @@ static bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
   return b2b_h >= difficulty;
 }
 
-static PyObject *work_validate(PyObject *self, PyObject *args) {
+static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *h32;
   uint64_t difficulty, work;
   Py_ssize_t p0;
@@ -56,22 +53,19 @@ static PyObject *work_validate(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", res);
 }
 
-static PyObject *work_generate(PyObject *self, PyObject *args) {
+static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *h32;
-  int i;
   uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
-  nonce_state n;
-  Py_ssize_t p0;
+  Py_ssize_t p0, p1;
 
-  if (!PyArg_ParseTuple(args, "y#K", &h32, &p0, &difficulty))
+  if (!PyArg_ParseTuple(args, "y#Ky#", &h32, &p0, &difficulty, &s, &p1))
     return NULL;
   if (p0 != 32)
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
+  if (p1 != 128)
+    return PyErr_Format(PyExc_ValueError, "Random seed must be 128 bytes");
 
-  srand(time(NULL));
-  n.p = 0;
-  for (i = 0; i < 16; i++)
-    n.s[i] = (uint64_t)rand() << 32 | rand();
+  p = 0;
 
 #ifdef USE_OCL
   int err;
@@ -170,22 +164,22 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateKernel", err);
 
-  err = clSetKernelArg(kernel, 0, sizeof(d_nonce), &d_nonce);
+  err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_nonce);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 1, sizeof(d_work), &d_work);
+  err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_work);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 2, sizeof(d_h32), &d_h32);
+  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h32);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 3, sizeof(d_difficulty), &d_difficulty);
+  err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_difficulty);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
@@ -202,7 +196,7 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
                         "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
   while (!work) {
-    nonce = xorshift1024star(&n);
+    nonce = xorshift1024star();
 
     err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0, NULL,
                                NULL);
@@ -269,9 +263,11 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
                         "OpenCL:%d: Failed to clReleaseContext", err);
 #else
   while (!work) {
-    nonce = xorshift1024star(&n);
-#pragma omp parallel for
-    for (i = 0; i < work_size; i++) {
+    nonce = xorshift1024star();
+    int i;
+#pragma omp parallel for default(none)                                         \
+    shared(work_size, work, nonce, h32, difficulty)
+    for (i = 0; i < (int)work_size; i++) {
       if (!work && is_valid(nonce + i, h32, difficulty)) {
 #pragma omp critical
         work = nonce + i;
@@ -282,7 +278,8 @@ static PyObject *work_generate(PyObject *self, PyObject *args) {
   return Py_BuildValue("K", work);
 }
 
-void ed25519_randombytes_unsafe(void *out, size_t outlen) {}
+void ed25519_randombytes_unsafe(void *Py_UNUSED(out),
+                                size_t Py_UNUSED(outlen)) {}
 
 void ed25519_hash_init(ed25519_hash_context *ctx) { blake2b_init(ctx, 64); }
 
@@ -302,7 +299,7 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
   ed25519_hash_final(&ctx, out);
 }
 
-static PyObject *publickey(PyObject *self, PyObject *args) {
+static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
   const uint8_t *sk;
   Py_ssize_t p0;
   ed25519_public_key pk;
@@ -316,7 +313,7 @@ static PyObject *publickey(PyObject *self, PyObject *args) {
   return Py_BuildValue("y#", pk, sizeof(pk));
 }
 
-static PyObject *sign(PyObject *self, PyObject *args) {
+static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
   const uint8_t *sk, *m, *r;
   Py_ssize_t p0, p1, p2;
 
@@ -334,7 +331,7 @@ static PyObject *sign(PyObject *self, PyObject *args) {
   return Py_BuildValue("y#", sig, sizeof(sig));
 }
 
-static PyObject *verify_signature(PyObject *self, PyObject *args) {
+static PyObject *verify_signature(PyObject *Py_UNUSED(self), PyObject *args) {
   const uint8_t *sig, *pk, *m;
   Py_ssize_t p0, p1, p2;
 
@@ -349,15 +346,13 @@ static PyObject *verify_signature(PyObject *self, PyObject *args) {
   return Py_BuildValue("i", res);
 }
 
-static PyMethodDef m_methods[] = {
-    {"work_generate", work_generate, METH_VARARGS, NULL},
-    {"work_validate", work_validate, METH_VARARGS, NULL},
-    {"publickey", publickey, METH_VARARGS, NULL},
-    {"sign", sign, METH_VARARGS, NULL},
-    {"verify_signature", verify_signature, METH_VARARGS, NULL},
-    {NULL, NULL, 0, NULL}};
+static PyMethodDef m[] = {{"work_generate", work_generate, METH_VARARGS},
+                          {"work_validate", work_validate, METH_VARARGS},
+                          {"publickey", publickey, METH_VARARGS},
+                          {"sign", sign, METH_VARARGS},
+                          {"verify_signature", verify_signature, METH_VARARGS},
+                          {}};
 
-static struct PyModuleDef ext_module = {
-    PyModuleDef_HEAD_INIT, "ext", NULL, -1, m_methods, NULL, NULL, NULL, NULL};
+static struct PyModuleDef ext = {PyModuleDef_HEAD_INIT, "ext", NULL, 0, m};
 
-PyMODINIT_FUNC PyInit_ext(void) { return PyModule_Create(&ext_module); }
+PyMODINIT_FUNC PyInit_ext(void) { return PyModule_Create(&ext); }
