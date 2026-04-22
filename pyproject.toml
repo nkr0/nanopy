@@ -11,7 +11,7 @@ requires-python = ">=3.10"
 dependencies = ["jsonschema", "mnemonic", "platformdirs", "pykeepass", "requests", "websocket-client"]
 
 [project.optional-dependencies]
-dev = ["black", "coverage", "mypy", "pylint", "sphinx-autodoc-typehints", "types-jsonschema", "types-requests"]
+dev = ["black", "coverage", "mypy", "pylint", "sphinx-autodoc-typehints", "types-jsonschema", "types-requests", "types-setuptools"]
 
 [project.scripts]
 nanopy = "nanopy.cli:main"
@@ -34,5 +34,5 @@ omit = ["src/nanopy/rpc.py"]
 profile = "black"
 
 [tool.mypy]
-files = "src, tests"
+files = "setup.py, src, tests"
 strict = true
