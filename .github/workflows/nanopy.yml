@@ -34,23 +34,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
     - uses: actions/checkout@v6
-    - if: runner.os != 'macOS'
-      run: pipx run cibuildwheel
-    - if: matrix.os == 'macos-14'
-      run: pipx run cibuildwheel
-      env:
-        CC: gcc-15
-        MACOSX_DEPLOYMENT_TARGET: 14.0
-    - if: matrix.os == 'macos-15' || matrix.os == 'macos-15-intel'
-      run: pipx run cibuildwheel
-      env:
-        CC: gcc-15
-        MACOSX_DEPLOYMENT_TARGET: 15.0
-    - if: matrix.os == 'macos-26' || matrix.os == 'macos-26-intel'
-      run: pipx run cibuildwheel
-      env:
-        CC: gcc-15
-        MACOSX_DEPLOYMENT_TARGET: 26.0
+    - if: runner.os == 'macOS'
+      run: printf 'CC=gcc-15\nMACOSX_DEPLOYMENT_TARGET=%s\n' "$(sw_vers -productVersion | cut -d. -f1)" >> $GITHUB_ENV
+    - run: pipx run cibuildwheel
     - uses: actions/upload-artifact@v7
       with:
         name: nanopy-${{ matrix.os }}
