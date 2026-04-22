@@ -24,6 +24,11 @@ else:
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e = setuptools.Extension("nanopy.ext", ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC])
+o = {}
+if not sysconfig.get_config_var("Py_GIL_DISABLED"):
+    e.py_limited_api = True
+    e.define_macros += [("Py_LIMITED_API", "0x030A0000")]
+    o = {"bdist_wheel": {"py_limited_api": "cp310"}}
 e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
 
 if k == "Windows":
@@ -55,4 +60,4 @@ else:
     e.extra_link_args += ["-fopenmp"]
 
 print(vars(e))
-setuptools.setup(ext_modules=[e])
+setuptools.setup(ext_modules=[e], options=o)
