@@ -11,36 +11,31 @@ BLAKE2B_DIR = "src/nanopy/blake2b"
 ED25519_DIR = "src/nanopy/ed25519-donna"
 ED25519_SRC = ED25519_DIR + "/ed25519.c"
 ED25519_IMPL = None
-ARCH_FLAG = ""
+ARCH_FLAG = []
 if m.lower() in ["x86_64", "amd64"]:
     BLAKE2B_DIR += "/sse"
     ED25519_IMPL = "ED25519_SSE2"
-    ARCH_FLAG = "/arch:AVX2" if k == "Windows" else "-march=x86-64-v3"
+    ARCH_FLAG = ["/arch:AVX2" if k == "Windows" else "-march=x86-64-v3"]
 elif m.lower().startswith("arm64") or m.lower().startswith("aarch64"):
     BLAKE2B_DIR += "/neon"
-    ARCH_FLAG = "/arch:armv8.0" if k == "Windows" else "-march=armv8-a"
+    ARCH_FLAG = ["/arch:armv8.0" if k == "Windows" else "-march=armv8-a"]
 else:
     BLAKE2B_DIR += "/ref"
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e = setuptools.Extension("nanopy.ext", ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC])
+e.extra_compile_args += ARCH_FLAG
+e.extra_link_args += ARCH_FLAG
+e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
+
 o = {}
 if not sysconfig.get_config_var("Py_GIL_DISABLED"):
     e.py_limited_api = True
     e.define_macros += [("Py_LIMITED_API", "0x030A0000")]
     o = {"bdist_wheel": {"py_limited_api": "cp310"}}
-e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
 
-if k == "Windows":
-    e.extra_compile_args += [ARCH_FLAG]
-else:
-    if os.environ.get("DBG"):
-        e.extra_compile_args += ["-g", "-O0"]
-        e.extra_link_args += ["-g", "-O0"]
-        e.undef_macros += ["NDEBUG"]
-    else:
-        e.extra_compile_args += ["-O3", "-flto", ARCH_FLAG]
-        e.extra_link_args += ["-O3", "-flto", ARCH_FLAG]
+if os.environ.get("DBG"):
+    e.undef_macros += ["NDEBUG"]
 
 if ED25519_IMPL:
     e.define_macros += [(ED25519_IMPL, None)]
