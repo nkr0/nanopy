@@ -20,8 +20,7 @@ static uint64_t s[16];
 static int p;
 
 static uint64_t xorshift1024star() {
-  const uint64_t s0 = s[p++];
-  uint64_t s1 = s[p &= 15];
+  uint64_t s0 = s[p++], s1 = s[p &= 15];
   s1 ^= s1 << 31;
   s1 ^= s1 >> 11;
   s1 ^= s0 ^ (s0 >> 30);
@@ -54,18 +53,19 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
 }
 
 static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *h32;
+  uint8_t *h32, *r128;
   uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
   Py_ssize_t p0, p1;
 
-  if (!PyArg_ParseTuple(args, "y#Ky#", &h32, &p0, &difficulty, &s, &p1))
+  if (!PyArg_ParseTuple(args, "y#Ky#", &h32, &p0, &difficulty, &r128, &p1))
     return NULL;
   if (p0 != 32)
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
-  if (p1 != 128)
+  if (p1 != sizeof s)
     return PyErr_Format(PyExc_ValueError, "Random seed must be 128 bytes");
 
   p = 0;
+  memcpy(s, r128, sizeof s);
 
 #ifdef USE_OCL
   int err;
@@ -78,7 +78,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
 #ifndef NDEBUG
   char cl_platform_name[128];
-  clGetPlatformInfo(cpPlatform, CL_PLATFORM_NAME, sizeof(cl_platform_name),
+  clGetPlatformInfo(cpPlatform, CL_PLATFORM_NAME, sizeof cl_platform_name,
                     cl_platform_name, NULL);
   printf("OpenCL: %s\n", cl_platform_name);
 #endif
@@ -101,7 +101,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
                         "OpenCL:%d: Failed to clGetDeviceIDs", err);
 #ifndef NDEBUG
   char cl_device_name[128];
-  clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof(cl_device_name),
+  clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof cl_device_name,
                   cl_device_name, NULL);
   printf("OpenCL: %s\n", cl_device_name);
 #endif
@@ -300,7 +300,7 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
 }
 
 static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
-  const uint8_t *sk;
+  uint8_t *sk;
   Py_ssize_t p0;
   ed25519_public_key pk;
 
@@ -310,11 +310,11 @@ static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
 
   ed25519_publickey(sk, pk);
-  return Py_BuildValue("y#", pk, sizeof(pk));
+  return Py_BuildValue("y#", pk, sizeof(ed25519_public_key));
 }
 
 static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
-  const uint8_t *sk, *m, *r;
+  uint8_t *sk, *m, *r;
   Py_ssize_t p0, p1, p2;
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
@@ -328,11 +328,11 @@ static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
   ed25519_sign(m, p1, r, sk, pk, sig);
-  return Py_BuildValue("y#", sig, sizeof(sig));
+  return Py_BuildValue("y#", sig, sizeof(ed25519_signature));
 }
 
 static PyObject *verify_signature(PyObject *Py_UNUSED(self), PyObject *args) {
-  const uint8_t *sig, *pk, *m;
+  uint8_t *sig, *pk, *m;
   Py_ssize_t p0, p1, p2;
 
   if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
