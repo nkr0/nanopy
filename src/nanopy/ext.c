@@ -28,44 +28,44 @@ static uint64_t xorshift1024star() {
   return s1 * 1181783497276652981ull;
 }
 
-static bool is_valid(uint64_t work, uint8_t *h32, uint64_t difficulty) {
-  uint64_t b2b_h;
-  blake2b_state b2b;
-  blake2b_init(&b2b, 8);
-  blake2b_update(&b2b, &work, 8);
-  blake2b_update(&b2b, h32, 32);
-  blake2b_final(&b2b, &b2b_h, 8);
-  return b2b_h >= difficulty;
+static bool is_valid(uint64_t work, uint8_t *h, uint64_t difficulty) {
+  uint64_t d;
+  blake2b_state b;
+  blake2b_init(&b, 8);
+  blake2b_update(&b, &work, 8);
+  blake2b_update(&b, h, 32);
+  blake2b_final(&b, &d, 8);
+  return d >= difficulty;
 }
 
 static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *h32;
+  uint8_t *h;
   uint64_t difficulty, work;
-  Py_ssize_t p0;
+  Py_ssize_t n0;
 
-  if (!PyArg_ParseTuple(args, "Ky#K", &work, &h32, &p0, &difficulty))
+  if (!PyArg_ParseTuple(args, "Ky#K", &work, &h, &n0, &difficulty))
     return NULL;
-  if (p0 != 32)
+  if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
 
-  bool res = is_valid(work, h32, difficulty);
+  bool res = is_valid(work, h, difficulty);
   return Py_BuildValue("i", res);
 }
 
 static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *h32, *r128;
-  uint64_t difficulty, work = 0, nonce, work_size = 1024 * 1024;
-  Py_ssize_t p0, p1;
+  uint8_t *h, *r;
+  uint64_t difficulty, work = 0, nonce, n = 1024 * 1024;
+  Py_ssize_t n0, n1;
 
-  if (!PyArg_ParseTuple(args, "y#Ky#", &h32, &p0, &difficulty, &r128, &p1))
+  if (!PyArg_ParseTuple(args, "y#Ky#", &h, &n0, &difficulty, &r, &n1))
     return NULL;
-  if (p0 != 32)
+  if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
-  if (p1 != sizeof s)
-    return PyErr_Format(PyExc_ValueError, "Random seed must be 128 bytes");
+  if (n1 != sizeof s)
+    return PyErr_Format(PyExc_ValueError, "Random must be 128 bytes");
 
   p = 0;
-  memcpy(s, r128, sizeof s);
+  memcpy(s, r, sizeof s);
 
 #ifdef USE_OCL
   int err;
@@ -84,7 +84,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
 #endif
 
   size_t length = strlen(opencl_program);
-  cl_mem d_nonce, d_work, d_h32, d_difficulty;
+  cl_mem d_nonce, d_work, d_h, d_difficulty;
   cl_device_id device_id;
   cl_context context;
   cl_command_queue queue;
@@ -147,8 +147,8 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_h32 = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 32,
-                         h32, &err);
+  d_h = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 32, h,
+                       &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
@@ -174,7 +174,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h32);
+  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
@@ -184,7 +184,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clEnqueueWriteBuffer(queue, d_h32, CL_FALSE, 0, 32, h32, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(queue, d_h, CL_FALSE, 0, 32, h, 0, NULL, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
@@ -204,8 +204,8 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
-    err = clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &work_size, NULL, 0,
-                                 NULL, NULL);
+    err =
+        clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &n, NULL, 0, NULL, NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueNDRangeKernel", err);
@@ -232,7 +232,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clReleaseMemObject", err);
 
-  err = clReleaseMemObject(d_h32);
+  err = clReleaseMemObject(d_h);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clReleaseMemObject", err);
@@ -265,10 +265,9 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   while (!work) {
     nonce = xorshift1024star();
     int i;
-#pragma omp parallel for default(none)                                         \
-    shared(work_size, work, nonce, h32, difficulty)
-    for (i = 0; i < (int)work_size; i++) {
-      if (!work && is_valid(nonce + i, h32, difficulty)) {
+#pragma omp parallel for default(none) shared(n, work, nonce, h, difficulty)
+    for (i = 0; i < (int)n; i++) {
+      if (!work && is_valid(nonce + i, h, difficulty)) {
 #pragma omp critical
         work = nonce + i;
       }
@@ -301,12 +300,12 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
 
 static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *sk;
-  Py_ssize_t p0;
+  Py_ssize_t n0;
   ed25519_public_key pk;
 
-  if (!PyArg_ParseTuple(args, "y#", &sk, &p0))
+  if (!PyArg_ParseTuple(args, "y#", &sk, &n0))
     return NULL;
-  if (p0 != 32)
+  if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
 
   ed25519_publickey(sk, pk);
@@ -315,34 +314,34 @@ static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
 
 static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *sk, *m, *r;
-  Py_ssize_t p0, p1, p2;
+  Py_ssize_t n0, n1, n2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &p0, &m, &p1, &r, &p2))
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &n0, &m, &n1, &r, &n2))
     return NULL;
-  if (p0 != 32)
+  if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
-  if (p2 != 32)
+  if (n2 != 32)
     return PyErr_Format(PyExc_ValueError, "Random must be 32 bytes");
 
   ed25519_public_key pk;
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
-  ed25519_sign(m, p1, r, sk, pk, sig);
+  ed25519_sign(m, n1, r, sk, pk, sig);
   return Py_BuildValue("y#", sig, sizeof(ed25519_signature));
 }
 
 static PyObject *verify_signature(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *sig, *pk, *m;
-  Py_ssize_t p0, p1, p2;
+  Py_ssize_t n0, n1, n2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &p0, &pk, &p1, &m, &p2))
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &n0, &pk, &n1, &m, &n2))
     return NULL;
-  if (p0 != 64)
+  if (n0 != 64)
     return PyErr_Format(PyExc_ValueError, "Signature must be 64 bytes");
-  if (p1 != 32)
+  if (n1 != 32)
     return PyErr_Format(PyExc_ValueError, "Public key must be 32 bytes");
 
-  bool res = ed25519_sign_open(m, p2, pk, sig) == 0;
+  bool res = ed25519_sign_open(m, n2, pk, sig) == 0;
   return Py_BuildValue("i", res);
 }
 
