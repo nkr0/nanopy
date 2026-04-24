@@ -50,7 +50,8 @@ if os.environ.get("USE_OCL"):
         e.libraries += ["OpenCL"]
 elif k == "Windows":
     e.extra_compile_args += ["/openmp"]
-else:
+elif os.environ.get("USE_OMP"):
+    e.define_macros += [("USE_OMP", None)]
     e.extra_compile_args += ["-fopenmp"]
     e.extra_link_args += ["-fopenmp"]
 

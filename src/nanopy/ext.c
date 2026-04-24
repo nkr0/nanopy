@@ -12,10 +12,14 @@
 #else
 #include <CL/cl.h>
 #endif
+#elif !defined(USE_OMP) && __has_include(<pthread.h>)
+#include <pthread.h>
+#include <unistd.h>
 #else
 #include <omp.h>
 #endif
 
+static const uint64_t n = 1024 * 1024;
 static uint64_t s[16];
 static int p;
 
@@ -52,9 +56,28 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
   return Py_BuildValue("i", res);
 }
 
+#if !defined(USE_OCL) && !defined(USE_OMP) && __has_include(<pthread.h>)
+typedef struct {
+  uint8_t *h;
+  uint64_t nonce, result, difficulty;
+} thread_arg_t;
+
+void *worker(void *arg) {
+  thread_arg_t *a = (thread_arg_t *)arg;
+  a->result = 0;
+  for (uint64_t i = 0; i < n; i++) {
+    if (is_valid(a->nonce + i, a->h, a->difficulty)) {
+      a->result = a->nonce + i;
+      break;
+    }
+  }
+  return NULL;
+}
+#endif
+
 static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   uint8_t *h, *r;
-  uint64_t difficulty, work = 0, nonce, n = 1024 * 1024;
+  uint64_t difficulty, work = 0;
   Py_ssize_t n0, n1;
 
   if (!PyArg_ParseTuple(args, "y#Ky#", &h, &n0, &difficulty, &r, &n1))
@@ -135,26 +158,25 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clBuildProgram", err);
 
-  d_nonce = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
-                           &nonce, &err);
+  d_nonce = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_work = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8,
+  d_work = clCreateBuffer(context, CL_MEM_WRITE_ONLY | CL_MEM_COPY_HOST_PTR, 8,
                           &work, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_h = clCreateBuffer(context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 32, h,
+  d_h = clCreateBuffer(context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 32, h,
                        &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
   d_difficulty = clCreateBuffer(
-      context, CL_MEM_READ_WRITE | CL_MEM_COPY_HOST_PTR, 8, &difficulty, &err);
+      context, CL_MEM_READ_ONLY | CL_MEM_COPY_HOST_PTR, 8, &difficulty, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
@@ -184,21 +206,10 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clEnqueueWriteBuffer(queue, d_h, CL_FALSE, 0, 32, h, 0, NULL, NULL);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
-
-  err = clEnqueueWriteBuffer(queue, d_difficulty, CL_FALSE, 0, 8, &difficulty,
-                             0, NULL, NULL);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
-
   while (!work) {
-    nonce = xorshift1024star();
+    const uint64_t nonce = xorshift1024star();
 
-    err = clEnqueueWriteBuffer(queue, d_nonce, CL_FALSE, 0, 8, &nonce, 0, NULL,
+    err = clEnqueueWriteBuffer(queue, d_nonce, CL_TRUE, 0, 8, &nonce, 0, NULL,
                                NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
@@ -210,16 +221,11 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueNDRangeKernel", err);
 
-    err = clEnqueueReadBuffer(queue, d_work, CL_FALSE, 0, 8, &work, 0, NULL,
-                              NULL);
+    err =
+        clEnqueueReadBuffer(queue, d_work, CL_TRUE, 0, 8, &work, 0, NULL, NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueReadBuffer", err);
-
-    err = clFinish(queue);
-    if (err)
-      return PyErr_Format(PyExc_RuntimeError, "OpenCL:%d: Failed to clFinish",
-                          err);
   }
 
   err = clReleaseMemObject(d_nonce);
@@ -261,9 +267,28 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clReleaseContext", err);
+#elif !defined(USE_OMP) && __has_include(<pthread.h>)
+  long NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
+  pthread_t *threads = malloc(NUM_THREADS * sizeof(pthread_t));
+  thread_arg_t *wargs = malloc(NUM_THREADS * sizeof(thread_arg_t));
+  while (!work) {
+    for (int t = 0; t < NUM_THREADS; t++) {
+      wargs[t].nonce = xorshift1024star();
+      wargs[t].h = h;
+      wargs[t].difficulty = difficulty;
+      pthread_create(&threads[t], NULL, worker, &wargs[t]);
+    }
+    for (int t = 0; t < NUM_THREADS; t++) {
+      pthread_join(threads[t], NULL);
+      if (wargs[t].result)
+        work = wargs[t].result;
+    }
+  }
+  free(threads);
+  free(wargs);
 #else
   while (!work) {
-    nonce = xorshift1024star();
+    const uint64_t nonce = xorshift1024star();
     int i;
 #pragma omp parallel for default(none) shared(n, work, nonce, h, difficulty)
     for (i = 0; i < (int)n; i++) {
