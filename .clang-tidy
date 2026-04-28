@@ -1,2 +1,3 @@
 Checks: '*,-altera*,-google*,-llvm*,-readability*,-hicpp*,-misc*,-cppcoreguidelines*,-bugprone*,-clang-analyzer-security.insecureAPI*'
+ExtraArgs: ['-Wall', '-Wextra']
 WarningsAsErrors: '*'

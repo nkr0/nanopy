@@ -21,7 +21,7 @@
 #endif
 #endif
 
-static const uint64_t n = 1024 * 1024;
+static const size_t n = 1024 * 1024;
 static uint64_t s[16];
 static int p;
 
@@ -378,13 +378,15 @@ static PyObject *verify_signature(PyObject *Py_UNUSED(self), PyObject *args) {
   return Py_BuildValue("i", res);
 }
 
-static PyMethodDef m[] = {{"work_generate", work_generate, METH_VARARGS},
-                          {"work_validate", work_validate, METH_VARARGS},
-                          {"publickey", publickey, METH_VARARGS},
-                          {"sign", sign, METH_VARARGS},
-                          {"verify_signature", verify_signature, METH_VARARGS},
-                          {}};
+static PyMethodDef m[] = {
+    {"work_generate", work_generate, METH_VARARGS, NULL},
+    {"work_validate", work_validate, METH_VARARGS, NULL},
+    {"publickey", publickey, METH_VARARGS, NULL},
+    {"sign", sign, METH_VARARGS, NULL},
+    {"verify_signature", verify_signature, METH_VARARGS, NULL},
+    {}};
 
-static struct PyModuleDef ext = {PyModuleDef_HEAD_INIT, "ext", NULL, 0, m};
+static struct PyModuleDef ext = {
+    PyModuleDef_HEAD_INIT, "ext", NULL, 0, m, NULL, NULL, NULL, NULL};
 
 PyMODINIT_FUNC PyInit_ext(void) { return PyModule_Create(&ext); }
