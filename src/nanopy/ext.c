@@ -12,11 +12,13 @@
 #else
 #include <CL/cl.h>
 #endif
-#elif !defined(USE_OMP) && __has_include(<pthread.h>)
+#else
+#ifdef _WIN32
+#include <windows.h>
+#else
 #include <pthread.h>
 #include <unistd.h>
-#else
-#include <omp.h>
+#endif
 #endif
 
 static const uint64_t n = 1024 * 1024;
@@ -56,22 +58,25 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
   return Py_BuildValue("i", res);
 }
 
-#if !defined(USE_OCL) && !defined(USE_OMP) && __has_include(<pthread.h>)
+#ifndef USE_OCL
 typedef struct {
   uint8_t *h;
-  uint64_t nonce, result, difficulty;
+  uint64_t difficulty, nonce, result;
 } thread_arg_t;
 
-void *worker(void *arg) {
+#ifdef _WIN32
+static DWORD WINAPI worker(LPVOID arg) {
+#else
+static void *worker(void *arg) {
+#endif
   thread_arg_t *a = (thread_arg_t *)arg;
-  a->result = 0;
   for (uint64_t i = 0; i < n; i++) {
     if (is_valid(a->nonce + i, a->h, a->difficulty)) {
       a->result = a->nonce + i;
       break;
     }
   }
-  return NULL;
+  return 0;
 }
 #endif
 
@@ -267,37 +272,40 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clReleaseContext", err);
-#elif !defined(USE_OMP) && __has_include(<pthread.h>)
+#else
+#ifdef _WIN32
+  long NUM_THREADS = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
+  HANDLE *threads = malloc(NUM_THREADS * sizeof(HANDLE));
+#else
   long NUM_THREADS = sysconf(_SC_NPROCESSORS_ONLN);
   pthread_t *threads = malloc(NUM_THREADS * sizeof(pthread_t));
+#endif
   thread_arg_t *wargs = malloc(NUM_THREADS * sizeof(thread_arg_t));
   while (!work) {
     for (int t = 0; t < NUM_THREADS; t++) {
-      wargs[t].nonce = xorshift1024star();
       wargs[t].h = h;
       wargs[t].difficulty = difficulty;
+      wargs[t].nonce = xorshift1024star();
+      wargs[t].result = 0;
+#ifdef _WIN32
+      threads[t] = CreateThread(NULL, 0, worker, &wargs[t], 0, NULL);
+#else
       pthread_create(&threads[t], NULL, worker, &wargs[t]);
+#endif
     }
     for (int t = 0; t < NUM_THREADS; t++) {
+#ifdef _WIN32
+      WaitForSingleObject(threads[t], INFINITE);
+      CloseHandle(threads[t]);
+#else
       pthread_join(threads[t], NULL);
+#endif
       if (wargs[t].result)
         work = wargs[t].result;
     }
   }
   free(threads);
   free(wargs);
-#else
-  while (!work) {
-    const uint64_t nonce = xorshift1024star();
-    int i;
-#pragma omp parallel for default(none) shared(n, work, nonce, h, difficulty)
-    for (i = 0; i < (int)n; i++) {
-      if (!work && is_valid(nonce + i, h, difficulty)) {
-#pragma omp critical
-        work = nonce + i;
-      }
-    }
-  }
 #endif
   return Py_BuildValue("K", work);
 }
