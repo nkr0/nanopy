@@ -48,12 +48,6 @@ if os.environ.get("USE_OCL"):
         e.extra_link_args += ["-framework", "OpenCL"]
     else:
         e.libraries += ["OpenCL"]
-elif k == "Windows":
-    e.extra_compile_args += ["/openmp"]
-elif os.environ.get("USE_OMP"):
-    e.define_macros += [("USE_OMP", None)]
-    e.extra_compile_args += ["-fopenmp"]
-    e.extra_link_args += ["-fopenmp"]
 
 print(vars(e))
 setuptools.setup(ext_modules=[e], options=o)

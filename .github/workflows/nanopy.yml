@@ -19,9 +19,6 @@ jobs:
     - run: CC=clang bear -- pip install -ve .
     - run: clang-tidy src/nanopy/ext.c
     - run: python -m unittest
-    - run: USE_OMP=1 bear -- pip install -ve .
-    - run: clang-tidy src/nanopy/ext.c
-    - run: python -m unittest
     - run: clinfo
     - run: USE_OCL=1 bear -- pip install -ve .
     - run: clang-tidy src/nanopy/ext.c
