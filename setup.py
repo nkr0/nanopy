@@ -10,11 +10,11 @@ print(k, m, cc)
 BLAKE2B_DIR = "src/nanopy/blake2b"
 ED25519_DIR = "src/nanopy/ed25519-donna"
 ED25519_SRC = ED25519_DIR + "/ed25519.c"
-ED25519_IMPL = None
+ED25519_IMPL = []
 ARCH_FLAG = []
 if m.lower() in ["x86_64", "amd64"]:
     BLAKE2B_DIR += "/sse"
-    ED25519_IMPL = "ED25519_SSE2"
+    ED25519_IMPL = [("ED25519_SSE2", None)]
     ARCH_FLAG = ["/arch:AVX2" if k == "Windows" else "-march=x86-64-v3"]
 elif m.lower().startswith("arm64") or m.lower().startswith("aarch64"):
     BLAKE2B_DIR += "/neon"
@@ -24,6 +24,7 @@ else:
 BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e = setuptools.Extension("nanopy.ext", ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC])
+e.define_macros += ED25519_IMPL
 e.extra_compile_args += ARCH_FLAG
 e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
 
@@ -35,9 +36,6 @@ if not sysconfig.get_config_var("Py_GIL_DISABLED"):
 
 if os.environ.get("DBG"):
     e.undef_macros += ["NDEBUG"]
-
-if ED25519_IMPL:
-    e.define_macros += [(ED25519_IMPL, None)]
 
 if os.environ.get("USE_OCL"):
     e.define_macros += [("USE_OCL", None)]
