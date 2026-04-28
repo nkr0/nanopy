@@ -25,7 +25,6 @@ BLAKE2B_SRC = BLAKE2B_DIR + "/blake2b.c"
 
 e = setuptools.Extension("nanopy.ext", ["src/nanopy/ext.c", BLAKE2B_SRC, ED25519_SRC])
 e.extra_compile_args += ARCH_FLAG
-e.extra_link_args += ARCH_FLAG
 e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
 
 o = {}
