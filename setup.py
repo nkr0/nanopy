@@ -5,8 +5,7 @@ import sysconfig
 import setuptools
 
 k, _, _, _, m, _ = platform.uname()
-cc = os.getenv("CC", sysconfig.get_config_var("CC"))
-print(k, m, cc)
+print(k, m)
 BLAKE2B_DIR = "src/nanopy/blake2b"
 ED25519_DIR = "src/nanopy/ed25519-donna"
 ED25519_SRC = ED25519_DIR + "/ed25519.c"
