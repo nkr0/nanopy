@@ -33,9 +33,6 @@ if not sysconfig.get_config_var("Py_GIL_DISABLED"):
     e.define_macros += [("Py_LIMITED_API", "0x030A0000")]
     o = {"bdist_wheel": {"py_limited_api": "cp310"}}
 
-if os.environ.get("DBG"):
-    e.undef_macros += ["NDEBUG"]
-
 if os.environ.get("USE_OCL"):
     e.define_macros += [("USE_OCL", None)]
     if os.environ.get("CI"):
@@ -44,6 +41,9 @@ if os.environ.get("USE_OCL"):
         e.extra_link_args += ["-framework", "OpenCL"]
     else:
         e.libraries += ["OpenCL"]
+
+if os.environ.get("DBG"):
+    e.undef_macros += ["NDEBUG"]
 
 print(vars(e))
 setuptools.setup(ext_modules=[e], options=o)
