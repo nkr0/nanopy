@@ -6,12 +6,12 @@
 #include <stdbool.h>
 
 #ifdef USE_OCL
-#include "opencl_program.h"
-#ifdef __APPLE__
-#include <OpenCL/opencl.h>
-#else
+#if __has_include(<CL/cl.h>)
 #include <CL/cl.h>
+#else
+#include <OpenCL/opencl.h>
 #endif
+#include "opencl_program.h"
 #else
 #ifdef _WIN32
 #include <windows.h>
@@ -139,7 +139,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateContext", err);
 
-#ifndef __APPLE__
+#ifdef CL_VERSION_2_0
   queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
   if (err)
     return PyErr_Format(
