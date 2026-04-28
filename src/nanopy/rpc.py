@@ -40,12 +40,10 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
     _Dict: Callable[[dict[str, Any]], dict[str, Any]] = lambda x: {
         "type": "object",
         "properties": x,
-        "additionalProperties": False,
     }
     _DictP: Callable[[dict[str, Any]], dict[str, Any]] = lambda x: {
         "type": "object",
         "patternProperties": x,
-        "additionalProperties": False,
     }
     _Req: Callable[[list[str]], dict[str, Any]] = lambda x: {
         "anyOf": [
@@ -88,7 +86,6 @@ class RPC(ABC):  # pylint: disable=too-many-public-methods
         """
         r = self.request(data)
         if schema:
-            schema.pop("additionalProperties", None)
             jsonschema.validate(r, schema)
         return r
 
