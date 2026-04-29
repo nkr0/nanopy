@@ -97,11 +97,10 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
 
 #ifdef USE_OCL
   int err;
-  cl_uint num;
   cl_platform_id cpPlatform;
 
-  err = clGetPlatformIDs(1, &cpPlatform, &num);
-  if (err || !num)
+  err = clGetPlatformIDs(1, &cpPlatform, NULL);
+  if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
 #ifndef NDEBUG
@@ -111,7 +110,6 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   printf("OpenCL: %s\n", cl_platform_name);
 #endif
 
-  size_t length = strlen(opencl_program);
   cl_mem d_nonce, d_work, d_h, d_difficulty;
   cl_device_id device_id;
   cl_context context;
@@ -134,26 +132,26 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   printf("OpenCL: %s\n", cl_device_name);
 #endif
 
-  context = clCreateContext(0, 1, &device_id, NULL, NULL, &err);
+  context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateContext", err);
 
 #ifdef CL_VERSION_2_0
-  queue = clCreateCommandQueueWithProperties(context, device_id, 0, &err);
+  queue = clCreateCommandQueueWithProperties(context, device_id, NULL, &err);
   if (err)
     return PyErr_Format(
         PyExc_RuntimeError,
         "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
 #else
-  queue = clCreateCommandQueue(context, device_id, 0, &err);
+  queue = clCreateCommandQueue(context, device_id, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateCommandQueue", err);
 #endif
 
   program = clCreateProgramWithSource(
-      context, 1, (const char **)&opencl_program, &length, &err);
+      context, 1, (const char **)&opencl_program, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateProgramWithSource", err);
