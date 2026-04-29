@@ -150,8 +150,7 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
                         "OpenCL:%d: Failed to clCreateCommandQueue", err);
 #endif
 
-  program = clCreateProgramWithSource(
-      context, 1, (const char **)&opencl_program, NULL, &err);
+  program = clCreateProgramWithSource(context, 1, opencl_program, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateProgramWithSource", err);

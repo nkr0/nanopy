@@ -1,5 +1,5 @@
 // this is the variable opencl_program in nano-node/nano/node/openclwork.cpp
-const char *opencl_program = "\n\
+const char *opencl_program[] = {"\n\
 enum Blake2b_IV {\n\
     iv0 = 0x6a09e667f3bcc908UL,\n\
     iv1 = 0xbb67ae8584caa73bUL,\n\
@@ -104,4 +104,4 @@ __kernel void nano_work(__constant ulong *attempt,\n\
     if (blake2b(attempt_l, item_a) >= *difficulty)\n\
         *result_a = attempt_l;\n\
 }\n\
-";
+"};
