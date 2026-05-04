@@ -59,8 +59,8 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
 }
 
 #ifdef USE_OCL
-static cl_platform_id cpPlatform;
-static cl_device_id device_id;
+static cl_platform_id platform;
+static cl_device_id device;
 static cl_context context;
 static cl_command_queue queue;
 static cl_program program;
@@ -273,45 +273,45 @@ static struct PyModuleDef ext = {
 
 PyMODINIT_FUNC PyInit_ext(void) {
 #ifdef USE_OCL
-  int err = clGetPlatformIDs(1, &cpPlatform, NULL);
+  int err = clGetPlatformIDs(1, &platform, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
 #ifndef NDEBUG
   char cl_platform_name[128];
-  clGetPlatformInfo(cpPlatform, CL_PLATFORM_NAME, sizeof cl_platform_name,
+  clGetPlatformInfo(platform, CL_PLATFORM_NAME, sizeof cl_platform_name,
                     cl_platform_name, NULL);
   printf("OpenCL: %s\n", cl_platform_name);
 #endif
 
 #ifdef USE_OCL_CPU
-  err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_CPU, 1, &device_id, NULL);
+  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
 #else
-  err = clGetDeviceIDs(cpPlatform, CL_DEVICE_TYPE_GPU, 1, &device_id, NULL);
+  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
 #endif
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetDeviceIDs", err);
 #ifndef NDEBUG
   char cl_device_name[128];
-  clGetDeviceInfo(device_id, CL_DEVICE_NAME, sizeof cl_device_name,
-                  cl_device_name, NULL);
+  clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof cl_device_name, cl_device_name,
+                  NULL);
   printf("OpenCL: %s\n", cl_device_name);
 #endif
 
-  context = clCreateContext(NULL, 1, &device_id, NULL, NULL, &err);
+  context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateContext", err);
 
 #ifdef CL_VERSION_2_0
-  queue = clCreateCommandQueueWithProperties(context, device_id, NULL, &err);
+  queue = clCreateCommandQueueWithProperties(context, device, NULL, &err);
   if (err)
     return PyErr_Format(
         PyExc_RuntimeError,
         "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
 #else
-  queue = clCreateCommandQueue(context, device_id, NULL, &err);
+  queue = clCreateCommandQueue(context, device, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateCommandQueue", err);
