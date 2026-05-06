@@ -21,7 +21,7 @@
 #endif
 #endif
 
-static const size_t n = 1024 * 1024;
+static const size_t n = 1 << 20;
 static uint64_t s[16];
 static int p;
 
@@ -77,45 +77,113 @@ static void free_ext(void *Py_UNUSED(m)) {
   clReleaseCommandQueue(queue);
   clReleaseContext(context);
 }
-#else
-static void free_ext(void *Py_UNUSED(m)) {}
-typedef struct {
-  uint8_t *h;
-  uint64_t difficulty, nonce, result;
-} thread_arg_t;
 
-#ifdef _WIN32
-static DWORD WINAPI worker(LPVOID arg) {
-#else
-static void *worker(void *arg) {
+static PyObject *setup_cl() {
+  int err = clGetPlatformIDs(1, &platform, NULL);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clGetPlatformIDs", err);
+#ifndef NDEBUG
+  char cl_platform_name[128];
+  clGetPlatformInfo(platform, CL_PLATFORM_NAME, sizeof cl_platform_name,
+                    cl_platform_name, NULL);
+  printf("OpenCL: %s\n", cl_platform_name);
 #endif
-  thread_arg_t *a = (thread_arg_t *)arg;
-  for (uint64_t i = 0; i < n; i++) {
-    if (is_valid(a->nonce + i, a->h, a->difficulty)) {
-      a->result = a->nonce + i;
-      break;
-    }
-  }
-  return 0;
+
+#ifdef USE_OCL_CPU
+  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
+#else
+  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+#endif
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clGetDeviceIDs", err);
+#ifndef NDEBUG
+  char cl_device_name[128];
+  clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof cl_device_name, cl_device_name,
+                  NULL);
+  printf("OpenCL: %s\n", cl_device_name);
+#endif
+
+  context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateContext", err);
+
+#ifdef CL_VERSION_2_0
+  queue = clCreateCommandQueueWithProperties(context, device, NULL, &err);
+  if (err)
+    return PyErr_Format(
+        PyExc_RuntimeError,
+        "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
+#else
+  queue = clCreateCommandQueue(context, device, 0, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateCommandQueue", err);
+#endif
+
+  program = clCreateProgramWithSource(context, 1, opencl_program, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateProgramWithSource", err);
+
+  err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clBuildProgram", err);
+
+  d_nonce = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
+
+  d_work = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 8, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
+
+  d_h = clCreateBuffer(context, CL_MEM_READ_ONLY, 32, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
+
+  d_difficulty = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateBuffer", err);
+
+  kernel = clCreateKernel(program, "nano_work", &err);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clCreateKernel", err);
+
+  err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_nonce);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
+
+  err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_work);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
+
+  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
+
+  err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_difficulty);
+  if (err)
+    return PyErr_Format(PyExc_RuntimeError,
+                        "OpenCL:%d: Failed to clSetKernelArg", err);
+
+  return NULL;
 }
-#endif
 
-static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *h, *r;
-  uint64_t difficulty, work = 0;
-  Py_ssize_t n0, n1;
+static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
+  uint64_t work = 0;
 
-  if (!PyArg_ParseTuple(args, "y#Ky#", &h, &n0, &difficulty, &r, &n1))
-    return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
-  if (n0 != 32)
-    return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
-  if (n1 != sizeof s)
-    return PyErr_Format(PyExc_ValueError, "Random must be 128 bytes");
-
-  p = 0;
-  memcpy(s, r, sizeof s);
-
-#ifdef USE_OCL
   int err =
       clEnqueueWriteBuffer(queue, d_work, CL_TRUE, 0, 8, &work, 0, NULL, NULL);
   if (err)
@@ -154,7 +222,33 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueReadBuffer", err);
   }
+
+  return Py_BuildValue("K", work);
+}
 #else
+static void free_ext(void *Py_UNUSED(m)) {}
+typedef struct {
+  uint8_t *h;
+  uint64_t difficulty, nonce, result;
+} thread_arg_t;
+
+#ifdef _WIN32
+static DWORD WINAPI worker(LPVOID arg) {
+#else
+static void *worker(void *arg) {
+#endif
+  thread_arg_t *a = (thread_arg_t *)arg;
+  for (uint64_t i = 0; i < n; i++) {
+    if (is_valid(a->nonce + i, a->h, a->difficulty)) {
+      a->result = a->nonce + i;
+      break;
+    }
+  }
+  return 0;
+}
+
+static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
+  uint64_t work = 0;
 #ifdef _WIN32
   long NUM_THREADS = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
   HANDLE *threads = malloc(NUM_THREADS * sizeof(HANDLE));
@@ -188,8 +282,25 @@ static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
   }
   free(threads);
   free(wargs);
-#endif
   return Py_BuildValue("K", work);
+}
+#endif
+
+static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
+  uint8_t *h, *r;
+  uint64_t difficulty;
+  Py_ssize_t n0, n1;
+
+  if (!PyArg_ParseTuple(args, "y#Ky#", &h, &n0, &difficulty, &r, &n1))
+    return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
+  if (n0 != 32)
+    return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
+  if (n1 != sizeof s)
+    return PyErr_Format(PyExc_ValueError, "Random must be 128 bytes");
+
+  p = 0;
+  memcpy(s, r, sizeof s);
+  return work_generate_impl(h, difficulty);
 }
 
 void ed25519_randombytes_unsafe(void *Py_UNUSED(out),
@@ -273,104 +384,9 @@ static struct PyModuleDef ext = {
 
 PyMODINIT_FUNC PyInit_ext(void) {
 #ifdef USE_OCL
-  int err = clGetPlatformIDs(1, &platform, NULL);
+  PyObject *err = setup_cl();
   if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clGetPlatformIDs", err);
-#ifndef NDEBUG
-  char cl_platform_name[128];
-  clGetPlatformInfo(platform, CL_PLATFORM_NAME, sizeof cl_platform_name,
-                    cl_platform_name, NULL);
-  printf("OpenCL: %s\n", cl_platform_name);
-#endif
-
-#ifdef USE_OCL_CPU
-  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
-#else
-  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
-#endif
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clGetDeviceIDs", err);
-#ifndef NDEBUG
-  char cl_device_name[128];
-  clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof cl_device_name, cl_device_name,
-                  NULL);
-  printf("OpenCL: %s\n", cl_device_name);
-#endif
-
-  context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateContext", err);
-
-#ifdef CL_VERSION_2_0
-  queue = clCreateCommandQueueWithProperties(context, device, NULL, &err);
-  if (err)
-    return PyErr_Format(
-        PyExc_RuntimeError,
-        "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
-#else
-  queue = clCreateCommandQueue(context, device, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateCommandQueue", err);
-#endif
-
-  program = clCreateProgramWithSource(context, 1, opencl_program, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateProgramWithSource", err);
-
-  err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clBuildProgram", err);
-
-  d_nonce = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateBuffer", err);
-
-  d_work = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 8, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateBuffer", err);
-
-  d_h = clCreateBuffer(context, CL_MEM_READ_ONLY, 32, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateBuffer", err);
-
-  d_difficulty = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateBuffer", err);
-
-  kernel = clCreateKernel(program, "nano_work", &err);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clCreateKernel", err);
-
-  err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_nonce);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clSetKernelArg", err);
-
-  err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_work);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clSetKernelArg", err);
-
-  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clSetKernelArg", err);
-
-  err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_difficulty);
-  if (err)
-    return PyErr_Format(PyExc_RuntimeError,
-                        "OpenCL:%d: Failed to clSetKernelArg", err);
+    return err;
 #endif
   return PyModule_Create(&ext);
 }
