@@ -68,7 +68,7 @@ static PyObject *work_validate(PyObject *Py_UNUSED(m), PyObject *args) {
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
 
   bool res = is_valid(work, h, difficulty);
-  return Py_BuildValue("i", res);
+  return Py_BuildValue("p", res);
 }
 
 #ifdef USE_OCL
@@ -375,7 +375,7 @@ static PyObject *verify_signature(PyObject *Py_UNUSED(m), PyObject *args) {
     return PyErr_Format(PyExc_ValueError, "Public key must be 32 bytes");
 
   bool res = ed25519_sign_open(msg, n2, pk, sig) == 0;
-  return Py_BuildValue("i", res);
+  return Py_BuildValue("p", res);
 }
 
 static PyMethodDef m[] = {
