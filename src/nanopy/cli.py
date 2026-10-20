@@ -3,6 +3,7 @@ import argparse
 import configparser
 import getpass
 import os
+from importlib.metadata import version
 from typing import Callable
 
 import platformdirs
@@ -105,30 +106,33 @@ def main() -> None:
         "--network",
         choices=["banano", "beta", "nano"],
         default="nano",
-        help="Choose the network to interact with. (nano)",
+        help="choose the network to interact with. (nano)",
         type=str,
+    )
+    parser.add_argument(
+        "-v", "--version", action="version", version=f"%(prog)s {version('nanopy')}"
     )
 
     subparsers = parser.add_subparsers(dest="sub")
-    o = subparsers.add_parser("open", help="Open KDBX file")
+    o = subparsers.add_parser("open", help="open KDBX file")
     o.add_argument("f", metavar="FILE", type=str, help="*.kdbx file.")
-    o.add_argument("k", metavar="KEY", help="Key label.")
-    o.add_argument("-g", "--group", help="Key group. (root)", type=str)
-    o.add_argument("-i", "--index", default=0, help="Account index. (0)", type=int)
-    o.add_argument("--rep", help="Change rep", metavar="ADDRESS", type=Account)
+    o.add_argument("k", metavar="KEY", help="key label.")
+    o.add_argument("-g", "--group", help="key group. (root)", type=str)
+    o.add_argument("-i", "--index", default=0, help="account index. (0)", type=int)
+    o.add_argument("--rep", help="change rep", metavar="ADDRESS", type=Account)
 
     ox = o.add_mutually_exclusive_group()
-    ox.add_argument("--audit", action="store_true", help="Audit key")
-    ox.add_argument("-n", "--new", action="store_true", help="Add a new key.")
-    ox.add_argument("-r", "--receive", help="Receive block", metavar="HASH", type=str)
+    ox.add_argument("--audit", action="store_true", help="audit key")
+    ox.add_argument("-n", "--new", action="store_true", help="add a new key.")
+    ox.add_argument("-r", "--receive", help="receive block", metavar="HASH", type=str)
     ox.add_argument(
-        "-R", "--receive-all", action="store_true", help="Receive all pending blocks."
+        "-R", "--receive-all", action="store_true", help="receive all pending blocks."
     )
-    ox.add_argument("-s", "--send", help="Send to", metavar="ADDRESS", type=Account)
+    ox.add_argument("-s", "--send", help="send to", metavar="ADDRESS", type=Account)
 
     sx = o.add_mutually_exclusive_group()
-    sx.add_argument("-a", "--amount", type=str, help="Amount to send")
-    sx.add_argument("-e", "--empty", action="store_true", help="Empty account")
+    sx.add_argument("-a", "--amount", type=str, help="amount to send")
+    sx.add_argument("-e", "--empty", action="store_true", help="empty account")
     args = parser.parse_args()
 
     config = configparser.ConfigParser(allow_no_value=True)
