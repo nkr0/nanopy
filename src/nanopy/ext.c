@@ -249,6 +249,7 @@ static void *worker(void *arg) {
 
 static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
   uint64_t work = 0;
+  Py_BEGIN_ALLOW_THREADS;
 #ifdef _WIN32
   long NUM_THREADS = GetActiveProcessorCount(ALL_PROCESSOR_GROUPS);
   HANDLE *threads = malloc(NUM_THREADS * sizeof(HANDLE));
@@ -282,6 +283,7 @@ static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
   }
   free(threads);
   free(wargs);
+  Py_END_ALLOW_THREADS;
   return Py_BuildValue("K", work);
 }
 #endif

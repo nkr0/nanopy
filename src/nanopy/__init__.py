@@ -454,7 +454,7 @@ class StateBlock:
         return bool(ext.verify_signature(s, p, h))
 
     def work_generate(self, difficulty: str) -> None:
-        """Compute work
+        """Compute work. This method is not thread safe.
 
         :arg difficulty: 16 hex char difficulty
         """
