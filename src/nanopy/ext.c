@@ -381,8 +381,14 @@ static PyMethodDef m[] = {
     {"verify_signature", verify_signature, METH_VARARGS, NULL},
     {}};
 
-static struct PyModuleDef ext = {
-    PyModuleDef_HEAD_INIT, "ext", NULL, 0, m, NULL, NULL, NULL, free_ext};
+static PyModuleDef_Slot slots[] = {
+#ifdef Py_GIL_DISABLED
+    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+    {0, NULL}};
+
+static PyModuleDef ext = {
+    PyModuleDef_HEAD_INIT, "ext", NULL, 0, m, slots, NULL, NULL, free_ext};
 
 PyMODINIT_FUNC PyInit_ext(void) {
 #ifdef USE_OCL
@@ -390,5 +396,5 @@ PyMODINIT_FUNC PyInit_ext(void) {
   if (err)
     return err;
 #endif
-  return PyModule_Create(&ext);
+  return PyModuleDef_Init(&ext);
 }
