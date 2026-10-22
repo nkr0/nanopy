@@ -22,15 +22,27 @@
 #endif
 
 static const size_t n = 1 << 20;
-static uint64_t s[16];
-static int p;
 
-static uint64_t xorshift1024star() {
-  uint64_t s0 = s[p++], s1 = s[p &= 15];
+typedef struct {
+  uint64_t s[16];
+  int p;
+#ifdef USE_OCL
+  cl_platform_id platform;
+  cl_device_id device;
+  cl_context context;
+  cl_command_queue queue;
+  cl_program program;
+  cl_mem d_nonce, d_work, d_h, d_difficulty;
+  cl_kernel kernel;
+#endif
+} ms;
+
+static uint64_t xorshift1024star(ms *self) {
+  uint64_t s0 = self->s[self->p++], s1 = self->s[self->p &= 15];
   s1 ^= s1 << 31;
   s1 ^= s1 >> 11;
   s1 ^= s0 ^ (s0 >> 30);
-  s[p] = s1;
+  self->s[self->p] = s1;
   return s1 * 1181783497276652981ull;
 }
 
@@ -59,27 +71,21 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
 }
 
 #ifdef USE_OCL
-static cl_platform_id platform;
-static cl_device_id device;
-static cl_context context;
-static cl_command_queue queue;
-static cl_program program;
-static cl_mem d_nonce, d_work, d_h, d_difficulty;
-static cl_kernel kernel;
-
-static void free_ext(void *Py_UNUSED(m)) {
-  clReleaseKernel(kernel);
-  clReleaseMemObject(d_nonce);
-  clReleaseMemObject(d_work);
-  clReleaseMemObject(d_h);
-  clReleaseMemObject(d_difficulty);
-  clReleaseProgram(program);
-  clReleaseCommandQueue(queue);
-  clReleaseContext(context);
+static void free_ext(void *m) {
+  ms *self = PyModule_GetState((PyObject *)m);
+  clReleaseKernel(self->kernel);
+  clReleaseMemObject(self->d_nonce);
+  clReleaseMemObject(self->d_work);
+  clReleaseMemObject(self->d_h);
+  clReleaseMemObject(self->d_difficulty);
+  clReleaseProgram(self->program);
+  clReleaseCommandQueue(self->queue);
+  clReleaseContext(self->context);
 }
 
-static PyObject *setup_cl() {
-  int err = clGetPlatformIDs(1, &platform, NULL);
+static PyObject *setup_cl(PyObject *m) {
+  ms *self = PyModule_GetState(m);
+  int err = clGetPlatformIDs(1, &self->platform, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetPlatformIDs", err);
@@ -91,89 +97,96 @@ static PyObject *setup_cl() {
 #endif
 
 #ifdef USE_OCL_CPU
-  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_CPU, 1, &device, NULL);
+  err = clGetDeviceIDs(self->platform, CL_DEVICE_TYPE_CPU, 1, &self->device,
+                       NULL);
 #else
-  err = clGetDeviceIDs(platform, CL_DEVICE_TYPE_GPU, 1, &device, NULL);
+  err = clGetDeviceIDs(self->platform, CL_DEVICE_TYPE_GPU, 1, &self->device,
+                       NULL);
 #endif
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clGetDeviceIDs", err);
 #ifndef NDEBUG
   char cl_device_name[128];
-  clGetDeviceInfo(device, CL_DEVICE_NAME, sizeof cl_device_name, cl_device_name,
-                  NULL);
+  clGetDeviceInfo(self->device, CL_DEVICE_NAME, sizeof cl_device_name,
+                  cl_device_name, NULL);
   printf("OpenCL: %s\n", cl_device_name);
 #endif
 
-  context = clCreateContext(NULL, 1, &device, NULL, NULL, &err);
+  self->context = clCreateContext(NULL, 1, &self->device, NULL, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateContext", err);
 
 #ifdef CL_VERSION_2_0
-  queue = clCreateCommandQueueWithProperties(context, device, NULL, &err);
+  self->queue = clCreateCommandQueueWithProperties(self->context, self->device,
+                                                   NULL, &err);
   if (err)
     return PyErr_Format(
         PyExc_RuntimeError,
         "OpenCL:%d: Failed to clCreateCommandQueueWithProperties", err);
 #else
-  queue = clCreateCommandQueue(context, device, 0, &err);
+  self->queue = clCreateCommandQueue(self->context, self->device, 0, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateCommandQueue", err);
 #endif
 
-  program = clCreateProgramWithSource(context, 1, opencl_program, NULL, &err);
+  self->program =
+      clCreateProgramWithSource(self->context, 1, opencl_program, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateProgramWithSource", err);
 
-  err = clBuildProgram(program, 0, NULL, NULL, NULL, NULL);
+  err = clBuildProgram(self->program, 0, NULL, NULL, NULL, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clBuildProgram", err);
 
-  d_nonce = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
+  self->d_nonce =
+      clCreateBuffer(self->context, CL_MEM_READ_ONLY, 8, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_work = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 8, NULL, &err);
+  self->d_work =
+      clCreateBuffer(self->context, CL_MEM_WRITE_ONLY, 8, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_h = clCreateBuffer(context, CL_MEM_READ_ONLY, 32, NULL, &err);
+  self->d_h = clCreateBuffer(self->context, CL_MEM_READ_ONLY, 32, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  d_difficulty = clCreateBuffer(context, CL_MEM_READ_ONLY, 8, NULL, &err);
+  self->d_difficulty =
+      clCreateBuffer(self->context, CL_MEM_READ_ONLY, 8, NULL, &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateBuffer", err);
 
-  kernel = clCreateKernel(program, "nano_work", &err);
+  self->kernel = clCreateKernel(self->program, "nano_work", &err);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clCreateKernel", err);
 
-  err = clSetKernelArg(kernel, 0, sizeof(cl_mem), &d_nonce);
+  err = clSetKernelArg(self->kernel, 0, sizeof(cl_mem), &self->d_nonce);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 1, sizeof(cl_mem), &d_work);
+  err = clSetKernelArg(self->kernel, 1, sizeof(cl_mem), &self->d_work);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 2, sizeof(cl_mem), &d_h);
+  err = clSetKernelArg(self->kernel, 2, sizeof(cl_mem), &self->d_h);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
 
-  err = clSetKernelArg(kernel, 3, sizeof(cl_mem), &d_difficulty);
+  err = clSetKernelArg(self->kernel, 3, sizeof(cl_mem), &self->d_difficulty);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clSetKernelArg", err);
@@ -181,43 +194,44 @@ static PyObject *setup_cl() {
   return NULL;
 }
 
-static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
+static PyObject *work_generate_impl(ms *self, uint8_t *h, uint64_t difficulty) {
   uint64_t work = 0;
 
-  int err =
-      clEnqueueWriteBuffer(queue, d_work, CL_TRUE, 0, 8, &work, 0, NULL, NULL);
+  int err = clEnqueueWriteBuffer(self->queue, self->d_work, CL_TRUE, 0, 8,
+                                 &work, 0, NULL, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
-  err = clEnqueueWriteBuffer(queue, d_h, CL_TRUE, 0, 32, h, 0, NULL, NULL);
+  err = clEnqueueWriteBuffer(self->queue, self->d_h, CL_TRUE, 0, 32, h, 0, NULL,
+                             NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
-  err = clEnqueueWriteBuffer(queue, d_difficulty, CL_TRUE, 0, 8, &difficulty, 0,
-                             NULL, NULL);
+  err = clEnqueueWriteBuffer(self->queue, self->d_difficulty, CL_TRUE, 0, 8,
+                             &difficulty, 0, NULL, NULL);
   if (err)
     return PyErr_Format(PyExc_RuntimeError,
                         "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
   while (!work) {
-    const uint64_t nonce = xorshift1024star();
+    const uint64_t nonce = xorshift1024star(self);
 
-    err = clEnqueueWriteBuffer(queue, d_nonce, CL_TRUE, 0, 8, &nonce, 0, NULL,
-                               NULL);
+    err = clEnqueueWriteBuffer(self->queue, self->d_nonce, CL_TRUE, 0, 8,
+                               &nonce, 0, NULL, NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueWriteBuffer", err);
 
-    err =
-        clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &n, NULL, 0, NULL, NULL);
+    err = clEnqueueNDRangeKernel(self->queue, self->kernel, 1, NULL, &n, NULL,
+                                 0, NULL, NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueNDRangeKernel", err);
 
-    err =
-        clEnqueueReadBuffer(queue, d_work, CL_TRUE, 0, 8, &work, 0, NULL, NULL);
+    err = clEnqueueReadBuffer(self->queue, self->d_work, CL_TRUE, 0, 8, &work,
+                              0, NULL, NULL);
     if (err)
       return PyErr_Format(PyExc_RuntimeError,
                           "OpenCL:%d: Failed to clEnqueueReadBuffer", err);
@@ -247,7 +261,7 @@ static void *worker(void *arg) {
   return 0;
 }
 
-static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
+static PyObject *work_generate_impl(ms *self, uint8_t *h, uint64_t difficulty) {
   uint64_t work = 0;
   Py_BEGIN_ALLOW_THREADS;
 #ifdef _WIN32
@@ -262,7 +276,7 @@ static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
     for (int t = 0; t < NUM_THREADS; t++) {
       wargs[t].h = h;
       wargs[t].difficulty = difficulty;
-      wargs[t].nonce = xorshift1024star();
+      wargs[t].nonce = xorshift1024star(self);
       wargs[t].result = 0;
 #ifdef _WIN32
       threads[t] = CreateThread(NULL, 0, worker, &wargs[t], 0, NULL);
@@ -288,21 +302,18 @@ static PyObject *work_generate_impl(uint8_t *h, uint64_t difficulty) {
 }
 #endif
 
-static PyObject *work_generate(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *h, *r;
+static PyObject *work_generate(PyObject *m, PyObject *args) {
+  uint8_t *h;
   uint64_t difficulty;
-  Py_ssize_t n0, n1;
+  Py_ssize_t n0;
+  ms *self = PyModule_GetState(m);
 
-  if (!PyArg_ParseTuple(args, "y#Ky#", &h, &n0, &difficulty, &r, &n1))
+  if (!PyArg_ParseTuple(args, "y#K", &h, &n0, &difficulty))
     return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
   if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Hash must be 32 bytes");
-  if (n1 != sizeof s)
-    return PyErr_Format(PyExc_ValueError, "Random must be 128 bytes");
 
-  p = 0;
-  memcpy(s, r, sizeof s);
-  return work_generate_impl(h, difficulty);
+  return work_generate_impl(self, h, difficulty);
 }
 
 void ed25519_randombytes_unsafe(void *Py_UNUSED(out),
@@ -341,15 +352,22 @@ static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
 }
 
 static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *sk, *m, *r;
-  Py_ssize_t n0, n1, n2;
+  uint8_t *sk, *m, *r, R[32];
+  Py_ssize_t n0, n1, n2 = 0;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sk, &n0, &m, &n1, &r, &n2))
+  if (!PyArg_ParseTuple(args, "y#y#|y#", &sk, &n0, &m, &n1, &r, &n2))
     return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
   if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
-  if (n2 != 32)
-    return PyErr_Format(PyExc_ValueError, "Random must be 32 bytes");
+
+  if (n2 != 32) {
+    PyObject *os = PyImport_ImportModule("os");
+    PyObject *seed = PyObject_CallMethod(os, "urandom", "i", sizeof R);
+    PyBytes_AsStringAndSize(seed, (char **)R, &n1);
+    Py_DECREF(seed);
+    Py_DECREF(os);
+    r = &R[0];
+  }
 
   ed25519_public_key pk;
   ed25519_publickey(sk, pk);
@@ -381,20 +399,33 @@ static PyMethodDef m[] = {
     {"verify_signature", verify_signature, METH_VARARGS, NULL},
     {}};
 
-static PyModuleDef_Slot slots[] = {
-#ifdef Py_GIL_DISABLED
-    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
-#endif
-    {0, NULL}};
+static int exec_ext(PyObject *m) {
+  ms *self = PyModule_GetState(m);
+  Py_ssize_t n;
 
-static PyModuleDef ext = {
-    PyModuleDef_HEAD_INIT, "ext", NULL, 0, m, slots, NULL, NULL, free_ext};
+  PyObject *os = PyImport_ImportModule("os");
+  PyObject *seed = PyObject_CallMethod(os, "urandom", "i", sizeof self->s);
+  PyBytes_AsStringAndSize(seed, (char **)self->s, &n);
+  Py_DECREF(seed);
+  Py_DECREF(os);
+  self->p = 0;
 
-PyMODINIT_FUNC PyInit_ext(void) {
 #ifdef USE_OCL
-  PyObject *err = setup_cl();
-  if (err)
-    return err;
+  if (setup_cl(m))
+    return -1;
 #endif
-  return PyModuleDef_Init(&ext);
+
+  return 0;
 }
+
+static PyModuleDef_Slot slots[] = {{Py_mod_exec, exec_ext},
+#ifdef Py_GIL_DISABLED
+                                   {Py_mod_gil, Py_MOD_GIL_NOT_USED},
+#endif
+                                   {0, NULL}};
+
+static PyModuleDef ext = {PyModuleDef_HEAD_INIT, .m_name = "ext",
+                          .m_size = sizeof(ms),  .m_methods = m,
+                          .m_slots = slots,      .m_free = free_ext};
+
+PyMODINIT_FUNC PyInit_ext(void) { return PyModuleDef_Init(&ext); }

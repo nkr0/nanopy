@@ -9,7 +9,6 @@ import decimal
 import hashlib
 import hmac
 import json
-import os
 from typing import Optional
 
 import mnemonic
@@ -399,7 +398,7 @@ class Account:  # pylint: disable=too-many-instance-attributes
             raise NotImplementedError("This method needs private key")
         h = bytes.fromhex(b.hash_)
         s = bytes.fromhex(self._sk)
-        b.sig = str(ext.sign(s, h, os.urandom(32)).hex())
+        b.sig = str(ext.sign(s, h).hex())
 
 
 @dataclasses.dataclass
@@ -459,9 +458,7 @@ class StateBlock:
         :arg difficulty: 16 hex char difficulty
         """
         assert len(bytes.fromhex(difficulty)) == 8
-        w = ext.work_generate(
-            bytes.fromhex(self.prev), int(difficulty, 16), os.urandom(128)
-        )
+        w = ext.work_generate(bytes.fromhex(self.prev), int(difficulty, 16))
         self.work = f"{w:016x}"
 
     def work_validate(self, difficulty: str) -> bool:

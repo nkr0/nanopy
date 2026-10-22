@@ -1,6 +1,5 @@
 # pylint: disable=missing-module-docstring,missing-class-docstring,missing-function-docstring
 import csv
-import os
 from unittest import TestCase
 
 from nanopy import ext  # type: ignore
@@ -20,10 +19,8 @@ class TestModuleLevel(TestCase):
 
     def test_work_generate(self) -> None:
         with self.assertRaisesRegex(ValueError, "Hash must be 32 bytes"):
-            ext.work_generate(b"", 0, b"")
-        with self.assertRaisesRegex(ValueError, "Random must be 128 bytes"):
-            ext.work_generate(b"0" * 32, 0, b"")
-        ext.work_generate(b"0" * 32, 0, os.urandom(128))
+            ext.work_generate(b"", 0)
+        ext.work_generate(b"0" * 32, 0)
 
     def test_publickey(self) -> None:
         with self.assertRaisesRegex(ValueError, "Secret key must be 32 bytes"):
@@ -37,9 +34,7 @@ class TestModuleLevel(TestCase):
 
     def test_sign(self) -> None:
         with self.assertRaisesRegex(ValueError, "Secret key must be 32 bytes"):
-            ext.sign(b"", b"", b"")
-        with self.assertRaisesRegex(ValueError, "Random must be 32 bytes"):
-            ext.sign(b"0" * 32, b"", b"")
+            ext.sign(b"", b"")
         with open("tests/ed25519.csv", encoding="ascii") as f:
             cf = csv.reader(f)
             for e in cf:
@@ -47,6 +42,7 @@ class TestModuleLevel(TestCase):
                 m = bytes.fromhex(e[2])
                 r = bytes.fromhex(e[3])
                 sig = bytes.fromhex(e[4])
+                assert sig != ext.sign(sk, m)
                 assert sig == ext.sign(sk, m, r)
 
     def test_verify_signature(self) -> None:
