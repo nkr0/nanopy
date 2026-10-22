@@ -420,14 +420,34 @@ static void m_free(void *m) {
 #endif
 }
 
+#if !defined(Py_LIMITED_API) || Py_LIMITED_API < 0x030f0000
 static PyModuleDef_Slot slots[] = {{Py_mod_exec, m_exec},
 #ifdef Py_GIL_DISABLED
                                    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
 #endif
-                                   {0, NULL}};
+                                   { 0,
+                                     NULL }};
 
 static PyModuleDef ext = {PyModuleDef_HEAD_INIT, .m_name = "ext",
                           .m_size = sizeof(ms),  .m_methods = m,
                           .m_slots = slots,      .m_free = m_free};
 
 PyMODINIT_FUNC PyInit_ext(void) { return PyModuleDef_Init(&ext); }
+#else
+PyABIInfo_VAR(abi_info);
+
+static PySlot slots[] = {PySlot_STATIC_DATA(Py_mod_abi, &abi_info),
+#ifdef Py_GIL_DISABLED
+                         PySlot_DATA(Py_mod_gil, Py_MOD_GIL_NOT_USED),
+#endif
+                         PySlot_DATA(Py_mod_multiple_interpreters,
+                                     Py_MOD_PER_INTERPRETER_GIL_SUPPORTED),
+                         PySlot_STATIC_DATA(Py_mod_name, "ext"),
+                         PySlot_SIZE(Py_mod_state_size, sizeof(ms)),
+                         PySlot_STATIC_DATA(Py_mod_methods, m),
+                         PySlot_FUNC(Py_mod_exec, m_exec),
+                         PySlot_FUNC(Py_mod_state_free, m_free),
+                         PySlot_END};
+
+PyMODEXPORT_FUNC PyModExport_ext(void) { return slots; }
+#endif

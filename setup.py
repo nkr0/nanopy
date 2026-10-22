@@ -1,5 +1,6 @@
 import os
 import platform
+import sys
 import sysconfig
 
 import setuptools
@@ -28,7 +29,11 @@ e.extra_compile_args += ARCH_FLAG
 e.include_dirs += [BLAKE2B_DIR, ED25519_DIR]
 
 o = {}
-if not sysconfig.get_config_var("Py_GIL_DISABLED"):
+if sys.version_info >= (3, 15):
+    e.py_limited_api = True
+    e.define_macros += [("Py_LIMITED_API", "0x030F0000")]
+    o = {"bdist_wheel": {"py_limited_api": "cp315"}}
+elif not sysconfig.get_config_var("Py_GIL_DISABLED"):
     e.py_limited_api = True
     e.define_macros += [("Py_LIMITED_API", "0x030A0000")]
     o = {"bdist_wheel": {"py_limited_api": "cp310"}}
