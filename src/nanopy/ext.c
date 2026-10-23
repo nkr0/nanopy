@@ -26,6 +26,7 @@ static const size_t n = 1 << 20;
 typedef struct {
   uint64_t s[16];
   int p;
+  PyObject *os;
 #ifdef USE_OCL
   cl_platform_id platform;
   cl_device_id device;
@@ -56,7 +57,7 @@ static bool is_valid(uint64_t work, uint8_t *h, uint64_t difficulty) {
   return d >= difficulty;
 }
 
-static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
+static PyObject *work_validate(PyObject *Py_UNUSED(m), PyObject *args) {
   uint8_t *h;
   uint64_t difficulty, work;
   Py_ssize_t n0;
@@ -71,18 +72,6 @@ static PyObject *work_validate(PyObject *Py_UNUSED(self), PyObject *args) {
 }
 
 #ifdef USE_OCL
-static void free_ext(void *m) {
-  ms *self = PyModule_GetState((PyObject *)m);
-  clReleaseKernel(self->kernel);
-  clReleaseMemObject(self->d_nonce);
-  clReleaseMemObject(self->d_work);
-  clReleaseMemObject(self->d_h);
-  clReleaseMemObject(self->d_difficulty);
-  clReleaseProgram(self->program);
-  clReleaseCommandQueue(self->queue);
-  clReleaseContext(self->context);
-}
-
 static PyObject *setup_cl(PyObject *m) {
   ms *self = PyModule_GetState(m);
   int err = clGetPlatformIDs(1, &self->platform, NULL);
@@ -240,7 +229,6 @@ static PyObject *work_generate_impl(ms *self, uint8_t *h, uint64_t difficulty) {
   return Py_BuildValue("K", work);
 }
 #else
-static void free_ext(void *Py_UNUSED(m)) {}
 typedef struct {
   uint8_t *h;
   uint64_t difficulty, nonce, result;
@@ -337,7 +325,7 @@ void ed25519_hash(uint8_t *out, uint8_t const *in, size_t inlen) {
   ed25519_hash_final(&ctx, out);
 }
 
-static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
+static PyObject *publickey(PyObject *Py_UNUSED(m), PyObject *args) {
   uint8_t *sk;
   Py_ssize_t n0;
   ed25519_public_key pk;
@@ -351,43 +339,42 @@ static PyObject *publickey(PyObject *Py_UNUSED(self), PyObject *args) {
   return Py_BuildValue("y#", pk, sizeof(ed25519_public_key));
 }
 
-static PyObject *sign(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *sk, *m, *r, R[32];
+static PyObject *sign(PyObject *m, PyObject *args) {
+  uint8_t *sk, *msg, *r, R[32];
   Py_ssize_t n0, n1, n2 = 0;
 
-  if (!PyArg_ParseTuple(args, "y#y#|y#", &sk, &n0, &m, &n1, &r, &n2))
+  if (!PyArg_ParseTuple(args, "y#y#|y#", &sk, &n0, &msg, &n1, &r, &n2))
     return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
   if (n0 != 32)
     return PyErr_Format(PyExc_ValueError, "Secret key must be 32 bytes");
 
   if (n2 != 32) {
-    PyObject *os = PyImport_ImportModule("os");
-    PyObject *seed = PyObject_CallMethod(os, "urandom", "i", sizeof R);
+    ms *self = PyModule_GetState(m);
+    PyObject *seed = PyObject_CallMethod(self->os, "urandom", "i", sizeof R);
     PyBytes_AsStringAndSize(seed, (char **)R, &n1);
     Py_DECREF(seed);
-    Py_DECREF(os);
     r = &R[0];
   }
 
   ed25519_public_key pk;
   ed25519_publickey(sk, pk);
   ed25519_signature sig;
-  ed25519_sign(m, n1, r, sk, pk, sig);
+  ed25519_sign(msg, n1, r, sk, pk, sig);
   return Py_BuildValue("y#", sig, sizeof(ed25519_signature));
 }
 
-static PyObject *verify_signature(PyObject *Py_UNUSED(self), PyObject *args) {
-  uint8_t *sig, *pk, *m;
+static PyObject *verify_signature(PyObject *Py_UNUSED(m), PyObject *args) {
+  uint8_t *sig, *pk, *msg;
   Py_ssize_t n0, n1, n2;
 
-  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &n0, &pk, &n1, &m, &n2))
+  if (!PyArg_ParseTuple(args, "y#y#y#", &sig, &n0, &pk, &n1, &msg, &n2))
     return PyErr_Format(PyExc_RuntimeError, "Failed to parse arguments");
   if (n0 != 64)
     return PyErr_Format(PyExc_ValueError, "Signature must be 64 bytes");
   if (n1 != 32)
     return PyErr_Format(PyExc_ValueError, "Public key must be 32 bytes");
 
-  bool res = ed25519_sign_open(m, n2, pk, sig) == 0;
+  bool res = ed25519_sign_open(msg, n2, pk, sig) == 0;
   return Py_BuildValue("i", res);
 }
 
@@ -399,15 +386,15 @@ static PyMethodDef m[] = {
     {"verify_signature", verify_signature, METH_VARARGS, NULL},
     {}};
 
-static int exec_ext(PyObject *m) {
+static int m_exec(PyObject *m) {
   ms *self = PyModule_GetState(m);
   Py_ssize_t n;
 
-  PyObject *os = PyImport_ImportModule("os");
-  PyObject *seed = PyObject_CallMethod(os, "urandom", "i", sizeof self->s);
+  self->os = PyImport_ImportModule("os");
+  PyObject *seed =
+      PyObject_CallMethod(self->os, "urandom", "i", sizeof self->s);
   PyBytes_AsStringAndSize(seed, (char **)self->s, &n);
   Py_DECREF(seed);
-  Py_DECREF(os);
   self->p = 0;
 
 #ifdef USE_OCL
@@ -418,7 +405,22 @@ static int exec_ext(PyObject *m) {
   return 0;
 }
 
-static PyModuleDef_Slot slots[] = {{Py_mod_exec, exec_ext},
+static void m_free(void *m) {
+  ms *self = PyModule_GetState((PyObject *)m);
+  Py_DECREF(self->os);
+#ifdef USE_OCL
+  clReleaseKernel(self->kernel);
+  clReleaseMemObject(self->d_nonce);
+  clReleaseMemObject(self->d_work);
+  clReleaseMemObject(self->d_h);
+  clReleaseMemObject(self->d_difficulty);
+  clReleaseProgram(self->program);
+  clReleaseCommandQueue(self->queue);
+  clReleaseContext(self->context);
+#endif
+}
+
+static PyModuleDef_Slot slots[] = {{Py_mod_exec, m_exec},
 #ifdef Py_GIL_DISABLED
                                    {Py_mod_gil, Py_MOD_GIL_NOT_USED},
 #endif
@@ -426,6 +428,6 @@ static PyModuleDef_Slot slots[] = {{Py_mod_exec, exec_ext},
 
 static PyModuleDef ext = {PyModuleDef_HEAD_INIT, .m_name = "ext",
                           .m_size = sizeof(ms),  .m_methods = m,
-                          .m_slots = slots,      .m_free = free_ext};
+                          .m_slots = slots,      .m_free = m_free};
 
 PyMODINIT_FUNC PyInit_ext(void) { return PyModuleDef_Init(&ext); }
